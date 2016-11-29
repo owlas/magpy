@@ -1,0 +1,25 @@
+{
+    "simulation": {
+        "ensemble-size": 20,
+        "simulation-time": 1e-9,
+        "time-step": 1e-14
+    },
+    "output": {
+        "directory": "output"
+    },
+    "global": {
+        "temperature": 300,
+        "applied-field": {
+            "shape": "sine",
+            "frequency": 300e3,
+            "amplitude": 3.5e5
+        }
+    },
+    "particle": {
+        "damping": 0.1,
+        "radius": 8e-9,
+        "anisotropy": 23e3,
+        "anisotropy-axis": [0, 0, 1],
+        "initial-magnetisation": [0, 0, 1]
+    }
+}
