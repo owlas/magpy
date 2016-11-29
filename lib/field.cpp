@@ -2,6 +2,11 @@
 #define _USE_MATH_DEFINES
 #include<cmath>
 
+double field::constant( const double h, const double t )
+{
+    return h;
+}
+
 double field::sinusoidal( const double h, const double f, const double t )
 {
     return h*std::sin( 2*M_PI*f*t );

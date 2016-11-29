@@ -8,6 +8,9 @@
 #include <cstddef>
 namespace field
 {
+    // constant field term
+    double constant( const double h, const double t);
+
     // field strength h, frequency f, at time t
     double sinusoidal( const double h, const double f, const double t );
     double square( const double h, const double f, const double t );
