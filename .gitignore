@@ -1,4 +1,5 @@
 main
+tests
 logs/*
 objects/*
 *.dSYM
