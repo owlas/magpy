@@ -15,6 +15,12 @@ using d3 = std::array<double,3>;
 
 namespace simulation
 {
+    // This struct holds the results from the simulation
+    // data is dynamically allocated and handled by the dtor
+    // magnetisation - [Nx3] x,y,z compononents of the magnetisation
+    // field - [N] the value of the field at time t_n
+    // time - [N] the time at n
+    // N - the number of steps taken
     struct results {
         double *magnetisation;
         double *field;
@@ -34,6 +40,8 @@ namespace simulation
             delete [] time;
         }
     };
+
+    // Run the full dynamics and return the results
     struct results full_dynamics(
         const double damping,
         const double thermal_field_strength,
