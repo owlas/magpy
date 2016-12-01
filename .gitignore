@@ -3,3 +3,4 @@ tests
 logs/*
 objects/*
 *.dSYM
+.dir-locals.el
