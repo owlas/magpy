@@ -2,14 +2,20 @@
 #define _USE_MATH_DEFINES
 #include <cmath>
 #include <array>
-using d3=std::array<double,3>;
+#include <string>
 #include "../include/constants.hpp"
+#include "../include/easylogging++.h"
+
+using d3=std::array<double,3>;
 
 json normalisation::normalise( const json in )
 {
     // Simulation parameters
     double sim_time = in["simulation"]["simulation-time"];
     double time_step = in["simulation"]["time-step"];
+
+    // Get output parameters
+    std::string dir = in["output"]["directory"];
 
     // Global system parameters
     double T = in["global"]["temperature"];
@@ -59,7 +65,7 @@ json normalisation::normalise( const json in )
                 {"time-factor", time_factor}
             }},
         {"output", {
-                {"directory", in["output"]["directory"]}
+                {"directory", dir}
             }},
         {"global", {
                 {"temperature", T},
@@ -81,5 +87,8 @@ json normalisation::normalise( const json in )
                 {"stability-ratio", stability}
         }}
     };
+
+    LOG(INFO) << "Normalised simulation parameters. New time-step->"
+              << tau_step << " simulation-time->" << sim_tau;
     return out;
 }

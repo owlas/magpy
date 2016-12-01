@@ -6,7 +6,6 @@
 // O.Laslett@soton.ac.uk
 
 #include <fstream>
-#include <iostream>
 #include <array>
 #include <iostream>
 #include <random>
@@ -53,10 +52,20 @@ int main( int argc, char *argv[] )
 
     // Write the normalised parameters to file
     std::ostringstream config_out_fname;
-    config_out_fname << norm_config["output"]["directory"] << "/config_norm.json";
+    std::string dir = norm_config["output"]["directory"];
+    config_out_fname << dir << "/config_norm.json";
     std::ofstream out_config_stream( config_out_fname.str() );
-    out_config_stream << norm_config;
-    out_config_stream.close();
+    if( out_config_stream.is_open() )
+    {
+        out_config_stream << std::setw(4) << norm_config;
+        out_config_stream.close();
+        LOG(INFO) << "Wrote normalised simulation parameters to: "
+                  << config_out_fname.str();
+    }
+    else
+        LOG(ERROR) << "Error opening file to write normalised simulation parameters: "
+                   << config_out_fname.str();
+
 
     // Bind the applied field waveform
     // assumes sinusoidal for now
