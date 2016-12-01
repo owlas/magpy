@@ -109,7 +109,8 @@ void driver::eulerm(
 
 void integrator::heun(
     double *next_state,
-    double *trial_state,
+    double *drift_arr,
+    double *trial_drift_arr,
     double *diffusion_matrix,
     double *trial_diffusion_matrix,
     const double *current_state,
@@ -121,22 +122,22 @@ void integrator::heun(
     const double t,
     const double step_size )
 {
-    drift( next_state, current_state, t );
+    drift( drift_arr, current_state, t );
     diffusion( diffusion_matrix, current_state, t );
 
     for( unsigned int i=0; i<n_dims; i++ ){
-        trial_state[i] = current_state[i] * step_size*next_state[i];
+        next_state[i] = current_state[i] * step_size*drift_arr[i];
         for( unsigned int j=0; j<wiener_dims; j++ )
-            trial_state[i] += diffusion_matrix[j+i*wiener_dims]*wiener_steps[j];
+            next_state[i] += diffusion_matrix[j+i*wiener_dims]*wiener_steps[j];
     }
 
-    drift( next_state, trial_state, t + step_size );
-    diffusion( trial_diffusion_matrix, trial_state, t +step_size );
+    drift( trial_drift_arr, next_state, t + step_size );
+    diffusion( trial_diffusion_matrix, next_state, t +step_size );
 
     for( unsigned int i=0; i<n_dims; i++ )
     {
         next_state[i] = current_state[i]
-            + 0.5*step_size*( trial_state[i] + next_state[i] );
+            + 0.5*step_size*( trial_drift_arr[i] + drift_arr[i] );
         for( unsigned int j=0; j<wiener_dims; j++ )
             next_state[i] += 0.5*wiener_steps[j]
                 *( trial_diffusion_matrix[j+i*wiener_dims]
@@ -158,14 +159,16 @@ void driver::heun(
     for( unsigned int i=0; i<n_dims; i++ )
         states[i] = initial_state[i];
 
-    double *trial_state = new double[n_dims];
+    double *drift_arr = new double[n_dims];
+    double *trial_drift_arr = new double[n_dims];
     double *diffusion_mat = new double[n_dims*n_wiener];
     double *trial_diffusion_mat = new double[n_dims*n_wiener];
     for( unsigned int i=1; i<n_steps; i++ )
         integrator::heun(
-            states+i*n_dims, trial_state, diffusion_mat, trial_diffusion_mat,
-            states+(i-1)*n_dims, wiener_process+(i-1)*n_wiener, drift,
-            diffusion, n_dims, n_wiener, i*step_size, step_size );
+            states+i*n_dims, drift_arr, trial_drift_arr, diffusion_mat,
+            trial_diffusion_mat, states+(i-1)*n_dims, wiener_process+(i-1)*n_wiener,
+            drift, diffusion, n_dims, n_wiener, i*step_size, step_size );
 
-    delete[] trial_state; delete[] diffusion_mat; delete[] trial_diffusion_mat;
+    delete[] drift_arr; delete[] trial_drift_arr;
+    delete[] diffusion_mat; delete[] trial_diffusion_mat;
 }

@@ -65,9 +65,9 @@ namespace integrator
     // states, drift, and diffusion.
     // Heun
     void heun(
-        double *next_state, double *trial_state, double *diffusion_matrix,
-        double *trial_diffusion_matrix, const double *current_state,
-        const double *wiener_steps,
+        double *next_state, double *drift_arr, double *trial_drift_arr,
+        double *diffusion_matrix, double *trial_diffusion_matrix,
+        const double *current_state, const double *wiener_steps,
         const std::function<void(double*,const double*,const double)> drift,
         const std::function<void(double*,const double*,const double)> diffusion,
         const size_t n_dims, const size_t wiener_dims, const double t,

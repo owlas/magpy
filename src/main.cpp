@@ -26,7 +26,7 @@ void print_help()
     std::cout << "Usage:" << std::endl;
     std::cout << "$ ./moma INPUT" << std::endl;
     std::cout << "    - INPUT: json config file" << std::endl;
-};
+}
 
 // specify the json on the command line (add args)
 int main( int argc, char *argv[] )
