@@ -2,7 +2,8 @@
 #include "../include/easylogging++.h"
 #include "../include/llg.hpp"
 #include "../include/integrators.hpp"
-#include <iostream>
+#include "../include/io.hpp"
+#include "../include/simulation.hpp"
 
 INITIALIZE_EASYLOGGINGPP
 
@@ -62,4 +63,59 @@ TEST(heun, 2d_wiener)
 
     EXPECT_FLOAT_EQ( 0.1, next_state[0] );
     EXPECT_FLOAT_EQ( 0.01, next_state[1] );
+}
+
+TEST(io, write_array)
+{
+    double arr[3] = {1, 2, 3}, arrback[3];
+    int fail, nread;
+    fail = io::write_array( "test.out", arr, 3 );
+    ASSERT_EQ( 0, fail );
+
+    // Read back the data
+    FILE *in;
+    in = fopen( "test.out", "rb" );
+    nread = fread( arrback, sizeof(double), 3, in );
+    fclose( in );
+
+    ASSERT_EQ( 3, nread );
+    ASSERT_FLOAT_EQ( 1, arrback[0] );
+    ASSERT_FLOAT_EQ( 2, arrback[1] );
+    ASSERT_FLOAT_EQ( 3, arrback[2] );
+
+}
+
+TEST( simulation, save_results )
+{
+    simulation::results res( 2 );
+
+    res.magnetisation[0] = 2;
+    res.magnetisation[1] = 3;
+    res.field[0] = 4;
+    res.field[1] = 5;
+    res.time[0] = 6;
+    res.time[1] = 7;
+
+    simulation::save_results( "test.out", res );
+
+    int nread;
+    double arr[2];
+    FILE *in;
+    in=fopen( "test.out.mag", "rb" );
+    nread = fread( arr, sizeof(double), 2, in );
+    ASSERT_EQ( 2, nread );
+    ASSERT_FLOAT_EQ( 2, arr[0] );
+    ASSERT_FLOAT_EQ( 3, arr[1] );
+
+    in=fopen( "test.out.field", "rb" );
+    nread = fread( arr, sizeof(double), 2, in );
+    ASSERT_EQ( 2, nread );
+    ASSERT_FLOAT_EQ( 4, arr[0] );
+    ASSERT_FLOAT_EQ( 5, arr[1] );
+
+    in=fopen( "test.out.time", "rb" );
+    nread = fread( arr, sizeof(double), 2, in );
+    ASSERT_EQ( 2, nread );
+    ASSERT_FLOAT_EQ( 6, arr[0] );
+    ASSERT_FLOAT_EQ( 7, arr[1] );
 }

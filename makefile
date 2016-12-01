@@ -64,6 +64,9 @@ clean:
 	rm -f gtest-all.o gtest_main.o
 	rm -rf *.dSYM
 
-clean-all: clean
+clean-tests:
+	rm -f test.out*
+
+clean-all: clean clean-tests
 	rm -f main tests
 	rm -f gtest_main.a gtest.a

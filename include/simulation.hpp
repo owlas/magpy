@@ -9,6 +9,8 @@
 #include <functional>
 #include <array>
 #include <random>
+#include <string>
+#include <cstdlib>
 
 using d3 = std::array<double,3>;
 
@@ -50,5 +52,8 @@ namespace simulation
         const double time_step,
         const double end_time,
         std::mt19937_64 rng );
+
+    // Save a results file
+    void save_results( const std::string fname, const struct results& );
 }
 #endif

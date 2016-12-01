@@ -7,6 +7,8 @@
 #include "../include/llg.hpp"
 #include "../include/integrators.hpp"
 #include "../include/easylogging++.h"
+#include "../include/io.hpp"
+#include <exception>
 
 using namespace std::placeholders;
 using sde_function = std::function<void(double*,const double*,const double)>;
@@ -75,4 +77,22 @@ struct simulation::results simulation::full_dynamics(
     delete[] wiener;
 
     return res; // Ensure elison else copy is made and dtor is called!
+}
+
+void simulation::save_results( const std::string fname, const struct results &res )
+{
+    std::stringstream mag_fname, field_fname, time_fname;
+    mag_fname << fname << ".mag";
+    field_fname << fname << ".field";
+    time_fname << fname << ".time";
+    int err;
+    err = io::write_array( mag_fname.str(), res.magnetisation, res.N*3 );
+    if( err != 0 )
+        throw std::runtime_error( "failed to write file" );
+    err = io::write_array( field_fname.str(), res.field, res.N );
+    if( err != 0 )
+        throw std::runtime_error( "failed to write file" );
+    err = io::write_array( time_fname.str(), res.time, res.N );
+    if( err != 0 )
+        throw std::runtime_error( "failed to write file" );
 }
