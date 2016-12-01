@@ -44,7 +44,8 @@ struct simulation::results simulation::full_dynamics(
 
 
     // Allocate matrices needed for Heun scheme
-    double *trial_state = new double[dims];
+    double *drift_arr = new double[dims];
+    double *trial_drift_arr = new double[dims];
     double *diffusion_mat = new double[dims*dims];
     double *trial_diffusion_mat = new double[dims*dims];
 
@@ -63,14 +64,14 @@ struct simulation::results simulation::full_dynamics(
         sde_function diffusion = std::bind(
             llg::diffusion, _1, _2, _3, thermal_field_strength, damping );
 
-        integrator::heun( &(res.magnetisation[dims*step]), trial_state, diffusion_mat,
-                          trial_diffusion_mat, &(res.magnetisation[dims*(step-1)]),
-                          &(wiener[dims*step]), drift, diffusion, dims,
-                          dims, t, time_step );
+        integrator::heun(
+            &res.magnetisation[dims*step], drift_arr, trial_drift_arr, diffusion_mat,
+            trial_diffusion_mat, &res.magnetisation[dims*(step-1)],
+            &wiener[dims*(step-1)], drift, diffusion, dims,
+            dims, t, time_step );
     }
-    delete[] diffusion_mat;
-    delete[] trial_state;
-    delete[] trial_diffusion_mat;
+    delete[] drift_arr; delete[] trial_drift_arr;
+    delete[] diffusion_mat; delete[] trial_diffusion_mat;
     delete[] wiener;
 
     return res; // Ensure elison else copy is made and dtor is called!
