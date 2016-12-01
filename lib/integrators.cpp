@@ -126,7 +126,7 @@ void integrator::heun(
     diffusion( diffusion_matrix, current_state, t );
 
     for( unsigned int i=0; i<n_dims; i++ ){
-        next_state[i] = current_state[i] * step_size*drift_arr[i];
+        next_state[i] = current_state[i] + step_size*drift_arr[i];
         for( unsigned int j=0; j<wiener_dims; j++ )
             next_state[i] += diffusion_matrix[j+i*wiener_dims]*wiener_steps[j];
     }
