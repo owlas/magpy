@@ -4,6 +4,8 @@
 #include "../include/integrators.hpp"
 #include "../include/io.hpp"
 #include "../include/simulation.hpp"
+#include "../include/json.hpp"
+#include "../include/normalisation.hpp"
 #include <cmath>
 #include <random>
 
@@ -68,8 +70,8 @@ TEST(heun, multiplicative )
         current_state, wiener_steps, drift, diffusion, n_dims, wiener_dims,
         t, step_size );
 
-    EXPECT_FLOAT_EQ( 1.03019352, next_state[0] );
-    EXPECT_FLOAT_EQ( 2.57118625, next_state[1] );
+    EXPECT_DOUBLE_EQ( 1.03019352, next_state[0] );
+    EXPECT_DOUBLE_EQ( 2.571186252, next_state[1] );
 }
 
 TEST(io, write_array)
@@ -170,4 +172,84 @@ TEST( heun_driver, ou )
 
         ASSERT_NEAR( truesol, states[i], 1e-8 );
     }
+}
+
+TEST( normalisation, normalise_json )
+{
+    nlohmann::json in;
+    in = {
+        {"simulation", {
+                {"ensemble-size", 1},
+                {"simulation-time", 1e-9},
+                {"time-step", 1e-14}
+            }},
+        {"output", {
+                {"directory", "output"}
+            }},
+        {"global", {
+                {"temperature", 300},
+                {"applied-field", {
+                        {"shape", "sine"},
+                        {"frequency", 300e3},
+                        {"amplitude", 5e5}
+                    }}
+            }},
+        {"particle", {
+                {"damping", 0.1},
+                {"radius", 7e-9},
+                {"anisotropy", 23e3},
+                {"anisotropy-axis", {0, 0, 1}},
+                {"initial-magnetisation", {446e3, 0, 0}}
+            }}
+    };
+
+    nlohmann::json ref_out = {
+        {"simulation", {
+                {"ensemble-size", 1},
+                {"simulation-time", 17.981521111752436},
+                {"time-step", 0.000179815211117},
+                {"time-factor", 17981521111.752434}
+            }},
+        {"output", {
+                {"directory", "output"}
+            }},
+        {"global", {
+                {"temperature", 300},
+                {"applied-field", {
+                        {"frequency", 300e3},
+                        {"shape", "sine"},
+                        {"amplitude", 6.0919579213043464}
+                    }},
+                {"anisotropy-field", 82075.419177049276}
+            }},
+        {"particle", {
+                {"damping", 0.1},
+                {"volume", 1.436755040241732e-24},
+                {"radius", 7e-9},
+                {"anisotropy", 23e3},
+                {"anisotropy-axis", {0, 0, 1}},
+                {"initial-magnetisation", {1, 0, 0}},
+                {"thermal-field-strength", 0.11140026492035397},
+                {"stability-ratio", 7.97822314341568}
+            }}
+    };
+    nlohmann::json out = normalisation::normalise( in );
+    ASSERT_EQ( ref_out["simulation"]["ensemble-size"], out["simulation"]["ensemble-size"]);
+    ASSERT_NEAR( ref_out["simulation"]["time-step"].get<double>(), out["simulation"]["time-step"].get<double>(), 1e-14);
+    ASSERT_DOUBLE_EQ( ref_out["simulation"]["simulation-time"], out["simulation"]["simulation-time"]);
+    ASSERT_DOUBLE_EQ( ref_out["simulation"]["time-factor"], out["simulation"]["time-factor"]);
+    ASSERT_EQ( ref_out["output"]["directory"], out["output"]["directory"]);
+    ASSERT_DOUBLE_EQ( ref_out["global"]["temperature"], out["global"]["temperature"]);
+    ASSERT_DOUBLE_EQ( ref_out["global"]["applied-field"]["frequency"], out["global"]["applied-field"]["frequency"]);
+    ASSERT_EQ( ref_out["global"]["applied-field"]["shape"], out["global"]["applied-field"]["shape"]);
+    ASSERT_DOUBLE_EQ( ref_out["global"]["applied-field"]["amplitude"], out["global"]["applied-field"]["amplitude"]);
+    ASSERT_DOUBLE_EQ( ref_out["global"]["anisotropy-field"], out["global"]["anisotropy-field"]);
+    ASSERT_DOUBLE_EQ( ref_out["particle"]["damping"], out["particle"]["damping"]);
+    ASSERT_DOUBLE_EQ( ref_out["particle"]["volume"], out["particle"]["volume"]);
+    ASSERT_DOUBLE_EQ( ref_out["particle"]["radius"], out["particle"]["radius"]);
+    ASSERT_DOUBLE_EQ( ref_out["particle"]["anisotropy"], out["particle"]["anisotropy"]);
+    ASSERT_EQ( ref_out["particle"]["anisotropy-axis"], out["particle"]["anisotropy-axis"]);
+    ASSERT_EQ( ref_out["particle"]["initial-magnetisation"], out["particle"]["initial-magnetisation"]);
+    ASSERT_DOUBLE_EQ( ref_out["particle"]["thermal-field-strength"], out["particle"]["thermal-field-strength"]);
+    ASSERT_DOUBLE_EQ( ref_out["particle"]["stability-ratio"], out["particle"]["stability-ratio"]);
 }
