@@ -20,6 +20,7 @@ json normalisation::normalise( const json in )
     // Global system parameters
     double T = in["global"]["temperature"];
     double H = in["global"]["applied-field"]["amplitude"];
+    double f = in["global"]["applied-field"]["frequency"];
 
     // Get particle parameters
     double damping = in["particle"]["damping"];
@@ -47,6 +48,7 @@ json normalisation::normalise( const json in )
         / ( 1+damping*damping );
     double sim_tau = sim_time * time_factor;
     double tau_step = time_step * time_factor;
+    double f_in_tau = f / time_factor;
 
     // normalised thermal field strength
     double therm_strength = std::sqrt(
@@ -70,7 +72,7 @@ json normalisation::normalise( const json in )
         {"global", {
                 {"temperature", T},
                 {"applied-field", {
-                        {"frequency", in["global"]["applied-field"]["frequency"]},
+                        {"frequency", f_in_tau},
                         {"shape", in["global"]["applied-field"]["shape"]},
                         {"amplitude", h},
                     }},

@@ -216,7 +216,7 @@ TEST( normalisation, normalise_json )
         {"global", {
                 {"temperature", 300},
                 {"applied-field", {
-                        {"frequency", 300e3},
+                        {"frequency", 1.6683794331722291e-05},
                         {"shape", "sine"},
                         {"amplitude", 6.0919579213043464}
                     }},
