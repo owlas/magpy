@@ -27,3 +27,13 @@ double field::square_fourier( const double h,
     field *= 4/M_PI * h;
     return field;
 }
+
+void field::uniaxial_anisotropy(
+    double *h_anis, const double *mag, const double *axis )
+{
+    // compute the dot product
+    double dot = mag[0]*axis[0]+mag[1]*axis[1]+mag[2]*axis[2];
+    h_anis[0] = dot*axis[0];
+    h_anis[1] = dot*axis[1];
+    h_anis[2] = dot*axis[2];
+}

@@ -47,6 +47,7 @@ namespace simulation
     struct results full_dynamics(
         const double damping,
         const double thermal_field_strength,
+        const d3 anis_axis,
         const std::function<double(double)> applied_field,
         const d3 initial_magnetisation,
         const double time_step,

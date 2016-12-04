@@ -81,6 +81,13 @@ int main( int argc, char *argv[] )
             norm_config["particle"]["initial-magnetisation"][1],
             norm_config["particle"]["initial-magnetisation"][2] };
 
+    // Get the uniaxial anisotropy axis
+    std::array<double,3> aaxis{
+        norm_config["particle"]["anisotropy-axis"][0],
+            norm_config["particle"]["anisotropy-axis"][1],
+            norm_config["particle"]["anisotropy-axis"][2]
+            };
+
     // Create the random number generator
     std::mt19937_64 rng( 1001 );
 
@@ -88,22 +95,12 @@ int main( int argc, char *argv[] )
     auto results = simulation::full_dynamics(
         norm_config["particle"]["damping"],
         norm_config["particle"]["thermal-field-strength"],
-        happ, init,
+        aaxis, happ, init,
         norm_config["simulation"]["time-step"],
         norm_config["simulation"]["simulation-time"],
         rng );
 
-
-
-
-
-    // start with single particle
-    // define the struct from the config
-
-    // normalisation of all parameters
-
-    // simulate the llg for N steps
-
-    // Write to file
+    // Write the results to disk
+    simulation::save_results( "output/results", results );
     return 0;
 }

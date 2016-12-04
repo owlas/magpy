@@ -8,6 +8,7 @@
 #include "../include/integrators.hpp"
 #include "../include/easylogging++.h"
 #include "../include/io.hpp"
+#include "../include/field.hpp"
 #include <exception>
 
 using namespace std::placeholders;
@@ -16,6 +17,7 @@ using sde_function = std::function<void(double*,const double*,const double)>;
 struct simulation::results simulation::full_dynamics(
     const double damping,
     const double thermal_field_strength,
+    const d3 anis_axis,
     const std::function<double(double)> applied_field,
     const d3 initial_magnetisation,
     const double time_step,
@@ -51,6 +53,9 @@ struct simulation::results simulation::full_dynamics(
     double *diffusion_mat = new double[dims*dims];
     double *trial_diffusion_mat = new double[dims*dims];
 
+    // The effective field is updated at each time step
+    double heff[3];
+
     // Run the simulation
     for( unsigned int step=1; step<N_steps; step++ )
     {
@@ -58,19 +63,25 @@ struct simulation::results simulation::full_dynamics(
         double t = step*time_step;
         res.time[step] = t;
 
-        // compute the applied field
-        double hz[3] = { 0, 0, applied_field( t ) };
+        // create a pointer to the previous magnetisation state
+        double *prev_mag = &res.magnetisation[dims*(step-1)];
+
+        // Compute the anisotropy field
+        field::uniaxial_anisotropy( heff, prev_mag, anis_axis.data() );
+
+        // compute the applied field and add to effective field
+        double hz = applied_field( t );
+        heff[2] += hz;
 
         // bind parameters to the LLG function
-        sde_function drift = std::bind( llg::drift, _1, _2, _3, damping, hz );
+        sde_function drift = std::bind( llg::drift, _1, _2, _3, damping, heff );
         sde_function diffusion = std::bind(
             llg::diffusion, _1, _2, _3, thermal_field_strength, damping );
 
         integrator::heun(
             &res.magnetisation[dims*step], drift_arr, trial_drift_arr, diffusion_mat,
-            trial_diffusion_mat, &res.magnetisation[dims*(step-1)],
-            &wiener[dims*(step-1)], drift, diffusion, dims,
-            dims, t, time_step );
+            trial_diffusion_mat, prev_mag, &wiener[dims*(step-1)], drift,
+            diffusion, dims, dims, t, time_step );
     }
     delete[] drift_arr; delete[] trial_drift_arr;
     delete[] diffusion_mat; delete[] trial_diffusion_mat;

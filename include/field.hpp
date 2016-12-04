@@ -6,6 +6,7 @@
 #ifndef FIELD_H
 #define FIELD_H
 #include <cstddef>
+
 namespace field
 {
     // constant field term
@@ -18,5 +19,9 @@ namespace field
     // Use this to approximate a square wave with its fourier components
     double square_fourier( const double h, const double f,
                            const size_t n_compononents, double t );
+
+    // Computes the anisotropy field
+    void uniaxial_anisotropy( double *h_anis, const double *magnetisation,
+                              const double *anis_axis );
 }
 #endif
