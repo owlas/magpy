@@ -71,6 +71,7 @@ struct simulation::results simulation::full_dynamics(
 
         // compute the applied field and add to effective field
         double hz = applied_field( t );
+        res.field[step] = hz;
         heff[2] += hz;
 
         // bind parameters to the LLG function
