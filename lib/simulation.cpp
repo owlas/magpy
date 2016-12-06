@@ -6,7 +6,6 @@
 #include "../include/simulation.hpp"
 #include "../include/llg.hpp"
 #include "../include/integrators.hpp"
-#include "../include/easylogging++.h"
 #include "../include/io.hpp"
 #include "../include/field.hpp"
 #include <exception>
@@ -27,8 +26,6 @@ struct simulation::results simulation::full_dynamics(
     // compute the number of steps to take
     size_t N_steps = int( end_time / time_step ) + 1;
     size_t dims = 3;
-
-    LOG(INFO) << "Simulating " << N_steps << " steps of full dynamics.";
 
     // allocate memory for results
     simulation::results res( N_steps );

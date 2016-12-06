@@ -10,6 +10,7 @@
 #include <iostream>
 #include <random>
 #include <fenv.h>
+#include <omp.h>
 #include "../include/normalisation.hpp"
 #include "../include/field.hpp"
 #include "../include/simulation.hpp"
@@ -88,19 +89,35 @@ int main( int argc, char *argv[] )
             norm_config["particle"]["anisotropy-axis"][2]
             };
 
-    // Create the random number generator
-    std::mt19937_64 rng( 1001 );
+    // Run the simulation N times for a full ensemble
+    size_t n_runs = norm_config["simulation"]["ensemble-size"];
 
-    // Run the simulation
-    auto results = simulation::full_dynamics(
-        norm_config["particle"]["damping"],
-        norm_config["particle"]["thermal-field-strength"],
-        aaxis, happ, init,
-        norm_config["simulation"]["time-step"],
-        norm_config["simulation"]["simulation-time"],
-        rng );
+    LOG(INFO) << "Running " << n_runs << " simulations on "
+              << omp_get_max_threads() << " threads";
+#pragma omp parallel for schedule(dynamic,1)
+    for( unsigned int i=0; i<n_runs; i++ )
+    {
+        // Create the random number generator
+        unsigned long seed = config["simulation"]["seeds"][i];
+        std::mt19937_64 rng( seed );
 
-    // Write the results to disk
-    simulation::save_results( "output/results", results );
+        auto results = simulation::full_dynamics(
+            norm_config["particle"]["damping"],
+            norm_config["particle"]["thermal-field-strength"],
+            aaxis, happ, init,
+            norm_config["simulation"]["time-step"],
+            norm_config["simulation"]["simulation-time"],
+            rng );
+
+        // Write the results to disk
+        std::stringstream fname;
+        fname << "output/results" << i;
+        simulation::save_results( fname.str(), results );
+
+        // Log progress
+        #pragma omp critical
+        LOG(INFO) << "Simulation " << i << " - saved " << results.N
+                  << " steps to: " << fname.str();
+    }
     return 0;
 }
