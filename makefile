@@ -5,7 +5,7 @@
 #    make clean - cleans up
 
 
-CXX=g++
+CXX=icpc
 INC_PATH=include
 OBJ_PATH=objects
 LIB_PATH=lib
@@ -16,7 +16,7 @@ TESTS=test/test.cpp
 TEST_LIB=libgtest.a
 GTEST_FLAGS=-isystem $(GTEST_DIR)/include
 
-CXXFLAGS=--std=c++11 -W -Wall -pedantic -g -pthread
+CXXFLAGS=--std=c++11 -W -Wall -pedantic -pthread -fopenmp -O3 -g -simd -qopenmp -xHost
 
 SOURCES=$(wildcard $(LIB_PATH)/*.cpp)
 OBJ_FILES=$(addprefix $(OBJ_PATH)/,$(notdir $(SOURCES:.cpp=.o)))
