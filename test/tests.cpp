@@ -99,8 +99,8 @@ TEST( simulation, save_results )
 {
     simulation::results res( 2 );
 
-    res.magnetisation[0] = 2;
-    res.magnetisation[1] = 3;
+    res.mx[0] = 2;
+    res.mx[1] = 3;
     res.field[0] = 4;
     res.field[1] = 5;
     res.time[0] = 6;
@@ -111,7 +111,7 @@ TEST( simulation, save_results )
     int nread;
     double arr[2];
     FILE *in;
-    in=fopen( "test.out.mag", "rb" );
+    in=fopen( "test.out.mx", "rb" );
     nread = fread( arr, sizeof(double), 2, in );
     ASSERT_EQ( 2, nread );
     ASSERT_DOUBLE_EQ( 2, arr[0] );
