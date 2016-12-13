@@ -6,6 +6,7 @@
 #include "../include/simulation.hpp"
 #include "../include/json.hpp"
 #include "../include/normalisation.hpp"
+#include "../include/trap.hpp"
 #include <cmath>
 #include <random>
 
@@ -172,6 +173,14 @@ TEST( heun_driver, ou )
 
         ASSERT_NEAR( truesol, states[i], 1e-8 );
     }
+}
+
+TEST( trapezoidal_method, triangle )
+{
+    double x[4] = { 0.0, 0.1, 0.3, 0.7 };
+    double y[4] = { 5.0, 10.0, 10.0, 20.0 };
+    double area = trap::trapezoidal( x, y, 4 );
+    ASSERT_DOUBLE_EQ( 8.75, area );
 }
 
 TEST( normalisation, normalise_json )
