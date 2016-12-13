@@ -57,11 +57,9 @@ struct simulation::results simulation::full_dynamics(
     // Copy in the initial state
     res.time[0] = 0;
     res.field[0] = applied_field( 0 );
-    for( unsigned int i=0; i<dims; i++ )
-    {
-        res.magnetisation[i] = initial_magnetisation[i];
-        state[i] = initial_magnetisation[i];
-    }
+    res.mx[0] = initial_magnetisation[0];
+    res.my[0] = initial_magnetisation[1];
+    res.mz[0] = initial_magnetisation[2];
 
     // Generate the wiener paths needed for simulation
     std::normal_distribution<double> dist( 0, thermal_field_strength );
@@ -78,7 +76,6 @@ struct simulation::results simulation::full_dynamics(
     unsigned int step = 0;
     double t = 0;
     double hz = 0;
-    double *prev_state, *next_state;
     double pstate[3], nstate[3];
     nstate[0] = initial_magnetisation[0];
     nstate[1] = initial_magnetisation[1];
@@ -133,9 +130,9 @@ struct simulation::results simulation::full_dynamics(
           state at the sampling time.
          */
         res.time[sample] = sample*sampling_time; // sampling time
-        res.magnetisation[sample*dims+0] = pstate[0];
-        res.magnetisation[sample*dims+1] = pstate[1];
-        res.magnetisation[sample*dims+2] = pstate[2];
+        res.mx[sample] = pstate[0];
+        res.my[sample] = pstate[1];
+        res.mz[sample] = pstate[2];
         res.field[sample] = applied_field( sample*sampling_time );
     } // end sampling loop
 
@@ -148,12 +145,20 @@ struct simulation::results simulation::full_dynamics(
 
 void simulation::save_results( const std::string fname, const struct results &res )
 {
-    std::stringstream mag_fname, field_fname, time_fname;
-    mag_fname << fname << ".mag";
+    std::stringstream magx_fname, magy_fname, magz_fname, field_fname, time_fname;
+    magx_fname << fname << ".mx";
+    magy_fname << fname << ".my";
+    magz_fname << fname << ".mz";
     field_fname << fname << ".field";
     time_fname << fname << ".time";
     int err;
-    err = io::write_array( mag_fname.str(), res.magnetisation, res.N*3 );
+    err = io::write_array( magx_fname.str(), res.mx, res.N );
+    if( err != 0 )
+        throw std::runtime_error( "failed to write file" );
+    err = io::write_array( magy_fname.str(), res.my, res.N );
+    if( err != 0 )
+        throw std::runtime_error( "failed to write file" );
+    err = io::write_array( magz_fname.str(), res.mz, res.N );
     if( err != 0 )
         throw std::runtime_error( "failed to write file" );
     err = io::write_array( field_fname.str(), res.field, res.N );

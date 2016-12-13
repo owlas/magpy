@@ -24,20 +24,24 @@ namespace simulation
     // time - [N] the time at n
     // N - the number of steps taken
     struct results {
-        double *magnetisation;
+        double *mx;
+        double *my;
+        double *mz;
         double *field;
         double *time;
         size_t N;
 
         results( size_t _N ) {
             N=_N;
-            magnetisation = new double[N*3];
+            mx = new double[N];
+            my = new double[N];
+            mz = new double[N];
             field = new double[N];
             time = new double[N];
         }
 
         ~results() {
-            delete [] magnetisation;
+            delete [] mx; delete [] my; delete [] mz;
             delete [] field;
             delete [] time;
         }
