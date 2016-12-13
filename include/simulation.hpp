@@ -52,7 +52,8 @@ namespace simulation
         const d3 initial_magnetisation,
         const double time_step,
         const double end_time,
-        std::mt19937_64 rng );
+        std::mt19937_64 rng,
+        const int max_samples=-1 );
 
     // Save a results file
     void save_results( const std::string fname, const struct results& );

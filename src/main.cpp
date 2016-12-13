@@ -107,7 +107,8 @@ int main( int argc, char *argv[] )
             aaxis, happ, init,
             norm_config["simulation"]["time-step"],
             norm_config["simulation"]["simulation-time"],
-            rng );
+            rng,
+            config["simulation"]["max-samples"]);
 
         // Write the results to disk
         std::stringstream fname;

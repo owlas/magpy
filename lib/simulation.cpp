@@ -21,20 +21,47 @@ struct simulation::results simulation::full_dynamics(
     const d3 initial_magnetisation,
     const double time_step,
     const double end_time,
-    std::mt19937_64 rng )
+    std::mt19937_64 rng,
+    const int max_samples )
 {
-    // compute the number of steps to take
-    size_t N_steps = int( end_time / time_step ) + 1;
     size_t dims = 3;
 
+    /*
+      To ease memory requirements - can specify the maximum number of
+      samples to store in memory. This is used to compute the number
+      of integration steps per write to the in-memory results arrays.
+
+      max_samples=-1 is equivalent to max_samples=N_steps
+
+      The sampling interval is taken to be regularly spaced and is interpolated
+      from the integration steps using a zero-order-hold technique.
+     */
+    const size_t N_steps = int( end_time/time_step ) + 1;
+    const size_t N_samples = max_samples==-1 ?
+        int( end_time / time_step ) + 1
+        : max_samples;
+    const double sampling_time = end_time / N_samples;
+
     // allocate memory for results
-    simulation::results res( N_steps );
+    simulation::results res( N_samples );
+
+
+    // Allocate matrices needed for Heun scheme
+    double *state = new double[dims*2]; // stores old and new state
+                                        // i.e 2 *dims
+    double *drift_arr = new double[dims];
+    double *trial_drift_arr = new double[dims];
+    double *diffusion_mat = new double[dims*dims];
+    double *trial_diffusion_mat = new double[dims*dims];
 
     // Copy in the initial state
     res.time[0] = 0;
     res.field[0] = applied_field( 0 );
     for( unsigned int i=0; i<dims; i++ )
+    {
         res.magnetisation[i] = initial_magnetisation[i];
+        state[i] = initial_magnetisation[i];
+    }
 
     // Generate the wiener paths needed for simulation
     std::normal_distribution<double> dist( 0, thermal_field_strength );
@@ -44,46 +71,77 @@ struct simulation::results simulation::full_dynamics(
         wiener[i] = dist( rng );
 
 
-    // Allocate matrices needed for Heun scheme
-    double *drift_arr = new double[dims];
-    double *trial_drift_arr = new double[dims];
-    double *diffusion_mat = new double[dims*dims];
-    double *trial_diffusion_mat = new double[dims*dims];
-
     // The effective field is updated at each time step
     double heff[3];
 
-    // Run the simulation
-    for( unsigned int step=1; step<N_steps; step++ )
+    // Vars for loops
+    unsigned int step = 0;
+    double t = 0;
+    double hz = 0;
+    double *prev_state, *next_state;
+    double pstate[3], nstate[3];
+    nstate[0] = initial_magnetisation[0];
+    nstate[1] = initial_magnetisation[1];
+    nstate[2] = initial_magnetisation[2];
+
+    /*
+      The time for each point in the regularly spaced grid is
+      known. We want to obtain the state at each step
+     */
+    for( unsigned int sample=1; sample<N_samples; sample++ )
     {
-        // update time
-        double t = step*time_step;
-        res.time[step] = t;
+        // Perform a simulation step until we breach the next sampling point
+        while ( t <= sample*sampling_time )
+        {
+            // take a step
+            pstate[0] = nstate[0];
+            pstate[1] = nstate[1];
+            pstate[2] = nstate[2];
+            step++;
 
-        // create a pointer to the previous magnetisation state
-        double *prev_mag = &res.magnetisation[dims*(step-1)];
+            // Get pointers for the previous and next states and
+            // compute current time
+            // prev_state = state+(step-1)%2;
+            // next_state = state+step%2;
+            t = step*time_step;
 
-        // Compute the anisotropy field
-        field::uniaxial_anisotropy( heff, prev_mag, anis_axis.data() );
+            // Compute the anisotropy field
+            field::uniaxial_anisotropy( heff, pstate, anis_axis.data() );
 
-        // compute the applied field and add to effective field
-        double hz = applied_field( t );
-        res.field[step] = hz;
-        heff[2] += hz;
+            // Compute the applied field - always in the z-direction
+            hz = applied_field( t );
+            heff[2] += hz;
 
-        // bind parameters to the LLG function
-        sde_function drift = std::bind( llg::drift, _1, _2, _3, damping, heff );
-        sde_function diffusion = std::bind(
-            llg::diffusion, _1, _2, _3, thermal_field_strength, damping );
+            // bind parameters to the LLG functions
+            sde_function drift = std::bind(
+                llg::drift, _1, _2, _3, damping, heff );
+            sde_function diffusion = std::bind(
+                llg::diffusion, _1, _2, _3, thermal_field_strength, damping );
 
-        integrator::heun(
-            &res.magnetisation[dims*step], drift_arr, trial_drift_arr, diffusion_mat,
-            trial_diffusion_mat, prev_mag, &wiener[dims*(step-1)], drift,
-            diffusion, dims, dims, t, time_step );
-    }
+            // perform integration step
+            integrator::heun(
+                nstate, drift_arr, trial_drift_arr, diffusion_mat,
+                trial_diffusion_mat, pstate, &wiener[dims*(step-1)], drift,
+                diffusion, dims, dims, t, time_step );
+
+        } // end integration stepping loop
+
+        /*
+          Once this point is reached, we are currently one step beyond
+          the desired sampling point. Use a zero-order-hold:
+          i.e. take the previous state before the sampling time as the
+          state at the sampling time.
+         */
+        res.time[sample] = sample*sampling_time; // sampling time
+        res.magnetisation[sample*dims+0] = pstate[0];
+        res.magnetisation[sample*dims+1] = pstate[1];
+        res.magnetisation[sample*dims+2] = pstate[2];
+        res.field[sample] = applied_field( sample*sampling_time );
+    } // end sampling loop
+
     delete[] drift_arr; delete[] trial_drift_arr;
     delete[] diffusion_mat; delete[] trial_diffusion_mat;
-    delete[] wiener;
+    delete[] wiener; delete[] state;
 
     return res; // Ensure elison else copy is made and dtor is called!
 }
