@@ -1,8 +1,5 @@
-[![CircleCI](https://circleci.com/gh/owlas/moma.svg?style=svg)](https://circleci.com/gh/owlas/moma)
-
+# Oh Moma! [![CircleCI](https://circleci.com/gh/owlas/moma.svg?style=svg)](https://circleci.com/gh/owlas/moma) https://badge.waffle.io/owlas/moma.png?label=ready&title=Ready
 ---
-
-# Oh Moma!
 
 A **M**odern **o**pen-ource **m**agnetics simulation package.. **a**gain.
 
