@@ -1,6 +1,7 @@
 {
     "simulation": {
-        "ensemble-size": 20,
+        "ensemble-size": 10,
+        "max-samples": 10000,
         "simulation-time": 3.333333333e-9,
         "time-step": 1e-14,
         "seeds": [
@@ -29,7 +30,7 @@
         "directory": "output"
     },
     "global": {
-        "temperature": 300,
+        "temperature": 270,
         "applied-field": {
             "shape": "sine",
             "frequency": 300e3,
@@ -38,7 +39,7 @@
     },
     "particle": {
         "damping": 0.1,
-        "radius": 8e-9,
+        "radius": 12e-9,
         "anisotropy": 23e3,
         "anisotropy-axis": [0, 0, 1],
         "initial-magnetisation": [0, 0, 446e3]
