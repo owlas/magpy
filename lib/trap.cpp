@@ -12,4 +12,4 @@ double trap::trapezoidal( double *x, double *y, size_t N )
         sum += ( x[i]-x[i-1] ) * ( y[i]+y[i-1] );
     sum /= 2.0;
     return sum;
-};
+}
