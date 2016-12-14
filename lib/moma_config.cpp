@@ -92,7 +92,8 @@ json moma_config::normalise( const json in )
                 {"anisotropy-axis", {k_vec[0], k_vec[1], k_vec[2]}},
                 {"initial-magnetisation", {unit_mag[0], unit_mag[1], unit_mag[2]}},
                 {"thermal-field-strength", therm_strength},
-                {"stability-ratio", stability}
+                {"stability-ratio", stability},
+                {"saturation-magnetisation", ms}
         }}
     };
 
@@ -101,22 +102,24 @@ json moma_config::normalise( const json in )
     return out;
 }
 
-std::map<std::string, moma_config::ComputeOptions>
-moma_config::map_compute_options = {
-    {"full", Full},
-    {"power", Power}
-};
-
 int moma_config::validate( const json input )
 {
-    // Confirm a valid compute option
-    if ( map_compute_options.count( input["simulation"]["compute"] ) == 0)
+    return 0;
+}
+
+int moma_config::write( const std::string fname, const json output )
+{
+    std::ofstream os( fname );
+    if( os.is_open() )
     {
-        LOG(ERROR) << "Simulation.compute value of "
-                   << input["simulation"]["compute"]
-                   << " is not valid.";
+        os << std::setw(4) << output;
+        os.close();
+        LOG(INFO) << "Successfully wrote json file: " << fname;
+        return 0;
+    }
+    else
+    {
+        LOG(ERROR) << "Error opening file to write json: " << fname;
         return -1;
     }
-    LOG(INFO) << "Json config validated";
-    return 0;
 }

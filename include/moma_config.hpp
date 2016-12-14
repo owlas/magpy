@@ -6,6 +6,7 @@
 #ifndef JSONS_H
 #define JSONS_H
 #include <map>
+#include <string>
 #include "json.hpp"
 using json = nlohmann::json;
 
@@ -23,14 +24,10 @@ namespace moma_config
     */
     int validate( const json input );
 
-
     /*
-      Enumerators for the different options in the json config.
+      Takes a json and pretty prints it to a file.
+      Returns 0 if success else -1
     */
-    enum ComputeOptions {
-        Power,
-        Full
-    };
-    extern std::map<std::string, ComputeOptions> map_compute_options;
+    int write( std::string, const json );
 }
 #endif
