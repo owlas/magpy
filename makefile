@@ -18,7 +18,11 @@ GTEST_FLAGS=-isystem $(GTEST_DIR)/include
 
 GIT_VERSION := $(shell git describe --abbrev=4 --dirty --always --tags)
 
-CXXFLAGS=--std=c++11 -W -Wall -pedantic -pthread -O3 -g -fopenmp -simd -qopenmp -xHost -DVERSION=\"$(GIT_VERSION)\"
+ifeq ($(CXX),icpc)
+	CXXFLAGS=--std=c++11 -W -Wall -pedantic -pthread -O3 -g -fopenmp -simd -qopenmp -xHost -DVERSION=\"$(GIT_VERSION)\"
+else
+	CXXFLAGS=--std=c++11 -W -Wall -pedantic -pthread -O3 -g -fopenmp -DVERSION=\"$(GIT_VERSION)\"
+endif
 
 SOURCES=$(wildcard $(LIB_PATH)/*.cpp)
 OBJ_FILES=$(addprefix $(OBJ_PATH)/,$(notdir $(SOURCES:.cpp=.o)))
