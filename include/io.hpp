@@ -1,5 +1,7 @@
 // io.hpp
 // reading and writing from disk
+#ifndef IO_H
+#define IO_H
 #include "../include/easylogging++.h"
 #include <cstdlib>
 #include <string>
@@ -24,3 +26,4 @@ namespace io
         return 0;
     }
 }
+#endif
