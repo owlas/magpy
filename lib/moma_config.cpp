@@ -1,4 +1,10 @@
-#include "../include/normalisation.hpp"
+// moma_config.cpp
+// Implementation
+//
+// Oliver W. Laslett (2016)
+// O.Laslett@soton.ac.uk
+#include "../include/moma_config.hpp"
+
 #define _USE_MATH_DEFINES
 #include <cmath>
 #include <array>
@@ -8,7 +14,7 @@
 
 using d3=std::array<double,3>;
 
-json normalisation::normalise( const json in )
+json moma_config::normalise( const json in )
 {
     // Simulation parameters
     double sim_time = in["simulation"]["simulation-time"];
@@ -93,4 +99,24 @@ json normalisation::normalise( const json in )
     LOG(INFO) << "Normalised simulation parameters. New time-step->"
               << tau_step << " simulation-time->" << sim_tau;
     return out;
+}
+
+std::map<std::string, moma_config::ComputeOptions>
+moma_config::map_compute_options = {
+    {"full", Full},
+    {"power", Power}
+};
+
+int moma_config::validate( const json input )
+{
+    // Confirm a valid compute option
+    if ( map_compute_options.count( input["simulation"]["compute"] ) == 0)
+    {
+        LOG(ERROR) << "Simulation.compute value of "
+                   << input["simulation"]["compute"]
+                   << " is not valid.";
+        return -1;
+    }
+    LOG(INFO) << "Json config validated";
+    return 0;
 }

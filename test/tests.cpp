@@ -5,7 +5,7 @@
 #include "../include/io.hpp"
 #include "../include/simulation.hpp"
 #include "../include/json.hpp"
-#include "../include/normalisation.hpp"
+#include "../include/moma_config.hpp"
 #include "../include/trap.hpp"
 #include <cmath>
 #include <random>
@@ -183,7 +183,7 @@ TEST( trapezoidal_method, triangle )
     ASSERT_DOUBLE_EQ( 8.75, area );
 }
 
-TEST( normalisation, normalise_json )
+TEST( moma_config, normalise_json )
 {
     nlohmann::json in;
     in = {
@@ -242,7 +242,7 @@ TEST( normalisation, normalise_json )
                 {"stability-ratio", 7.97822314341568}
             }}
     };
-    nlohmann::json out = normalisation::normalise( in );
+    nlohmann::json out = moma_config::normalise( in );
     ASSERT_EQ( ref_out["simulation"]["ensemble-size"], out["simulation"]["ensemble-size"]);
     ASSERT_NEAR( ref_out["simulation"]["time-step"].get<double>(), out["simulation"]["time-step"].get<double>(), 1e-14);
     ASSERT_DOUBLE_EQ( ref_out["simulation"]["simulation-time"], out["simulation"]["simulation-time"]);
@@ -261,4 +261,14 @@ TEST( normalisation, normalise_json )
     ASSERT_EQ( ref_out["particle"]["initial-magnetisation"], out["particle"]["initial-magnetisation"]);
     ASSERT_DOUBLE_EQ( ref_out["particle"]["thermal-field-strength"], out["particle"]["thermal-field-strength"]);
     ASSERT_DOUBLE_EQ( ref_out["particle"]["stability-ratio"], out["particle"]["stability-ratio"]);
+}
+
+TEST( moma_config, validate_compute_options )
+{
+    nlohmann::json full = {{"simulation", {{"compute", "full"}}}};
+    nlohmann::json power = {{"simulation",{{"compute", "power"}}}};
+    nlohmann::json invalid = {{"simulation", {{"compute", "invalid"}}}};
+    ASSERT_EQ( 0, moma_config::validate( full ) );
+    ASSERT_EQ( 0, moma_config::validate( power ) );
+    ASSERT_EQ( -1, moma_config::validate( invalid ) );
 }

@@ -11,11 +11,12 @@
 #include <random>
 #include <fenv.h>
 #include <omp.h>
-#include "../include/normalisation.hpp"
+#include "../include/moma_config.hpp"
 #include "../include/field.hpp"
 #include "../include/simulation.hpp"
 #include "../include/json.hpp"
 #include "../include/easylogging++.h"
+#include "../include/io.hpp"
 
 using json = nlohmann::json;
 
@@ -48,8 +49,12 @@ int main( int argc, char *argv[] )
     config << filestream;
     filestream.close();
 
+    // Check the config
+    moma_config::validate( config );
+    auto compute_option = moma_config::map_compute_options[config["simulation"]["compute"]];
+
     // get the normalised system parameters write them to a file
-    json norm_config = normalisation::normalise( config );
+    json norm_config = moma_config::normalise( config );
 
     // Write the normalised parameters to file
     std::ostringstream config_out_fname;
