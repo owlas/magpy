@@ -51,7 +51,6 @@ int main( int argc, char *argv[] )
 
     // Check the config
     moma_config::validate( config );
-    auto compute_option = moma_config::map_compute_options[config["simulation"]["compute"]];
 
     // get the normalised system parameters write them to a file
     json norm_config = moma_config::normalise( config );
@@ -60,18 +59,7 @@ int main( int argc, char *argv[] )
     std::ostringstream config_out_fname;
     std::string dir = norm_config["output"]["directory"];
     config_out_fname << dir << "/config_norm.json";
-    std::ofstream out_config_stream( config_out_fname.str() );
-    if( out_config_stream.is_open() )
-    {
-        out_config_stream << std::setw(4) << norm_config;
-        out_config_stream.close();
-        LOG(INFO) << "Wrote normalised simulation parameters to: "
-                  << config_out_fname.str();
-    }
-    else
-        LOG(ERROR) << "Error opening file to write normalised simulation parameters: "
-                   << config_out_fname.str();
-
+    moma_config::write( config_out_fname.str(), norm_config );
 
     // Bind the applied field waveform
     // assumes sinusoidal for now
@@ -99,7 +87,14 @@ int main( int argc, char *argv[] )
 
     LOG(INFO) << "Running " << n_runs << " simulations on "
               << omp_get_max_threads() << " threads";
-#pragma omp parallel for schedule(dynamic,1)
+
+    // We will average the magnetisation directions into an ensemble
+    struct simulation::results ensemble(
+        config.at("simulation").at("max-samples").get<int>() );
+    simulation::zero_results( ensemble );
+
+
+    #pragma omp parallel for schedule(dynamic,1) shared(ensemble)
     for( unsigned int i=0; i<n_runs; i++ )
     {
         // Create the random number generator
@@ -115,15 +110,62 @@ int main( int argc, char *argv[] )
             rng,
             config["simulation"]["max-samples"]);
 
-        // Write the results to disk
-        std::stringstream fname;
-        fname << "output/results" << i;
-        simulation::save_results( fname.str(), results );
+        // Copy into the reduced results
+        for( unsigned int j=0; j<results.N; j++ )
+        {
+            #pragma omp atomic
+            ensemble.mx[j] += results.mx[j]; // maybe try with a critical
+            #pragma omp atomic
+            ensemble.my[j] += results.my[j];
+            #pragma omp atomic
+            ensemble.mz[j] += results.mz[j];
+        }
 
-        // Log progress
+        if( i==0 )
+            for( unsigned int j=0; j<results.N; j++ )
+            {
+                ensemble.time[j] = results.time[j];
+                ensemble.field[j] = results.field[j];
+            }
+
         #pragma omp critical
-        LOG(INFO) << "Simulation " << i << " - saved " << results.N
-                  << " steps to: " << fname.str();
+        LOG(INFO) << "Completed simulation " << i << "/" << n_runs;
+
+    } // end monte-carlo loop
+
+    // Average the ensemble magnetisation
+    for( unsigned int j=0; j<ensemble.N; j++ )
+    {
+        ensemble.mx[j] /= n_runs;
+        ensemble.my[j] /= n_runs;
+        ensemble.mz[j] /= n_runs;
     }
+
+    // Write the full results to disk
+    std::stringstream fname;
+    fname << "output/results";
+    simulation::save_results( fname.str(), ensemble );
+
+    LOG(INFO) << "Ensemble trajectory of " << ensemble.N
+              << " steps written to: " << fname.str();
+
+    // Compute the power emitted by the particle ensemble
+    double power = simulation::power_loss(
+        ensemble,
+        norm_config["particle"]["volume"],
+        norm_config["particle"]["anisotropy"],
+        norm_config["particle"]["saturation-magnetisation"],
+        norm_config["global"]["anisotropy-field"],
+        norm_config["global"]["applied-field"]["frequency"]);
+
+    json output;
+    output["power"] = power;
+    output["git-version"] = VERSION; // from compiler flag variable (see makefile)
+
+    // Write the normalised parameters to file
+    std::ostringstream output_fname;
+    output_fname << dir << "/output.json";
+    moma_config::write( output_fname.str(), output );
+
     return 0;
 }
