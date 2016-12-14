@@ -61,5 +61,11 @@ namespace simulation
 
     // Save a results file
     void save_results( const std::string fname, const struct results& );
+
+    // Compute the power loss for a particle from its simulation results
+    double power_loss(
+        const struct results&, double volume, double anisotropy,
+        double magnetisation, double anisotropy_field,
+        double field_frequency );
 }
 #endif

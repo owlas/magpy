@@ -8,6 +8,7 @@
 #include "../include/integrators.hpp"
 #include "../include/io.hpp"
 #include "../include/field.hpp"
+#include "../include/trap.hpp"
 #include <exception>
 
 using namespace std::placeholders;
@@ -141,6 +142,14 @@ struct simulation::results simulation::full_dynamics(
     delete[] wiener; delete[] state;
 
     return res; // Ensure elison else copy is made and dtor is called!
+}
+
+double simulation::power_loss(
+    const struct results &res,
+    double v, double K, double Ms, double Hk, double f )
+{
+    double area = trap::trapezoidal( res.mz, res.field, res.N );
+    return 2*K*Ms*Hk*area*f/v;
 }
 
 void simulation::save_results( const std::string fname, const struct results &res )
