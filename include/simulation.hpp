@@ -67,5 +67,8 @@ namespace simulation
         const struct results&, double volume, double anisotropy,
         double magnetisation, double anisotropy_field,
         double field_frequency );
+
+    // Sets all of the arrays in the results struct to zero
+    void zero_results( struct results& );
 }
 #endif

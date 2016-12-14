@@ -177,3 +177,9 @@ void simulation::save_results( const std::string fname, const struct results &re
     if( err != 0 )
         throw std::runtime_error( "failed to write file" );
 }
+
+void simulation::zero_results( struct simulation::results &res )
+{
+    for( unsigned int i=0; i<res.N; i++ )
+        res.mx[i] = res.my[i] = res.mz[i] = res.field[i] = res.time[i] = 0;
+}
