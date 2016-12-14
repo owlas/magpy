@@ -265,10 +265,5 @@ TEST( moma_config, normalise_json )
 
 TEST( moma_config, validate_compute_options )
 {
-    nlohmann::json full = {{"simulation", {{"compute", "full"}}}};
-    nlohmann::json power = {{"simulation",{{"compute", "power"}}}};
-    nlohmann::json invalid = {{"simulation", {{"compute", "invalid"}}}};
-    ASSERT_EQ( 0, moma_config::validate( full ) );
-    ASSERT_EQ( 0, moma_config::validate( power ) );
-    ASSERT_EQ( -1, moma_config::validate( invalid ) );
+    // removed test for validate
 }
