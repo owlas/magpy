@@ -16,7 +16,9 @@ TESTS=test/test.cpp
 TEST_LIB=libgtest.a
 GTEST_FLAGS=-isystem $(GTEST_DIR)/include
 
-CXXFLAGS=--std=c++11 -W -Wall -pedantic -pthread -fopenmp -O3 -g -simd -qopenmp -xHost
+GIT_VERSION := $(shell git describe --abbrev=4 --dirty --always --tags)
+
+CXXFLAGS=--std=c++11 -W -Wall -pedantic -pthread -O3 -g -fopenmp -simd -qopenmp -xHost -DVERSION=\"$(GIT_VERSION)\"
 
 SOURCES=$(wildcard $(LIB_PATH)/*.cpp)
 OBJ_FILES=$(addprefix $(OBJ_PATH)/,$(notdir $(SOURCES:.cpp=.o)))
