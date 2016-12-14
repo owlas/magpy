@@ -4,3 +4,4 @@ logs/*
 objects/*
 *.dSYM
 .dir-locals.el
+output/*
