@@ -62,13 +62,9 @@ struct simulation::results simulation::full_dynamics(
     res.my[0] = initial_magnetisation[1];
     res.mz[0] = initial_magnetisation[2];
 
-    // Generate the wiener paths needed for simulation
+    // The normally distributed number generator for wiener paths
     std::normal_distribution<double> dist( 0, thermal_field_strength );
-    size_t wiener_size = dims*(N_steps-1); // not needed for initial state
-    double *wiener = new double[wiener_size];
-    for( unsigned int i=0; i<wiener_size; i++ )
-        wiener[i] = dist( rng );
-
+    double wiener[3];
 
     // The effective field is updated at each time step
     double heff[3];
@@ -116,10 +112,14 @@ struct simulation::results simulation::full_dynamics(
             sde_function diffusion = std::bind(
                 llg::diffusion, _1, _2, _3, thermal_field_strength, damping );
 
+            // Generate the random numbers
+            for( unsigned int i=0; i<3; i++ )
+                wiener[i] = dist(rng);
+
             // perform integration step
             integrator::heun(
                 nstate, drift_arr, trial_drift_arr, diffusion_mat,
-                trial_diffusion_mat, pstate, &wiener[dims*(step-1)], drift,
+                trial_diffusion_mat, pstate, wiener, drift,
                 diffusion, dims, dims, t, time_step );
 
         } // end integration stepping loop
@@ -139,7 +139,7 @@ struct simulation::results simulation::full_dynamics(
 
     delete[] drift_arr; delete[] trial_drift_arr;
     delete[] diffusion_mat; delete[] trial_diffusion_mat;
-    delete[] wiener; delete[] state;
+    delete[] state;
 
     return res; // Ensure elison else copy is made and dtor is called!
 }
