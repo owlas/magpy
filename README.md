@@ -31,3 +31,11 @@ $ make CXX=g++-4.9
 ## Configuration
 
 See the [example config file](configs/example.json) for an overview of the options.
+
+## Dependencies
+
+**LAPACK**: On Ubuntu:
+
+``` shell
+$ sudo apt install liblapack-dev
+```

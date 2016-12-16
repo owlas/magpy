@@ -24,6 +24,8 @@ else
 	CXXFLAGS=--std=c++11 -W -Wall -pedantic -pthread -O3 -g -fopenmp -DVERSION=\"$(GIT_VERSION)\"
 endif
 
+LDFLAGS=-llapacke -lblas
+
 SOURCES=$(wildcard $(LIB_PATH)/*.cpp)
 OBJ_FILES=$(addprefix $(OBJ_PATH)/,$(notdir $(SOURCES:.cpp=.o)))
 
@@ -32,18 +34,19 @@ default: main
 
 main: src/main.cpp $(OBJ_FILES)
 	$(CXX) $(CXXFLAGS) $< \
-	$(OBJ_FILES) \
+	$(OBJ_FILES) $(LDFLAGS) \
 	-o $@
 
 # Build the individual object files
 $(OBJ_PATH)/%.o: $(LIB_PATH)/%.cpp
 	$(CXX) 	$(CXXFLAGS) -c \
 	-o $@ $<
+	$(LDFLAGS)
 
 # The tests are run using googletest
 tests: test/tests.cpp $(OBJ_FILES) $(GTEST_HEADERS) gtest_main.a
 	$(CXX) $(GTEST_FLAGS) $(CXXFLAGS) $< gtest_main.a \
-	$(OBJ_FILES) \
+	$(OBJ_FILES) $(LDFLAGS) \
 	-o $@
 
 # Builds the gtest testing suite

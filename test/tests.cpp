@@ -10,6 +10,7 @@
 #include "../include/optimisation.hpp"
 #include <cmath>
 #include <random>
+#include <lapacke.h>
 
 INITIALIZE_EASYLOGGINGPP
 
@@ -282,7 +283,7 @@ TEST( newton_raphson, 1d_function )
     int res = optimisation::newton_raphson_1(
         &x_root, f, fdash, x0, eps, max_iter );
     ASSERT_LE( std::abs( x_root - 3.2 ), eps );
-    ASSERT_EQ( 0, res );
+    ASSERT_EQ( optimisation::SUCCESS, res );
 }
 
 TEST( newton_raphson, 1d_funtion_max_iter )
@@ -298,5 +299,83 @@ TEST( newton_raphson, 1d_funtion_max_iter )
     int res = optimisation::newton_raphson_1(
         &x_root, f, fdash, x0, eps, max_iter );
 
-    ASSERT_EQ( -1, res );
+    ASSERT_EQ( optimisation::MAX_ITERATIONS_ERR, res );
+}
+
+TEST( newton_raphson_noinv, 2d_function_2_sols )
+{
+    double x_root[2], x_tmp[2], jac_out[4], x0[2], eps=1e-8;
+    lapack_int dim=2, ipiv[2];
+    size_t max_iter=100;
+    int lapack_err;
+
+    /*
+      F = [ -(x-2)^2 - 2xy,
+            -y(x+1) - 4y ]
+      F(x,y)==0 has 2 solutions:
+        x,y=-5,4.9    x,y=2,0
+    */
+    auto f = []( double*out,const double*in )->void
+    {
+        out[0] = -( in[0]-2 )*( in[0]-2 ) - 2*in[0]*in[1];
+        out[1] = -in[1]*( in[0]+1 ) - 4*in[1];
+    };
+    auto jac = []( double*out,const double*in )->void
+    {
+        out[0] = -2*in[0] - 2*in[1] + 4;
+        out[1] = -2*in[0];
+        out[2] = -in[1];
+        out[3] = -in[0]-5;
+    };
+
+    // Find the first solution
+    x0[0] = x0[1] = -5.2;
+    auto flag = optimisation::newton_raphson_noinv(
+        x_root, x_tmp, jac_out, ipiv, &lapack_err,
+        f, jac, x0, dim, eps, max_iter );
+    ASSERT_EQ( optimisation::SUCCESS, flag );
+    ASSERT_LE( std::abs( x_root[0] + 5 ), eps );
+    ASSERT_LE( std::abs( x_root[1] - 4.9 ), eps );
+
+    // Find the second solution
+    x0[0] = x0[1] = 1.0;
+    flag = optimisation::newton_raphson_noinv(
+        x_root, x_tmp, jac_out, ipiv, &lapack_err,
+        f, jac, x0, dim, eps, max_iter );
+    ASSERT_EQ( optimisation::SUCCESS, flag );
+    ASSERT_LE( std::abs( x_root[0] - 2 ), eps );
+    ASSERT_LE( std::abs( x_root[1] ), eps );
+}
+
+TEST( newton_raphson_noinv, 2d_function_singular )
+{
+    double x_root[2], x_tmp[2], jac_out[4], x0[2], eps=1e-8;
+    lapack_int dim=2, ipiv[2];
+    size_t max_iter=100;
+    int lapack_err;
+
+    /*
+      This function has infinite solutions which will create
+      a singular matrix in the LU factorisation in lapack routine
+    */
+    auto f = []( double*out,const double*in )->void
+    {
+        out[0] = -( in[0]-2 )*( in[0]-2 ) - 2*in[0]*in[1];
+        out[1] = out[0]*5.9;
+    };
+    auto jac = []( double*out,const double*in )->void
+    {
+        out[0] = -2*in[0] - 2*in[1] + 4;
+        out[1] = -2*in[0];
+        out[2] = out[0]*5.9;
+        out[3] = out[1]*5.9;
+    };
+
+    // Find the first solution
+    x0[0] = x0[1] = -5.2;
+    auto flag = optimisation::newton_raphson_noinv(
+        x_root, x_tmp, jac_out, ipiv, &lapack_err,
+        f, jac, x0, dim, eps, max_iter );
+    ASSERT_EQ( optimisation::LAPACK_ERR, flag );
+    ASSERT_GE( lapack_err, 0 );
 }
