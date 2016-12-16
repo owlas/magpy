@@ -1,5 +1,7 @@
 # Oh Moma! [![CircleCI](https://circleci.com/gh/owlas/moma.svg?style=svg)](https://circleci.com/gh/owlas/moma) [![Stories in Ready](https://badge.waffle.io/owlas/moma.png?label=ready&title=Ready)](https://waffle.io/owlas/moma)
 
+[![Join the chat at https://gitter.im/oh-moma/Lobby](https://badges.gitter.im/oh-moma/Lobby.svg)](https://gitter.im/oh-moma/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 A **M**odern **o**pen-source **m**agnetics simulation package.. **a**gain.
 
 Simulate magnetic nano-particles with ease.
