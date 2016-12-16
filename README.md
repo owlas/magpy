@@ -14,6 +14,10 @@ Simulate magnetic nano-particles with ease.
  - Real life logging!
  - You won't believe this is C++
 
+Join the chat at:
+
+[![gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/oh-moma)
+
 ## Installation
 
 Run the [makefile](makeflie) with intel complier:
