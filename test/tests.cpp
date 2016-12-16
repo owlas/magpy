@@ -473,3 +473,45 @@ TEST( rng, rng_mt_downsample )
     ASSERT_DOUBLE_EQ( ref_3, rng.get() );
     ASSERT_DOUBLE_EQ( ref_4, rng.get() );
 }
+
+TEST( implicit_integrator_stm, stiff_2dim_step )
+{
+    // Stiff 2d system with 1d wiener
+    double x[2], A_res[2], B_res[2], aux[2], A_RHS[2], A_LHS[2], B_RHS[2];
+    double x_trial[2], x_opt_tmp[2], x_opt_jac[4], x0[2]={1.0, 2.0}, dw[1]={0.07};
+    lapack_int x_opt_ipiv[2];
+    const size_t n_dim=2;
+    const size_t w_dim=1;
+    const double t=0;
+    const double dt=1e-3;
+    const double eps=1e-10;
+    const size_t max_iter=100;
+
+    const double a=5, b=0.1; //try b=10.0 too
+    auto A = [a,b](double*out,const double*in,const double)
+        {out[0]=a*(in[1]-in[0])-0.5*b*b*in[0];
+         out[1]=a*(in[0]-in[1])-0.5*b*b*in[1];};
+    auto Adash = [a,b](double*out,const double*in,const double)
+        {out[0]=-a-0.5*b*b;out[1]=a;out[2]=a;out[3]=-a-0.5*b*b;};
+    auto B = [b](double*out,const double*in, const double)
+        {out[0]=b*in[0];out[1]=b*in[1];};
+
+    integrator::stm( x, A_res, B_res, aux, A_RHS, A_LHS, B_RHS,
+                     x_trial, x_opt_tmp, x_opt_jac, x_opt_ipiv,
+                     x0, dw, A, B, Adash, n_dim, w_dim, t, dt,
+                     eps, max_iter );
+
+    // Solutions computed by hand
+    ASSERT_DOUBLE_EQ( 4.995, A_res[0] );
+    ASSERT_DOUBLE_EQ( -5.01, A_res[1] );
+    ASSERT_DOUBLE_EQ( 0.1, B_res[0] );
+    ASSERT_DOUBLE_EQ( 0.2, B_res[1] );
+    ASSERT_DOUBLE_EQ( 1.007, aux[0] );
+    ASSERT_DOUBLE_EQ( 2.014, aux[1] );
+    ASSERT_DOUBLE_EQ( 1.011995, x_trial[0] );
+    ASSERT_DOUBLE_EQ( 2.00899, x_trial[1] );
+
+    // Solutions from Kloeden & Platen (1992) pp.397
+    ASSERT_NEAR( 1.01202953, x[0], 1e-7 );
+    ASSERT_NEAR( 2.00902904, x[1], 1e-7 );
+}

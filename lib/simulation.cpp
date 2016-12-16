@@ -51,10 +51,20 @@ struct simulation::results simulation::full_dynamics(
     // Allocate matrices needed for Heun scheme
     double *state = new double[dims*2]; // stores old and new state
                                         // i.e 2 *dims
-    double *drift_arr = new double[dims];
-    double *trial_drift_arr = new double[dims];
-    double *diffusion_mat = new double[dims*dims];
-    double *trial_diffusion_mat = new double[dims*dims];
+    double *A_res = new double[dims];
+    double *B_res = new double[dims*dims];
+    double *aux = new double[dims];
+    double *A_RHS = new double[dims];
+    double *A_LHS = new double[dims*dims];
+    double *B_RHS = new double[dims*dims];
+    double *x_trial = new double[dims];
+    double *x_opt_tmp = new double[dims];
+    double *x_opt_jac = new double[dims*dims];
+    lapack_int *x_opt_ipiv = new lapack_int[2];
+
+    // Limits for the implicit solver
+    const double eps=1e-7;
+    const size_t max_iter=100;
 
     // Copy in the initial state
     res.time[0] = 0;
@@ -110,16 +120,18 @@ struct simulation::results simulation::full_dynamics(
                 llg::drift, _1, _2, _3, damping, heff );
             sde_function diffusion = std::bind(
                 llg::diffusion, _1, _2, _3, thermal_field_strength, damping );
+            sde_function drift_jac = std::bind(
+                llg::drift_jacobian, _1, _2, _3, damping, heff );
 
             // Generate the wiener increments
             for( unsigned int i=0; i<3; i++ )
                 wiener[i] = rng.get();
 
             // perform integration step
-            integrator::heun(
-                nstate, drift_arr, trial_drift_arr, diffusion_mat,
-                trial_diffusion_mat, pstate, wiener, drift,
-                diffusion, dims, dims, t, time_step );
+            integrator::stm(
+                nstate, A_res, B_res, aux, A_RHS, A_LHS, B_RHS, x_trial,
+                x_opt_tmp, x_opt_jac, x_opt_ipiv, pstate, wiener, drift,
+                diffusion, drift_jac, dims, dims, t, time_step, eps, max_iter );
 
             // Renormalise the length of the magnetisation
             if( renorm  )
@@ -144,9 +156,17 @@ struct simulation::results simulation::full_dynamics(
         res.field[sample] = applied_field( sample*sampling_time );
     } // end sampling loop
 
-    delete[] drift_arr; delete[] trial_drift_arr;
-    delete[] diffusion_mat; delete[] trial_diffusion_mat;
     delete[] state;
+    delete[] A_res;
+    delete[] B_res;
+    delete[] aux;
+    delete[] A_RHS;
+    delete[] A_LHS;
+    delete[] B_RHS;
+    delete[] x_trial;
+    delete[] x_opt_tmp;
+    delete[] x_opt_jac;
+    delete[] x_opt_ipiv;
 
     return res; // Ensure elison else copy is made and dtor is called!
 }

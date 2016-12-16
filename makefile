@@ -24,7 +24,7 @@ else
 	CXXFLAGS=--std=c++11 -W -Wall -pedantic -pthread -g -fopenmp -DVERSION=\"$(GIT_VERSION)\"
 endif
 
-LDFLAGS=-llapacke -lblas
+LDLIBS=-llapacke -lblas
 
 SOURCES=$(wildcard $(LIB_PATH)/*.cpp)
 OBJ_FILES=$(addprefix $(OBJ_PATH)/,$(notdir $(SOURCES:.cpp=.o)))
@@ -35,13 +35,13 @@ default: main
 main: src/main.cpp $(OBJ_FILES)
 	$(CXX) 	$(CXXFLAGS) $< \
 		$(OBJ_FILES) $(LDFLAGS) \
-		-o $@
+		-o $@ $(LDLIBS)
 
 # Build the individual object files
 $(OBJ_PATH)/%.o: $(LIB_PATH)/%.cpp
-	$(CXX)	$(CXXFLAGS) -c \
+	$(CXX)	$(CXXFLAGS) $(LDFLAGS)-c \
 		-o $@ $< \
-		$(LDFLAGS)
+		$(LDLIBS)
 
 # Run the entire testing suite (long run time)
 run-full-tests: test-suite run-tests
@@ -61,18 +61,18 @@ test-suite: test/tests test/convergence test/equilibrium
 test/tests: test/tests.cpp $(OBJ_FILES) $(GTEST_HEADERS) test/gtest_main.a
 	$(CXX) 	$(GTEST_FLAGS) $(CXXFLAGS) $< test/gtest_main.a \
 		$(OBJ_FILES) $(LDFLAGS) \
-		-o $@
+		-o $@ $(LDLIBS)
 
 # Additional test-suit tests
 test/convergence: test/convergence.cpp $(OBJ_FILES)
 	$(CXX) 	$(CXXFLAGS) $< \
 		$(OBJ_FILES) $(LDFLAGS) \
-		-o $@
+		-o $@ $(LDLIBS)
 
 test/equilibrium: test/equilibrium.cpp $(OBJ_FILES)
 	$(CXX) 	$(CXXFLAGS) $< \
 		$(OBJ_FILES) $(LDFLAGS) \
-		-o $@
+		-o $@ $(LDLIBS)
 
 # Builds the gtest testing suite
 GTEST_HEADERS = $(GTEST_DIR)/include/gtest/*.h \

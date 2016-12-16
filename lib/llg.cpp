@@ -19,6 +19,23 @@ void llg::drift( double *deriv, const double *state, const double time,
                              + state[1]*heff[1]));
 }
 
+void llg::drift_jacobian( double *jacobian, const double *state,
+                          const double time, const double alpha,
+                          const double *heff )
+{
+    jacobian[0] = -alpha*( state[1]*heff[1] - state[2]*heff[2] );
+    jacobian[1] = -heff[2] + alpha*( 2*state[1]*heff[0] - state[0]*heff[1] );
+    jacobian[2] = heff[1]+alpha*( 2*state[2]*heff[0] - state[0]*heff[2] );
+
+    jacobian[3] = heff[2] + alpha*( 2*state[0]*heff[1] - heff[0]*state[1] );
+    jacobian[4] = -alpha*( state[0]*heff[0] + state[2]*heff[2] );
+    jacobian[5] = -heff[0] + alpha*( 2*state[2]*heff[1] - state[1]*heff[2] );
+
+    jacobian[6] = -heff[1] + alpha*( 2*state[0]*heff[2] - heff[0]*state[2] );
+    jacobian[7] = heff[0] + alpha*( 2*state[1]*heff[1] - state[2]*heff[1] );
+    jacobian[8] = -alpha*( state[0]*heff[0] + state[1]*heff[1] );
+}
+
 void llg::diffusion( double *deriv, const double *state, const double time,
                      const double sr, const double alpha )
 {
