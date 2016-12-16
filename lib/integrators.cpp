@@ -3,6 +3,7 @@
 // ODEs. See header for interface information.
 
 #include "../include/integrators.hpp"
+#include "../include/optimisation.hpp"
 
 using sde_function = std::function<void(double*,const double*,const double)>;
 
@@ -171,4 +172,74 @@ void driver::heun(
 
     delete[] drift_arr; delete[] trial_drift_arr;
     delete[] diffusion_mat; delete[] trial_diffusion_mat;
+}
+
+// Work = NxM
+int integrator::stm(
+    double *x,
+    double *A_res,
+    double *B_res,
+    double *aux,
+    double *A_RHS,
+    double *A_LHS,
+    double *B_RHS,
+    double *x_trial,
+    double *x_opt_tmp,
+    double *x_opt_jac,
+    lapack_int *x_opt_ipiv,
+    const double *x0,
+    const double *dw,
+    const sde_function A,
+    const sde_function B,
+    const sde_function Adash,
+    const size_t n_dim,
+    const size_t w_dim,
+    const double t,
+    const double dt,
+    const double eps,
+    const size_t max_iter
+    )
+{
+    // Compute drift
+    A( A_res, x0, t );
+    // Take an auxiliary step
+    B( B_res, x0, t );
+    for( unsigned int i=0; i<n_dim; i++ )
+    {
+        aux[i] = x0[i];
+        for( unsigned int j=0; j<w_dim; j++ )
+            aux[i] += B_res[i*w_dim+j]*dw[j];
+    }
+
+    // Generate the right and left hand side components of the
+    // implicit scheme
+    auto RHS = [n_dim,w_dim,A,A_RHS,A_res,t,dt,x0,B,B_RHS,B_res,dw](double *out, const double *in)->void
+        {
+            A( A_RHS, in, t );
+            B( B_RHS, in, t );
+            for( unsigned int i=0; i<n_dim; i++ )
+            {
+                out[i] = in[i] - 0.5*A_RHS[i]*dt-x0[i] -0.5*A_res[i]*dt;
+                for( unsigned int j=0; j<w_dim; j++ )
+                    out[i] -= 0.5*( B_RHS[i*w_dim+j] + B_res[i*w_dim+j] )*dw[j];
+            }
+        };
+    auto LHS = [n_dim,dt,A_LHS,t,Adash](double *out, const double *in)->void
+        {
+            Adash( A_LHS, in, t );
+            for( unsigned int i=0; i<n_dim; i++ )
+                for( unsigned int j=0; j<n_dim; j++ )
+                    out[i*n_dim+j] = (i==j) - 0.5*A_LHS[i*n_dim+j]*dt;
+        };
+
+    // Our initial guess will be an Euler step (aux already has most of the computation)
+    for( unsigned int i=0; i<n_dim; i++ )
+        x_trial[i] = aux[i] + A_res[i]*dt;
+
+    // Determine the next step!
+    lapack_int err_code;
+    auto flag = optimisation::newton_raphson_noinv(
+        x, x_opt_tmp, x_opt_jac, x_opt_ipiv, &err_code,
+        RHS, LHS, x_trial, n_dim, eps, max_iter );
+    return flag==0 ? 0 : -1;
 }
