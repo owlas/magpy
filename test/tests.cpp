@@ -271,29 +271,32 @@ TEST( moma_config, validate_compute_options )
 
 TEST( newton_raphson, 1d_function )
 {
-    auto f = []( double *out, const double *in )->void
-        { out[0] = -(in[0]-3.2)*(in[0]-3.2); };
-    auto fdash = []( double *out, const double *in )->void
-        { out[0] = -2*(in[0]-3.2); };
-    double x0[1] = {0.0}, eps=1e-6, x_root[1], x_f[1], x_fdash[1], x_tmp[1];
-    const size_t dim=1, max_iter=100;
+    auto f = [](const double x)->double
+        { return -(x-3.2)*(x-3.2); };
+    auto fdash = [](const double x)->double
+        { return -2*(x-3.2); };
 
-    int res = optimisation::newton_raphson( x_root, x_f, x_fdash, x_tmp, f,
-                                            fdash, x0, dim, eps, max_iter );
-    ASSERT_LE( std::abs( x_root[0] - 3.2 ), eps );
+    double x0=0.0, eps=1e-6, x_root;
+    const size_t max_iter=100;
+
+    int res = optimisation::newton_raphson_1(
+        &x_root, f, fdash, x0, eps, max_iter );
+    ASSERT_LE( std::abs( x_root - 3.2 ), eps );
     ASSERT_EQ( 0, res );
 }
 
 TEST( newton_raphson, 1d_funtion_max_iter )
 {
-    auto f = []( double *out, const double *in )->void
-        { out[0] = -(in[0]-3.2)*(in[0]-3.2); };
-    auto fdash = []( double *out, const double *in )->void
-        { out[0] = -2*(in[0]-3.2); };
-    double x0[1] = {0.0}, eps=1e-6, x_root[1], x_f[1], x_fdash[1], x_tmp[1];
-    const size_t dim=1, max_iter=2;
+    auto f = [](const double x)->double
+        { return -(x-3.2)*(x-3.2); };
+    auto fdash = [](const double x)->double
+        { return -2*(x-3.2); };
 
-    int res = optimisation::newton_raphson( x_root, x_f, x_fdash, x_tmp, f,
-                                            fdash, x0, dim, eps, max_iter );
+    double x0=0.0, eps=1e-6, x_root;
+    const size_t max_iter=2;
+
+    int res = optimisation::newton_raphson_1(
+        &x_root, f, fdash, x0, eps, max_iter );
+
     ASSERT_EQ( -1, res );
 }

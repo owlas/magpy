@@ -15,15 +15,11 @@
   Returns 0 on success. -1 if max_iter reached
  */
 namespace optimisation {
-    int newton_raphson( double *x_root,
-                         double *x_f,
-                         double *x_fdash,
-                         double *x_tmp,
-                         const std::function<void(double *, const double *) > f,
-                         const std::function<void(double *, const double *) > fdash,
-                         const double *x0,
-                         const size_t dim,
-                         const double eps=1e-7,
-                         const size_t max_iter=1000 );
+    int newton_raphson_1( double *x_root,
+                          const std::function<double(const double) > f,
+                          const std::function<double(const double) > fdash,
+                          const double x0,
+                          const double eps=1e-7,
+                          const size_t max_iter=1000 );
 }
 #endif
