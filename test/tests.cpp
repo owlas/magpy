@@ -9,6 +9,7 @@
 #include "../include/trap.hpp"
 #include "../include/optimisation.hpp"
 #include "../include/rng.hpp"
+#include "../include/stochastic_processes.hpp"
 #include <cmath>
 #include <random>
 #include <lapacke.h>
@@ -444,4 +445,21 @@ TEST( rng, array_stride_3 )
     {
         FAIL() << "Expected std::out_of_range";
     }
+}
+
+TEST( stochastic, reduce_wiener_increments )
+{
+    double arr[6] = {0.1, 0.4, 0.4, 0.2, 0.1, 0.9};
+    auto len = stochastic::reduce_wiener_increments( arr, 6, 2 );
+    ASSERT_DOUBLE_EQ( 0.5, arr[0] ); // arr[0]+arr[1]
+    ASSERT_DOUBLE_EQ( 0.6, arr[1] ); // arr[2]+arr[3]
+    ASSERT_DOUBLE_EQ( 1.0, arr[2] ); // arr[4]+arr[5]
+    ASSERT_DOUBLE_EQ( 0.2, arr[3] ); // unchanged
+    ASSERT_EQ( len, 3 );
+
+    double arr4[6] = {0.1, 0.4, 0.4, 0.2, 0.1, 0.9};
+    auto len4 = stochastic::reduce_wiener_increments( arr4, 6, 4 );
+    ASSERT_DOUBLE_EQ( 1.1, arr4[0] ); // arr[0]+arr[1]+arr[2]+arr[3]
+    ASSERT_DOUBLE_EQ( 1.0, arr4[1] ); // unchanged
+    ASSERT_EQ( len4, 1 );
 }
