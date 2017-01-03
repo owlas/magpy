@@ -11,6 +11,7 @@
 #include <random>
 #include <string>
 #include <cstdlib>
+#include "rng.hpp"
 
 using d3 = std::array<double,3>;
 
@@ -56,7 +57,7 @@ namespace simulation
         const d3 initial_magnetisation,
         const double time_step,
         const double end_time,
-        std::mt19937_64 rng,
+        Rng &rng,
         const int max_samples=-1 );
 
     // Save a results file

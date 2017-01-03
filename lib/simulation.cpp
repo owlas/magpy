@@ -22,7 +22,7 @@ struct simulation::results simulation::full_dynamics(
     const d3 initial_magnetisation,
     const double time_step,
     const double end_time,
-    std::mt19937_64 rng,
+    Rng &rng,
     const int max_samples )
 {
     size_t dims = 3;
@@ -62,8 +62,7 @@ struct simulation::results simulation::full_dynamics(
     res.my[0] = initial_magnetisation[1];
     res.mz[0] = initial_magnetisation[2];
 
-    // The normally distributed number generator for wiener paths
-    std::normal_distribution<double> dist( 0, thermal_field_strength );
+    // The wiener paths
     double wiener[3];
 
     // The effective field is updated at each time step
@@ -114,7 +113,7 @@ struct simulation::results simulation::full_dynamics(
 
             // Generate the random numbers
             for( unsigned int i=0; i<3; i++ )
-                wiener[i] = dist(rng);
+                wiener[i] = rng.get() * thermal_field_strength;
 
             // perform integration step
             integrator::heun(
