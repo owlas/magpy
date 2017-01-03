@@ -21,15 +21,20 @@ double RngMtNorm::get() { return dist( generator ); }
 /*
    Wrapper to array of random numbers
 */
-RngArray::RngArray( const double *_arr, size_t _arr_length )
+RngArray::RngArray( const double *_arr, size_t _arr_length, size_t _stride )
     : Rng()
     , arr( _arr )
     , max( _arr_length )
+    , stride( _stride )
 {}
 double RngArray::get()
 {
-if( i<max )
-    return arr[i++];
-else
-    throw std::out_of_range( "Exceeded allocated random number array size" );
+    if( i<max )
+    {
+        unsigned int tmp = i;
+        i += stride;
+        return arr[tmp];
+    }
+    else
+        throw std::out_of_range( "Exceeded allocated random number array size" );
 }

@@ -420,3 +420,28 @@ TEST( rng, array )
         FAIL() << "Expected std::out_of_range";
     }
 }
+
+TEST( rng, array_stride_3 )
+{
+    // Test a pre-allocated array
+    double arr[5] = {0.01, 0.2, 1, 5, -0.1};
+    RngArray rng( arr, 5, 3 );
+    ASSERT_DOUBLE_EQ( 0.01, rng.get() ); // 0th index
+    ASSERT_DOUBLE_EQ(    5, rng.get() ); // 3rd index
+
+    // Next call will be 6th index which exceeds array length
+    try
+    {
+        rng.get();
+        FAIL() << "Expected std::out_of_range";
+    }
+    catch( std::out_of_range const & err )
+    {
+        EXPECT_EQ( err.what(),
+                   std::string("Exceeded allocated random number array size"));
+    }
+    catch( ... )
+    {
+        FAIL() << "Expected std::out_of_range";
+    }
+}
