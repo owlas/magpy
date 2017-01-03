@@ -34,17 +34,24 @@ private:
 };
 
 /*
-  Provides an interface to a preallocated array of random numbers
+  Provides an interface to a preallocated array of random numbers.
+  Specify the array and it's length.
+  The first call to .get() will return the value at the 0th index.
+  Each subsequent call to .get() will stride the array (default stride
+  is 1) and return that value.
+  A call to .get() after the end of the array will result in an
+  error.
 */
 class RngArray : public Rng
 {
 public:
-    RngArray( const double *arr, size_t arr_length );
+    RngArray( const double *arr, size_t arr_length, size_t stride=1 );
     double get();
 private:
     unsigned int i=0;
     const size_t max;
     const double *arr;
+    const size_t stride;
 };
 
 #endif
