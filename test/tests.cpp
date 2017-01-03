@@ -8,9 +8,11 @@
 #include "../include/moma_config.hpp"
 #include "../include/trap.hpp"
 #include "../include/optimisation.hpp"
+#include "../include/rng.hpp"
 #include <cmath>
 #include <random>
 #include <lapacke.h>
+#include <stdexcept>
 
 INITIALIZE_EASYLOGGINGPP
 
@@ -378,4 +380,43 @@ TEST( newton_raphson_noinv, 2d_function_singular )
         f, jac, x0, dim, eps, max_iter );
     ASSERT_EQ( optimisation::LAPACK_ERR, flag );
     ASSERT_GE( lapack_err, 0 );
+}
+
+TEST( rng, mt_norm )
+{
+    // Test the mt algorithm
+    RngMtNorm rng( 999, 0.2 ); // seed, standard deviation
+    ASSERT_DOUBLE_EQ(  0.27100401702487437, rng.get() );
+    ASSERT_DOUBLE_EQ( -0.18950297511996847, rng.get() );
+    ASSERT_DOUBLE_EQ( -0.27620532277321042, rng.get() );
+    ASSERT_DOUBLE_EQ( -0.10214651921310165, rng.get() );
+    ASSERT_DOUBLE_EQ( -0.19125423381292103, rng.get() );
+}
+
+TEST( rng, array )
+{
+    // Test a pre-allocated array
+    double arr[5] = {0.01, 0.2, 1, 5, -0.1};
+    RngArray rng( arr, 5 );
+    ASSERT_DOUBLE_EQ( 0.01, rng.get() );
+    ASSERT_DOUBLE_EQ(  0.2, rng.get() );
+    ASSERT_DOUBLE_EQ(    1, rng.get() );
+    ASSERT_DOUBLE_EQ(    5, rng.get() );
+    ASSERT_DOUBLE_EQ( -0.1, rng.get() );
+
+    // Check that error is thrown if too many calls
+    try
+    {
+        rng.get();
+        FAIL() << "Expected std::out_of_range";
+    }
+    catch( std::out_of_range const & err )
+    {
+        EXPECT_EQ( err.what(),
+                   std::string("Exceeded allocated random number array size"));
+    }
+    catch( ... )
+    {
+        FAIL() << "Expected std::out_of_range";
+    }
 }
