@@ -450,7 +450,7 @@ TEST( rng, array_stride_3 )
 TEST( stochastic, reduce_wiener_increments )
 {
     double arr[6] = {0.1, 0.4, 0.4, 0.2, 0.1, 0.9};
-    auto len = stochastic::reduce_wiener_increments( arr, 6, 2 );
+    auto len = stochastic::downsample_wiener_path( arr, 6, 2 );
     ASSERT_DOUBLE_EQ( 0.5, arr[0] ); // arr[0]+arr[1]
     ASSERT_DOUBLE_EQ( 0.6, arr[1] ); // arr[2]+arr[3]
     ASSERT_DOUBLE_EQ( 1.0, arr[2] ); // arr[4]+arr[5]
@@ -458,8 +458,9 @@ TEST( stochastic, reduce_wiener_increments )
     ASSERT_EQ( len, 3 );
 
     double arr4[6] = {0.1, 0.4, 0.4, 0.2, 0.1, 0.9};
-    auto len4 = stochastic::reduce_wiener_increments( arr4, 6, 4 );
+    auto len4 = stochastic::downsample_wiener_path( arr4, 6, 4 );
     ASSERT_DOUBLE_EQ( 1.1, arr4[0] ); // arr[0]+arr[1]+arr[2]+arr[3]
-    ASSERT_DOUBLE_EQ( 1.0, arr4[1] ); // unchanged
+    ASSERT_DOUBLE_EQ( 1.0, arr4[1] ); // arr[4]+arr[5]
+    ASSERT_DOUBLE_EQ( 0.4, arr4[2] ); // unchanged
     ASSERT_EQ( len4, 1 );
 }
