@@ -17,6 +17,7 @@
 #include "../include/json.hpp"
 #include "../include/easylogging++.h"
 #include "../include/io.hpp"
+#include "../include/rng.hpp"
 
 using json = nlohmann::json;
 
@@ -99,7 +100,7 @@ int main( int argc, char *argv[] )
     {
         // Create the random number generator
         unsigned long seed = config["simulation"]["seeds"][i];
-        std::mt19937_64 rng( seed );
+        RngMtNorm rng( seed, 1.0 ); // standard normal values
 
         auto results = simulation::full_dynamics(
             norm_config["particle"]["damping"],
