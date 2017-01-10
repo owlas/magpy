@@ -109,9 +109,9 @@ struct simulation::results simulation::full_dynamics(
             sde_function diffusion = std::bind(
                 llg::diffusion, _1, _2, _3, thermal_field_strength, damping );
 
-            // Generate the random numbers
+            // Generate the wiener increments
             for( unsigned int i=0; i<3; i++ )
-                wiener[i] = rng.get() * thermal_field_strength;
+                wiener[i] = rng.get();
 
             // perform integration step
             integrator::heun(
