@@ -32,6 +32,23 @@ Make with gcc (will need version >=4.9):
 $ make CXX=g++-4.9
 ```
 
+## Tests
+
+The fast unit tests can be run with
+
+``` shell
+$ make tests
+$ ./test
+```
+
+The full test suite includes numerical simulations of convergence. These take a
+long time to execute (~5mins). Test suite results are available in `test/output`.
+
+``` shell
+$ make run-tests
+$ cd test/output
+```
+
 ## Configuration
 
 See the [example config file](configs/example.json) for an overview of the options.
