@@ -84,12 +84,12 @@ TEST(io, write_array)
 {
     double arr[3] = {1, 2, 3}, arrback[3];
     int fail, nread;
-    fail = io::write_array( "test.out", arr, 3 );
+    fail = io::write_array( "output/test.out", arr, 3 );
     ASSERT_EQ( 0, fail );
 
     // Read back the data
     FILE *in;
-    in = fopen( "test.out", "rb" );
+    in = fopen( "output/test.out", "rb" );
     nread = fread( arrback, sizeof(double), 3, in );
     fclose( in );
 
@@ -111,24 +111,24 @@ TEST( simulation, save_results )
     res.time[0] = 6;
     res.time[1] = 7;
 
-    simulation::save_results( "test.out", res );
+    simulation::save_results( "output/test.out", res );
 
     int nread;
     double arr[2];
     FILE *in;
-    in=fopen( "test.out.mx", "rb" );
+    in=fopen( "output/test.out.mx", "rb" );
     nread = fread( arr, sizeof(double), 2, in );
     ASSERT_EQ( 2, nread );
     ASSERT_DOUBLE_EQ( 2, arr[0] );
     ASSERT_DOUBLE_EQ( 3, arr[1] );
 
-    in=fopen( "test.out.field", "rb" );
+    in=fopen( "output/test.out.field", "rb" );
     nread = fread( arr, sizeof(double), 2, in );
     ASSERT_EQ( 2, nread );
     ASSERT_DOUBLE_EQ( 4, arr[0] );
     ASSERT_DOUBLE_EQ( 5, arr[1] );
 
-    in=fopen( "test.out.time", "rb" );
+    in=fopen( "output/test.out.time", "rb" );
     nread = fread( arr, sizeof(double), 2, in );
     ASSERT_EQ( 2, nread );
     ASSERT_DOUBLE_EQ( 6, arr[0] );
