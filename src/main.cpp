@@ -100,7 +100,9 @@ int main( int argc, char *argv[] )
     {
         // Create the random number generator
         unsigned long seed = config["simulation"]["seeds"][i];
-        RngMtNorm rng( seed, 1.0 ); // standard normal values
+        RngMtNorm rng(
+            seed, std::sqrt(
+                norm_config.at("simulation").at("time-step").get<double>() ) );
 
         auto results = simulation::full_dynamics(
             norm_config["particle"]["damping"],
