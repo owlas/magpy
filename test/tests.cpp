@@ -84,12 +84,12 @@ TEST(io, write_array)
 {
     double arr[3] = {1, 2, 3}, arrback[3];
     int fail, nread;
-    fail = io::write_array( "output/test.out", arr, 3 );
+    fail = io::write_array( "test/output/test.out", arr, 3 );
     ASSERT_EQ( 0, fail );
 
     // Read back the data
     FILE *in;
-    in = fopen( "output/test.out", "rb" );
+    in = fopen( "test/output/test.out", "rb" );
     nread = fread( arrback, sizeof(double), 3, in );
     fclose( in );
 
@@ -111,24 +111,25 @@ TEST( simulation, save_results )
     res.time[0] = 6;
     res.time[1] = 7;
 
-    simulation::save_results( "output/test.out", res );
+
+    simulation::save_results( "test/output/test.out", res );
 
     int nread;
     double arr[2];
     FILE *in;
-    in=fopen( "output/test.out.mx", "rb" );
+    in=fopen( "test/output/test.out.mx", "rb" );
     nread = fread( arr, sizeof(double), 2, in );
     ASSERT_EQ( 2, nread );
     ASSERT_DOUBLE_EQ( 2, arr[0] );
     ASSERT_DOUBLE_EQ( 3, arr[1] );
 
-    in=fopen( "output/test.out.field", "rb" );
+    in=fopen( "test/output/test.out.field", "rb" );
     nread = fread( arr, sizeof(double), 2, in );
     ASSERT_EQ( 2, nread );
     ASSERT_DOUBLE_EQ( 4, arr[0] );
     ASSERT_DOUBLE_EQ( 5, arr[1] );
 
-    in=fopen( "output/test.out.time", "rb" );
+    in=fopen( "test/output/test.out.time", "rb" );
     nread = fread( arr, sizeof(double), 2, in );
     ASSERT_EQ( 2, nread );
     ASSERT_DOUBLE_EQ( 6, arr[0] );
@@ -199,7 +200,7 @@ TEST( moma_config, normalise_json )
                 {"renormalisation", true}
             }},
         {"output", {
-                {"directory", "output"}
+                {"directory", "test/output"}
             }},
         {"global", {
                 {"temperature", 300},
@@ -227,7 +228,7 @@ TEST( moma_config, normalise_json )
                 {"renormalisation", true}
             }},
         {"output", {
-                {"directory", "output"}
+                {"directory", "test/output"}
             }},
         {"global", {
                 {"temperature", 300},
@@ -491,7 +492,7 @@ TEST( implicit_integrator_stm, stiff_2dim_step )
     auto A = [a,b](double*out,const double*in,const double)
         {out[0]=a*(in[1]-in[0])-0.5*b*b*in[0];
          out[1]=a*(in[0]-in[1])-0.5*b*b*in[1];};
-    auto Adash = [a,b](double*out,const double*in,const double)
+    auto Adash = [a,b](double*out,const double*,const double)
         {out[0]=-a-0.5*b*b;out[1]=a;out[2]=a;out[3]=-a-0.5*b*b;};
     auto B = [b](double*out,const double*in, const double)
         {out[0]=b*in[0];out[1]=b*in[1];};

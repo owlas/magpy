@@ -2,7 +2,7 @@
 // llg implementation
 #include "../include/llg.hpp"
 
-void llg::drift( double *deriv, const double *state, const double time,
+void llg::drift( double *deriv, const double *state, const double,
                  const double alpha, const double *heff )
 {
     deriv[0] = state[2]*heff[1] - state[1]*heff[2]
@@ -20,7 +20,7 @@ void llg::drift( double *deriv, const double *state, const double time,
 }
 
 void llg::drift_jacobian( double *jacobian, const double *state,
-                          const double time, const double alpha,
+                          const double, const double alpha,
                           const double *heff )
 {
     jacobian[0] = -alpha*( state[1]*heff[1] - state[2]*heff[2] );
@@ -36,7 +36,7 @@ void llg::drift_jacobian( double *jacobian, const double *state,
     jacobian[8] = -alpha*( state[0]*heff[0] + state[1]*heff[1] );
 }
 
-void llg::diffusion( double *deriv, const double *state, const double time,
+void llg::diffusion( double *deriv, const double *state, const double,
                      const double sr, const double alpha )
 {
     deriv[0] = alpha*sr*(state[1]*state[1]+state[2]*state[2]); // 1st state
@@ -53,7 +53,7 @@ void llg::diffusion( double *deriv, const double *state, const double time,
 }
 
 void llg::diffusion_jacobian( double *jacobian, const double *state,
-                              const double time,
+                              const double,
                               const double sr, const double alpha )
 {
     // 1st state, 1st wiener process, state 1,2,3 partial derivatives
