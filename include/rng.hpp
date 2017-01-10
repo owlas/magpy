@@ -34,6 +34,27 @@ private:
 };
 
 /*
+  Uses the MT to generate normally distributed random numbers.
+  Down-samples the path by summing consecutive draws in each dimension.
+  Utility for generating coarser Wiener processes.
+*/
+class RngMtDownsample : public Rng
+{
+public:
+    RngMtDownsample( const unsigned long int seed, const double std,
+                     const size_t dim, const size_t down_factor );
+    double get();
+private:
+    void downsample_draw();
+    std::mt19937_64 generator;
+    std::normal_distribution<double> dist;
+    int current_dim;
+    std::vector<double> store;
+    const size_t D;
+    const size_t F;
+};
+
+/*
   Provides an interface to a preallocated array of random numbers.
   Specify the array and it's length.
   The first call to .get() will return the value at the 0th index.
@@ -53,5 +74,4 @@ private:
     const double *arr;
     const size_t stride;
 };
-
 #endif
