@@ -5,3 +5,4 @@ objects/*
 *.dSYM
 .dir-locals.el
 output/*
+test/output/*
