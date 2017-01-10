@@ -44,22 +44,32 @@ $(OBJ_PATH)/%.o: $(LIB_PATH)/%.cpp
 	$(LDFLAGS)
 
 # Run the entire testing suite (long run time)
-run-tests: test-suite
-	./tests
-	./convergence test/configs/convergence.json
-	cd test/plotting && python convergence.py
+run-full-tests: test-suite run-tests
+	cd test && ./convergence configs/convergence.json
+	cd test && python plotting/convergence.py
+	cd test && ./equilibrium configs/equilibrium.json
+	cd test && python plotting/equilibrium.py
+
+# Run the unit tests only
+run-tests: test/tests
+	cd test && ./tests
 
 # Build full testing-suite
-test-suite: tests convergence
+test-suite: test/tests test/convergence test/equilibrium
 
 # The unit tests are run using googletest
-tests: test/tests.cpp $(OBJ_FILES) $(GTEST_HEADERS) gtest_main.a
-	$(CXX) $(GTEST_FLAGS) $(CXXFLAGS) $< gtest_main.a \
+test/tests: test/tests.cpp $(OBJ_FILES) $(GTEST_HEADERS) test/gtest_main.a
+	$(CXX) $(GTEST_FLAGS) $(CXXFLAGS) $< test/gtest_main.a \
 	$(OBJ_FILES) $(LDFLAGS) \
 	-o $@
 
-# Convergence tests
-convergence: test/convergence.cpp $(OBJ_FILES)
+# Additional test-suit tests
+test/convergence: test/convergence.cpp $(OBJ_FILES)
+	$(CXX) $(CXXFLAGS) $< \
+	$(OBJ_FILES) $(LDFLAGS) \
+	-o $@
+
+test/equilibrium: test/equilibrium.cpp $(OBJ_FILES)
 	$(CXX) $(CXXFLAGS) $< \
 	$(OBJ_FILES) $(LDFLAGS) \
 	-o $@
@@ -69,31 +79,31 @@ GTEST_HEADERS = $(GTEST_DIR)/include/gtest/*.h \
 		$(GTEST_DIR)/include/gtest/internal/*.h
 GTEST_SRCS_ = $(GTEST_DIR)/src/*.cc $(GTEST_DIR)/src/*.h $(GTEST_HEADERS)
 
-gtest-all.o : $(GTEST_SRCS_)
+test/gtest-all.o : $(GTEST_SRCS_)
 	$(CXX) $(GTEST_FLAGS) -I$(GTEST_DIR) $(CXXFLAGS) -c \
+	-o $@ \
 	$(GTEST_DIR)/src/gtest-all.cc
 
-gtest_main.o : $(GTEST_SRCS_)
+test/gtest_main.o : $(GTEST_SRCS_)
 	$(CXX) $(GTEST_FLAGS) -I$(GTEST_DIR) $(CXXFLAGS) -c \
+	-o $@ \
 	$(GTEST_DIR)/src/gtest_main.cc
 
-gtest.a : gtest-all.o
+test/gtest.a : test/gtest-all.o
 	$(AR) $(ARFLAGS) $@ $^
 
-gtest_main.a : gtest-all.o gtest_main.o
+test/gtest_main.a : test/gtest-all.o test/gtest_main.o
 	$(AR) $(ARFLAGS) $@ $^
 
 clean:
 	rm -f objects/*
-	rm -f gtest-all.o gtest_main.o
 	rm -rf *.dSYM
 
 clean-tests:
-	rm -f test.out*
-	rm -f convergence.*
-	rm -f convergence
-	rm -f tests
+	rm -f test/convergence
+	rm -f test/tests
+	rm -f test/equilibrium
+	rm -f test/output/*
+	rm -f test/*.o test/*.a
 
 clean-all: clean clean-tests
-	rm -f main tests
-	rm -f gtest_main.a gtest.a

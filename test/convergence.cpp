@@ -62,12 +62,12 @@ int main( int argc, char *argv[] )
     // Run the simulation for each particle in the ensemble
     // For each particle we solve the system for the same wiener paths
     // with different sampling rates.
+    LOG(INFO) << "Running test body...";
     for( unsigned i=0; i<n_runs; i++ )
     {
         // Each time step is double the previous
         for( unsigned int ts_factor=0; ts_factor<N_time_steps; ts_factor++ )
         {
-            LOG(INFO) << "Computing step " << ts_factor+1 << "/" << N_time_steps;
             // Calculate the time step multiplier and time step
             int N_mul = std::pow( 2, ts_factor );
             double base_time_step = norm_config["simulation"]["time-step"];
@@ -94,28 +94,28 @@ int main( int argc, char *argv[] )
     } // end for each path
 
     // Write results to disk
-    std::ofstream outputfile( "convergence.out" );
+    std::ofstream outputfile( "output/convergence.out" );
     if ( outputfile.is_open() )
     {
         for( unsigned int i=0; i<n_runs*N_time_steps*3; i++ )
             outputfile << sols[i] << " ";
         outputfile.close();
-        LOG(INFO) << "Successfully wrote results to disk: ./convergence.out";
+        LOG(INFO) << "Successfully wrote results to disk: ./output/convergence.out";
     }
     else
-        LOG(FATAL) << "Failed to write results to disk: ./convergence.out";
+        LOG(FATAL) << "Failed to write results to disk: ./output/convergence.out";
 
-    std::ofstream dtfile( "convergence.dt" );
+    std::ofstream dtfile( "output/convergence.dt" );
     if( dtfile.is_open() )
     {
         for( unsigned int i=0; i<N_time_steps; i++ )
             dtfile << std::pow( 2, i )*norm_config["simulation"]["time-step"].get<double>()
                    << " ";
         dtfile.close();
-        LOG(INFO) << "Successfully wrote results to disk: ./convergence.dt";
+        LOG(INFO) << "Successfully wrote results to disk: ./output/convergence.dt";
     }
     else
-        LOG(FATAL) << "Failed to write results to disk: ./convergence.dt";
+        LOG(FATAL) << "Failed to write results to disk: ./output/convergence.dt";
 
     delete[] sols;
     LOG(INFO) << "Convergence tests completed!";
