@@ -19,12 +19,12 @@ GTEST_FLAGS=-isystem $(GTEST_DIR)/include
 GIT_VERSION := $(shell git describe --abbrev=4 --dirty --always --tags)
 
 ifeq ($(CXX),icpc)
-	CXXFLAGS=--std=c++11 -W -Wall -pedantic -pthread -g -fopenmp -simd -qopenmp -xHost -DVERSION=\"$(GIT_VERSION)\"
+	override CXXFLAGS+=--std=c++11 -W -Wall -pedantic -pthread -g -fopenmp -simd -qopenmp -xHost -DVERSION=\"$(GIT_VERSION)\"
 else
-	CXXFLAGS=--std=c++11 -W -Wall -pedantic -pthread -g -fopenmp -DVERSION=\"$(GIT_VERSION)\"
+	override CXXFLAGS+=--std=c++11 -W -Wall -pedantic -pthread -g -fopenmp -DVERSION=\"$(GIT_VERSION)\"
 endif
 
-LDLIBS=-llapacke -lblas
+LDLIBS=-llapack -lblas
 
 SOURCES=$(wildcard $(LIB_PATH)/*.cpp)
 OBJ_FILES=$(addprefix $(OBJ_PATH)/,$(notdir $(SOURCES:.cpp=.o)))
@@ -33,13 +33,13 @@ OBJ_FILES=$(addprefix $(OBJ_PATH)/,$(notdir $(SOURCES:.cpp=.o)))
 default: main
 
 main: src/main.cpp $(OBJ_FILES)
-	$(CXX) 	$(CXXFLAGS) $< \
-		$(OBJ_FILES) $(LDFLAGS) \
+	$(CXX) 	$(CXXFLAGS) $(LDFLAGS) $< \
+		$(OBJ_FILES) \
 		-o $@ $(LDLIBS)
 
 # Build the individual object files
 $(OBJ_PATH)/%.o: $(LIB_PATH)/%.cpp
-	$(CXX)	$(CXXFLAGS) $(LDFLAGS)-c \
+	$(CXX)	$(CXXFLAGS) $(LDFLAGS) -c \
 		-o $@ $< \
 		$(LDLIBS)
 
@@ -59,19 +59,19 @@ test-suite: test/tests test/convergence test/equilibrium
 
 # The unit tests are run using googletest
 test/tests: test/tests.cpp $(OBJ_FILES) $(GTEST_HEADERS) test/gtest_main.a
-	$(CXX) 	$(GTEST_FLAGS) $(CXXFLAGS) $< test/gtest_main.a \
-		$(OBJ_FILES) $(LDFLAGS) \
+	$(CXX) 	$(GTEST_FLAGS) $(CXXFLAGS) $(LDFLAGS) $< test/gtest_main.a \
+		$(OBJ_FILES) \
 		-o $@ $(LDLIBS)
 
 # Additional test-suit tests
 test/convergence: test/convergence.cpp $(OBJ_FILES)
-	$(CXX) 	$(CXXFLAGS) $< \
-		$(OBJ_FILES) $(LDFLAGS) \
+	$(CXX) 	$(CXXFLAGS) $(LDFLAGS) $< \
+		$(OBJ_FILES) \
 		-o $@ $(LDLIBS)
 
 test/equilibrium: test/equilibrium.cpp $(OBJ_FILES)
-	$(CXX) 	$(CXXFLAGS) $< \
-		$(OBJ_FILES) $(LDFLAGS) \
+	$(CXX) 	$(CXXFLAGS) $(LDFLAGS) $< \
+		$(OBJ_FILES) \
 		-o $@ $(LDLIBS)
 
 # Builds the gtest testing suite
@@ -100,9 +100,8 @@ clean:
 	rm -rf *.dSYM
 
 clean-tests:
-	rm -f test/convergence
-	rm -f test/tests
-	rm -f test/equilibrium
+	rm -f test.out*
+	rm -f convergence.*
 	rm -f test/output/*
 	rm -f test/*.o test/*.a
 

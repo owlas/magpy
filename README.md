@@ -20,7 +20,8 @@ Join the chat at:
 
 ## Installation
 
-Run the [makefile](makeflie) with intel complier:
+Moma requires LAPACK and
+BLAS routines. Run the [makefile](makeflie) with intel complier:
 
 ``` shell
 $ make
@@ -30,6 +31,22 @@ Make with gcc (will need version >=4.9):
 
 ``` shell
 $ make CXX=g++-4.9
+```
+
+### Mac OSX
+
+The easiest way to obtain LACPACK/BLAS is through
+[homebrew](http://brew.sh/) by install openblas, which comes with
+both. Run the following command:
+
+``` shell
+$ brew install homebrew/science/openblas
+```
+
+You'll need to link to link to the libraries when running the make command, e.g:
+
+``` shell
+$ make CXX=g++-4.9 LDFLAGS=-L/usr/local/opt/openblas/lib CXXFLAGS=-I/usr/local/opt/openblas/include
 ```
 
 ## Tests
