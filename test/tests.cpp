@@ -464,3 +464,27 @@ TEST( stochastic, reduce_wiener_increments )
     ASSERT_DOUBLE_EQ( 0.4, arr4[2] ); // unchanged
     ASSERT_EQ( len4, 1 );
 }
+
+TEST( rng, rng_mt_downsample )
+{
+    RngMtDownsample rng( 1, 0.1, 2, 3 );
+    RngMtNorm rng_ref( 1, 0.1 );
+
+    double ref_1 = rng_ref.get();
+    double ref_2 = rng_ref.get();
+    ref_1 += rng_ref.get();
+    ref_2 += rng_ref.get();
+    ref_1 += rng_ref.get();
+    ref_2 += rng_ref.get();
+    double ref_3 = rng_ref.get();
+    double ref_4 = rng_ref.get();
+    ref_3 += rng_ref.get();
+    ref_4 += rng_ref.get();
+    ref_3 += rng_ref.get();
+    ref_4 += rng_ref.get();
+
+    ASSERT_DOUBLE_EQ( ref_1, rng.get() );
+    ASSERT_DOUBLE_EQ( ref_2, rng.get() );
+    ASSERT_DOUBLE_EQ( ref_3, rng.get() );
+    ASSERT_DOUBLE_EQ( ref_4, rng.get() );
+}
