@@ -7,7 +7,7 @@ dependencies:
   override:
     - sudo apt-get install -y liblapacke-dev
     - g++ --version
-    - make CXX=g++-4.9 tests
+    - make CXX=g++-4.9 test/tests
 test:
   override:
-    - ./tests
+    - make run-tests
