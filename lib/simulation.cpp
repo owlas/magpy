@@ -37,11 +37,10 @@ struct simulation::results simulation::full_dynamics(
       The sampling interval is taken to be regularly spaced and is interpolated
       from the integration steps using a zero-order-hold technique.
      */
-    const size_t N_steps = int( end_time/time_step ) + 1;
     const size_t N_samples = max_samples==-1 ?
         int( end_time / time_step ) + 1
         : max_samples;
-    const double sampling_time = end_time / N_samples;
+    const double sampling_time = end_time / ( N_samples-1 );
 
     // allocate memory for results
     simulation::results res( N_samples );
@@ -92,11 +91,10 @@ struct simulation::results simulation::full_dynamics(
             pstate[2] = nstate[2];
             step++;
 
-            // Get pointers for the previous and next states and
-            // compute current time
-            // prev_state = state+(step-1)%2;
-            // next_state = state+step%2;
-            t = step*time_step;
+            // Compute current time
+            // When max_samples=-1 uses sampling_time directly to avoid rounding
+            // errors
+            t = max_samples==-1 ? sample*sampling_time : step*time_step;
 
             // Compute the anisotropy field
             field::uniaxial_anisotropy( heff, pstate, anis_axis.data() );
