@@ -19,9 +19,9 @@ GTEST_FLAGS=-isystem $(GTEST_DIR)/include
 GIT_VERSION := $(shell git describe --abbrev=4 --dirty --always --tags)
 
 ifeq ($(CXX),icpc)
-	CXXFLAGS=--std=c++11 -W -Wall -pedantic -pthread -O3 -g -fopenmp -simd -qopenmp -xHost -DVERSION=\"$(GIT_VERSION)\"
+	CXXFLAGS=--std=c++11 -W -Wall -pedantic -pthread -g -fopenmp -simd -qopenmp -xHost -DVERSION=\"$(GIT_VERSION)\"
 else
-	CXXFLAGS=--std=c++11 -W -Wall -pedantic -pthread -O3 -g -fopenmp -DVERSION=\"$(GIT_VERSION)\"
+	CXXFLAGS=--std=c++11 -W -Wall -pedantic -pthread -g -fopenmp -DVERSION=\"$(GIT_VERSION)\"
 endif
 
 LDFLAGS=-llapacke -lblas
@@ -40,12 +40,27 @@ main: src/main.cpp $(OBJ_FILES)
 # Build the individual object files
 $(OBJ_PATH)/%.o: $(LIB_PATH)/%.cpp
 	$(CXX) 	$(CXXFLAGS) -c \
-	-o $@ $<
+	-o $@ $< \
 	$(LDFLAGS)
 
-# The tests are run using googletest
+# Run the entire testing suite (long run time)
+run-tests: test-suite
+	./tests
+	./convergence test/configs/convergence.json
+	cd test/plotting && python convergence.py
+
+# Build full testing-suite
+test-suite: tests convergence
+
+# The unit tests are run using googletest
 tests: test/tests.cpp $(OBJ_FILES) $(GTEST_HEADERS) gtest_main.a
 	$(CXX) $(GTEST_FLAGS) $(CXXFLAGS) $< gtest_main.a \
+	$(OBJ_FILES) $(LDFLAGS) \
+	-o $@
+
+# Convergence tests
+convergence: test/convergence.cpp $(OBJ_FILES)
+	$(CXX) $(CXXFLAGS) $< \
 	$(OBJ_FILES) $(LDFLAGS) \
 	-o $@
 
@@ -75,6 +90,9 @@ clean:
 
 clean-tests:
 	rm -f test.out*
+	rm -f convergence.*
+	rm -f convergence
+	rm -f tests
 
 clean-all: clean clean-tests
 	rm -f main tests
