@@ -27,17 +27,3 @@ void stochastic::ito_to_strato(
                     * diffusion[k*wiener_dims+j]
                     * diffusion_jacobian[i*n_dims*wiener_dims+j*n_dims+k];
 }
-
-size_t stochastic::downsample_wiener_path( double *inc, size_t N, size_t R )
-{
-    // If no reduction factor required then return the original increments
-    if( R==0 )
-        return N;
-
-    for( unsigned int i=0; i<N; i++ )
-        if( i%R )
-            inc[i/R] += inc[i];
-        else
-            inc[i/R] = inc[i];
-    return N/R;
-}
