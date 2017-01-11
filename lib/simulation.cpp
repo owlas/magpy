@@ -10,6 +10,7 @@
 #include "../include/field.hpp"
 #include "../include/trap.hpp"
 #include <exception>
+#include <cblas.h>
 
 using namespace std::placeholders;
 using sde_function = std::function<void(double*,const double*,const double)>;
@@ -23,6 +24,7 @@ struct simulation::results simulation::full_dynamics(
     const double time_step,
     const double end_time,
     Rng &rng,
+    const bool renorm,
     const int max_samples )
 {
     size_t dims = 3;
@@ -118,6 +120,14 @@ struct simulation::results simulation::full_dynamics(
                 nstate, drift_arr, trial_drift_arr, diffusion_mat,
                 trial_diffusion_mat, pstate, wiener, drift,
                 diffusion, dims, dims, t, time_step );
+
+            // Renormalise the length of the magnetisation
+            if( renorm  )
+            {
+                double norm = cblas_dnrm2( 3, nstate, 1 );
+                for( unsigned int i=0; i<dims; i++ )
+                    nstate[i] = nstate[i]/norm;
+            } // end renormalisation
 
         } // end integration stepping loop
 

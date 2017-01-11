@@ -195,7 +195,8 @@ TEST( moma_config, normalise_json )
         {"simulation", {
                 {"ensemble-size", 1},
                 {"simulation-time", 1e-9},
-                {"time-step", 1e-14}
+                {"time-step", 1e-14},
+                {"renormalisation", true}
             }},
         {"output", {
                 {"directory", "output"}
@@ -222,7 +223,8 @@ TEST( moma_config, normalise_json )
                 {"ensemble-size", 1},
                 {"simulation-time", 17.981521111752436},
                 {"time-step", 0.000179815211117},
-                {"time-factor", 17981521111.752434}
+                {"time-factor", 17981521111.752434},
+                {"renormalisation", true}
             }},
         {"output", {
                 {"directory", "output"}
@@ -252,6 +254,7 @@ TEST( moma_config, normalise_json )
     ASSERT_NEAR( ref_out["simulation"]["time-step"].get<double>(), out["simulation"]["time-step"].get<double>(), 1e-14);
     ASSERT_DOUBLE_EQ( ref_out["simulation"]["simulation-time"], out["simulation"]["simulation-time"]);
     ASSERT_DOUBLE_EQ( ref_out["simulation"]["time-factor"], out["simulation"]["time-factor"]);
+    ASSERT_EQ( ref_out["simulation"]["renormalisation"], out["simulation"]["renormalisation"] );
     ASSERT_EQ( ref_out["output"]["directory"], out["output"]["directory"]);
     ASSERT_DOUBLE_EQ( ref_out["global"]["temperature"], out["global"]["temperature"]);
     ASSERT_DOUBLE_EQ( ref_out["global"]["applied-field"]["frequency"], out["global"]["applied-field"]["frequency"]);
