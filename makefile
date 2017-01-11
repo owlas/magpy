@@ -33,15 +33,15 @@ OBJ_FILES=$(addprefix $(OBJ_PATH)/,$(notdir $(SOURCES:.cpp=.o)))
 default: main
 
 main: src/main.cpp $(OBJ_FILES)
-	$(CXX) $(CXXFLAGS) $< \
-	$(OBJ_FILES) $(LDFLAGS) \
-	-o $@
+	$(CXX) 	$(CXXFLAGS) $< \
+		$(OBJ_FILES) $(LDFLAGS) \
+		-o $@
 
 # Build the individual object files
 $(OBJ_PATH)/%.o: $(LIB_PATH)/%.cpp
-	$(CXX) 	$(CXXFLAGS) -c \
-	-o $@ $< \
-	$(LDFLAGS)
+	$(CXX)	$(CXXFLAGS) -c \
+		-o $@ $< \
+		$(LDFLAGS)
 
 # Run the entire testing suite (long run time)
 run-full-tests: test-suite run-tests
@@ -59,20 +59,20 @@ test-suite: test/tests test/convergence test/equilibrium
 
 # The unit tests are run using googletest
 test/tests: test/tests.cpp $(OBJ_FILES) $(GTEST_HEADERS) test/gtest_main.a
-	$(CXX) $(GTEST_FLAGS) $(CXXFLAGS) $< test/gtest_main.a \
-	$(OBJ_FILES) $(LDFLAGS) \
-	-o $@
+	$(CXX) 	$(GTEST_FLAGS) $(CXXFLAGS) $< test/gtest_main.a \
+		$(OBJ_FILES) $(LDFLAGS) \
+		-o $@
 
 # Additional test-suit tests
 test/convergence: test/convergence.cpp $(OBJ_FILES)
-	$(CXX) $(CXXFLAGS) $< \
-	$(OBJ_FILES) $(LDFLAGS) \
-	-o $@
+	$(CXX) 	$(CXXFLAGS) $< \
+		$(OBJ_FILES) $(LDFLAGS) \
+		-o $@
 
 test/equilibrium: test/equilibrium.cpp $(OBJ_FILES)
-	$(CXX) $(CXXFLAGS) $< \
-	$(OBJ_FILES) $(LDFLAGS) \
-	-o $@
+	$(CXX) 	$(CXXFLAGS) $< \
+		$(OBJ_FILES) $(LDFLAGS) \
+		-o $@
 
 # Builds the gtest testing suite
 GTEST_HEADERS = $(GTEST_DIR)/include/gtest/*.h \
@@ -80,20 +80,20 @@ GTEST_HEADERS = $(GTEST_DIR)/include/gtest/*.h \
 GTEST_SRCS_ = $(GTEST_DIR)/src/*.cc $(GTEST_DIR)/src/*.h $(GTEST_HEADERS)
 
 test/gtest-all.o : $(GTEST_SRCS_)
-	$(CXX) $(GTEST_FLAGS) -I$(GTEST_DIR) $(CXXFLAGS) -c \
-	-o $@ \
-	$(GTEST_DIR)/src/gtest-all.cc
+	$(CXX) 	$(GTEST_FLAGS) -I$(GTEST_DIR) $(CXXFLAGS) -c \
+		-o $@ \
+		$(GTEST_DIR)/src/gtest-all.cc
 
 test/gtest_main.o : $(GTEST_SRCS_)
-	$(CXX) $(GTEST_FLAGS) -I$(GTEST_DIR) $(CXXFLAGS) -c \
-	-o $@ \
-	$(GTEST_DIR)/src/gtest_main.cc
+	$(CXX) 	$(GTEST_FLAGS) -I$(GTEST_DIR) $(CXXFLAGS) -c \
+		-o $@ \
+		$(GTEST_DIR)/src/gtest_main.cc
 
 test/gtest.a : test/gtest-all.o
-	$(AR) $(ARFLAGS) $@ $^
+	$(AR) 	$(ARFLAGS) $@ $^
 
 test/gtest_main.a : test/gtest-all.o test/gtest_main.o
-	$(AR) $(ARFLAGS) $@ $^
+	$(AR) 	$(ARFLAGS) $@ $^
 
 clean:
 	rm -f objects/*
