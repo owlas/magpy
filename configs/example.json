@@ -4,6 +4,7 @@
         "max-samples": 10000,
         "simulation-time": 3.333333333e-9,
         "time-step": 1e-14,
+        "renormalisation": false,
         "seeds": [
             6683439711596033246,
             7864481324381512219,

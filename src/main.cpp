@@ -111,6 +111,7 @@ int main( int argc, char *argv[] )
             norm_config["simulation"]["time-step"],
             norm_config["simulation"]["simulation-time"],
             rng,
+            config["simulation"]["renormalisation"],
             config["simulation"]["max-samples"]);
 
         // Copy into the reduced results

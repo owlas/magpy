@@ -84,6 +84,7 @@ int main( int argc, char *argv[] )
                 aaxis, happ, init, time_step,
                 norm_config["simulation"]["simulation-time"],
                 rng,
+                config["simulation"]["renormalisation"],
                 config["simulation"]["max-samples"] );
             // Store the results
             sols[i*N_time_steps*3 + ts_factor*3 + 0] = results.mx[results.N-1];

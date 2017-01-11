@@ -79,6 +79,7 @@ int main( int argc, char *argv[] )
             norm_config.at("simulation").at("time-step").get<double>(),
             norm_config["simulation"]["simulation-time"],
             rng,
+            config["simulation"]["renormalisation"],
             config["simulation"]["max-samples"] );
 
         // Store the results

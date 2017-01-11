@@ -58,7 +58,8 @@ namespace simulation
         const double time_step,
         const double end_time,
         Rng &rng,
-        const int max_samples=-1 );
+        const bool renorm,
+        const int max_samples );
 
     // Save a results file
     void save_results( const std::string fname, const struct results& );

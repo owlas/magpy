@@ -19,6 +19,7 @@ json moma_config::normalise( const json in )
     // Simulation parameters
     double sim_time = in["simulation"]["simulation-time"];
     double time_step = in["simulation"]["time-step"];
+    bool renorm = in.at("simulation").at("renormalisation");
 
     // Get output parameters
     std::string dir = in["output"]["directory"];
@@ -70,7 +71,8 @@ json moma_config::normalise( const json in )
                 {"ensemble-size", in["simulation"]["ensemble-size"]},
                 {"simulation-time", sim_tau},
                 {"time-step", tau_step},
-                {"time-factor", time_factor}
+                {"time-factor", time_factor},
+                {"renormalisation", renorm}
             }},
         {"output", {
                 {"directory", dir}
