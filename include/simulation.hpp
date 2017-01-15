@@ -61,6 +61,24 @@ namespace simulation
         const bool renorm,
         const int max_samples );
 
+    /*
+      Simulates the dynamics for a single cycle of the applied
+      alternating field. Simulated repeatedly until the magnetisation
+      reaches a steady state.
+    */
+    struct results steady_state_cycle_dynamics(
+        const double damping,
+        const double thermal_field_strength,
+        const d3 anis_axis,
+        const std::function<double(double)> applied_field,
+        const d3 initial_magnetisation,
+        const double time_step,
+        const double applied_field_period,
+        Rng &rng,
+        const bool renorm,
+        const int max_samples,
+        const double steady_state_condition=1e-6 );
+
     // Save a results file
     void save_results( const std::string fname, const struct results& );
 

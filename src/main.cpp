@@ -98,39 +98,72 @@ int main( int argc, char *argv[] )
     #pragma omp parallel for schedule(dynamic,1) shared(ensemble)
     for( unsigned int i=0; i<n_runs; i++ )
     {
+
         // Create the random number generator
         unsigned long seed = config["simulation"]["seeds"][i];
         RngMtNorm rng(
             seed, std::sqrt(
                 norm_config.at("simulation").at("time-step").get<double>() ) );
 
-        auto results = simulation::full_dynamics(
-            norm_config["particle"]["damping"],
-            norm_config["particle"]["thermal-field-strength"],
-            aaxis, happ, init,
-            norm_config["simulation"]["time-step"],
-            norm_config["simulation"]["simulation-time"],
-            rng,
-            config["simulation"]["renormalisation"],
-            config["simulation"]["max-samples"]);
-
-        // Copy into the reduced results
-        for( unsigned int j=0; j<results.N; j++ )
+        if( norm_config.at("simulation").at("enable-steady-state-condition").get<bool>() )
         {
-            #pragma omp atomic
-            ensemble.mx[j] += results.mx[j]; // maybe try with a critical
-            #pragma omp atomic
-            ensemble.my[j] += results.my[j];
-            #pragma omp atomic
-            ensemble.mz[j] += results.mz[j];
-        }
-
-        if( i==0 )
+            double cycle_time = 1 /
+                norm_config.at("global").at("applied-field").at("frequency").get<double>();
+            auto results = simulation::full_dynamics(
+                norm_config["particle"]["damping"],
+                norm_config["particle"]["thermal-field-strength"],
+                aaxis, happ, init, cycle_time,
+                norm_config["simulation"]["simulation-time"],
+                rng,
+                config["simulation"]["renormalisation"],
+                config["simulation"]["max-samples"] );
+            // Copy into the reduced results
             for( unsigned int j=0; j<results.N; j++ )
             {
-                ensemble.time[j] = results.time[j];
-                ensemble.field[j] = results.field[j];
+                #pragma omp atomic
+                ensemble.mx[j] += results.mx[j]; // maybe try with a critical
+                #pragma omp atomic
+                ensemble.my[j] += results.my[j];
+                #pragma omp atomic
+                ensemble.mz[j] += results.mz[j];
             }
+
+            if( i==0 )
+                for( unsigned int j=0; j<results.N; j++ )
+                {
+                    ensemble.time[j] = results.time[j];
+                    ensemble.field[j] = results.field[j];
+                }
+        }
+        else
+        {
+            auto results = simulation::full_dynamics(
+                norm_config["particle"]["damping"],
+                norm_config["particle"]["thermal-field-strength"],
+                aaxis, happ, init,
+                norm_config["simulation"]["time-step"],
+                norm_config["simulation"]["simulation-time"],
+                rng,
+                config["simulation"]["renormalisation"],
+                config["simulation"]["max-samples"] );
+            // Copy into the reduced results
+            for( unsigned int j=0; j<results.N; j++ )
+            {
+                #pragma omp atomic
+                ensemble.mx[j] += results.mx[j]; // maybe try with a critical
+                #pragma omp atomic
+                ensemble.my[j] += results.my[j];
+                #pragma omp atomic
+                ensemble.mz[j] += results.mz[j];
+            }
+
+            if( i==0 )
+                for( unsigned int j=0; j<results.N; j++ )
+                {
+                    ensemble.time[j] = results.time[j];
+                    ensemble.field[j] = results.field[j];
+                }
+        } // end if statements
 
         #pragma omp critical
         LOG(INFO) << "Completed simulation " << i << "/" << n_runs;
