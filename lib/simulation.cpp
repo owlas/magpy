@@ -180,7 +180,7 @@ double simulation::power_loss(
     const struct results &res,
     double v, double K, double Ms, double Hk, double f )
 {
-    double area = trap::trapezoidal( res.mz, res.field, res.N );
+    double area = trap::trapezoidal( res.field, res.mz, res.N );
     return 2*K*Ms*Hk*area*f/v;
 }
 

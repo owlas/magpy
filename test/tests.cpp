@@ -554,3 +554,25 @@ TEST( implicit_integrator_midpoint, atest )
     ASSERT_NEAR( 1.01202953, x[0], 1e-7 );
     ASSERT_NEAR( 2.00902904, x[1], 1e-7 );
 }
+
+TEST( simulation, power_loss )
+{
+    struct simulation::results res( 5 );
+    res.field[0] = 0;
+    res.field[1] = 0.5;
+    res.field[2] = 1;
+    res.field[3] = 0.5;
+    res.field[4] = 0;
+    res.mz[0] = 0;
+    res.mz[1] = 1;
+    res.mz[2] = 1;
+    res.mz[3] = 0;
+    res.mz[4] = 0;
+
+    double area = trap::trapezoidal( res.field, res.mz, 5 );
+    ASSERT_DOUBLE_EQ( 0.5, area );
+
+    double power = simulation::power_loss(
+        res, 0.5, 3, 5, 2, 100 );
+    ASSERT_DOUBLE_EQ( 2*3*5*2*100*area/0.5, power );
+}
