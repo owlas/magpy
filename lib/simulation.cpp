@@ -176,6 +176,42 @@ struct simulation::results simulation::full_dynamics(
     return res; // Ensure elison else copy is made and dtor is called!
 }
 
+struct simulation::results simulation::steady_state_cycle_dynamics(
+    const double damping,
+    const double thermal_field_strength,
+    const d3 anis_axis,
+    const std::function<double(double)> applied_field,
+    const d3 initial_magnetisation,
+    const double time_step,
+    const double applied_field_period,
+    Rng &rng,
+    const bool renorm,
+    const int max_samples,
+    const double steady_state_condition )
+{
+    d3 mag = initial_magnetisation;
+    while ( true )
+    {
+        // Run the simulation
+        auto res = simulation::full_dynamics(
+            damping, thermal_field_strength, anis_axis, applied_field,
+            mag, time_step, applied_field_period, rng,
+            renorm, max_samples );
+
+        // Check the steady state condition
+        if( std::abs( res.mz[0] - res.mz[res.N-1] ) < steady_state_condition )
+            return res;
+
+        // If not reached - run another cycle from the current state
+        else
+        {
+            mag[0] = res.mx[res.N-1];
+            mag[1] = res.my[res.N-1];
+            mag[2] = res.mz[res.N-1];
+        }
+    }
+}
+
 double simulation::power_loss(
     const struct results &res,
     double v, double K, double Ms, double Hk, double f )

@@ -8,6 +8,7 @@
 #include <map>
 #include <string>
 #include "json.hpp"
+#include "simulation.hpp"
 using json = nlohmann::json;
 
 namespace moma_config
