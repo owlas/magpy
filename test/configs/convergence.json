@@ -3,7 +3,7 @@
         "ensemble-size": 1000,
         "max-samples": 200,
         "simulation-time": 1e-9,
-        "time-step": 1e-14,
+        "time-step": 1e-12,
         "renormalisation": false,
         "seeds": [
             6683439711596033246,

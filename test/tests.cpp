@@ -84,12 +84,12 @@ TEST(io, write_array)
 {
     double arr[3] = {1, 2, 3}, arrback[3];
     int fail, nread;
-    fail = io::write_array( "test/output/test.out", arr, 3 );
+    fail = io::write_array( "./output/test.out", arr, 3 );
     ASSERT_EQ( 0, fail );
 
     // Read back the data
     FILE *in;
-    in = fopen( "test/output/test.out", "rb" );
+    in = fopen( "./output/test.out", "rb" );
     nread = fread( arrback, sizeof(double), 3, in );
     fclose( in );
 
@@ -112,24 +112,24 @@ TEST( simulation, save_results )
     res.time[1] = 7;
 
 
-    simulation::save_results( "test/output/test.out", res );
+    simulation::save_results( "output/test.out", res );
 
     int nread;
     double arr[2];
     FILE *in;
-    in=fopen( "test/output/test.out.mx", "rb" );
+    in=fopen( "output/test.out.mx", "rb" );
     nread = fread( arr, sizeof(double), 2, in );
     ASSERT_EQ( 2, nread );
     ASSERT_DOUBLE_EQ( 2, arr[0] );
     ASSERT_DOUBLE_EQ( 3, arr[1] );
 
-    in=fopen( "test/output/test.out.field", "rb" );
+    in=fopen( "output/test.out.field", "rb" );
     nread = fread( arr, sizeof(double), 2, in );
     ASSERT_EQ( 2, nread );
     ASSERT_DOUBLE_EQ( 4, arr[0] );
     ASSERT_DOUBLE_EQ( 5, arr[1] );
 
-    in=fopen( "test/output/test.out.time", "rb" );
+    in=fopen( "output/test.out.time", "rb" );
     nread = fread( arr, sizeof(double), 2, in );
     ASSERT_EQ( 2, nread );
     ASSERT_DOUBLE_EQ( 6, arr[0] );
@@ -200,7 +200,7 @@ TEST( moma_config, normalise_json )
                 {"renormalisation", true}
             }},
         {"output", {
-                {"directory", "test/output"}
+                {"directory", "output"}
             }},
         {"global", {
                 {"temperature", 300},
@@ -228,7 +228,7 @@ TEST( moma_config, normalise_json )
                 {"renormalisation", true}
             }},
         {"output", {
-                {"directory", "test/output"}
+                {"directory", "output"}
             }},
         {"global", {
                 {"temperature", 300},
@@ -511,6 +511,44 @@ TEST( implicit_integrator_stm, stiff_2dim_step )
     ASSERT_DOUBLE_EQ( 2.014, aux[1] );
     ASSERT_DOUBLE_EQ( 1.011995, x_trial[0] );
     ASSERT_DOUBLE_EQ( 2.00899, x_trial[1] );
+
+    // Solutions from Kloeden & Platen (1992) pp.397
+    ASSERT_NEAR( 1.01202953, x[0], 1e-7 );
+    ASSERT_NEAR( 2.00902904, x[1], 1e-7 );
+}
+
+TEST( implicit_integrator_midpoint, atest )
+{
+    // Stiff 2d system with 1d wiener
+    double x[2], dwm[1], a_work[2], b_work[2], adash_work[4], bdash_work[4];
+    double x_guess[2], x_opt_tmp[2], x_opt_jac[4], x0[2]={1.0, 2.0}, dw[1]={0.07};
+    lapack_int x_opt_ipiv[2];
+    const size_t n_dim=2;
+    const size_t w_dim=1;
+    const double t=0;
+    const double dt=1e-3;
+    const double eps=1e-10;
+    const size_t max_iter=200;
+
+    const double a=5, b=0.1; //try b=10.0 too
+    auto A = [a,b](double*out,const double*in,const double)
+        {out[0]=a*(in[1]-in[0])-0.5*b*b*in[0];
+         out[1]=a*(in[0]-in[1])-0.5*b*b*in[1];};
+    auto Adash = [a,b](double*out,const double*,const double)
+        {out[0]=-a-0.5*b*b;out[1]=a;out[2]=a;out[3]=-a-0.5*b*b;};
+    auto B = [b](double*out,const double*in, const double)
+        {out[0]=b*in[0];out[1]=b*in[1];};
+    auto Bdash = [b](double*out,const double*, const double)
+        {out[0]=b;out[1]=0;out[2]=0;out[3]=b;};
+
+    int ans = integrator::implicit_midpoint(
+        x, dwm, a_work, b_work, adash_work, bdash_work,
+        x_guess, x_opt_tmp, x_opt_jac, x_opt_ipiv,
+        x0, dw, A, B, Adash, Bdash, n_dim, w_dim,
+        t, dt, eps, max_iter );
+
+    // Assert the integrator was successful
+    ASSERT_EQ( optimisation::SUCCESS, ans );
 
     // Solutions from Kloeden & Platen (1992) pp.397
     ASSERT_NEAR( 1.01202953, x[0], 1e-7 );

@@ -9,6 +9,8 @@
 #include "../include/io.hpp"
 #include "../include/field.hpp"
 #include "../include/trap.hpp"
+#include "../include/easylogging++.h"
+#include "../include/optimisation.hpp"
 #include <exception>
 #include <cblas.h>
 
@@ -48,23 +50,22 @@ struct simulation::results simulation::full_dynamics(
     simulation::results res( N_samples );
 
 
-    // Allocate matrices needed for Heun scheme
+    // Allocate matrices needed for the midpoint method
     double *state = new double[dims*2]; // stores old and new state
                                         // i.e 2 *dims
-    double *A_res = new double[dims];
-    double *B_res = new double[dims*dims];
-    double *aux = new double[dims];
-    double *A_RHS = new double[dims];
-    double *A_LHS = new double[dims*dims];
-    double *B_RHS = new double[dims*dims];
-    double *x_trial = new double[dims];
+    double *dwm = new double[dims];
+    double *a_work = new double[dims];
+    double *b_work = new double[dims*dims];
+    double *adash_work = new double[dims*dims];
+    double *bdash_work = new double[dims*dims*dims];
+    double *x_guess = new double[dims];
     double *x_opt_tmp = new double[dims];
     double *x_opt_jac = new double[dims*dims];
     lapack_int *x_opt_ipiv = new lapack_int[2];
 
     // Limits for the implicit solver
-    const double eps=1e-7;
-    const size_t max_iter=100;
+    const double eps=1e-9;
+    const size_t max_iter=1000;
 
     // Copy in the initial state
     res.time[0] = 0;
@@ -122,16 +123,22 @@ struct simulation::results simulation::full_dynamics(
                 llg::diffusion, _1, _2, _3, thermal_field_strength, damping );
             sde_function drift_jac = std::bind(
                 llg::drift_jacobian, _1, _2, _3, damping, heff );
+            sde_function diffusion_jac = std::bind(
+                llg::diffusion_jacobian, _1, _2, _3, thermal_field_strength,
+                damping );
 
             // Generate the wiener increments
             for( unsigned int i=0; i<3; i++ )
                 wiener[i] = rng.get();
 
             // perform integration step
-            integrator::stm(
-                nstate, A_res, B_res, aux, A_RHS, A_LHS, B_RHS, x_trial,
+            int errcode = integrator::implicit_midpoint(
+                nstate, dwm, a_work, b_work, adash_work, bdash_work, x_guess,
                 x_opt_tmp, x_opt_jac, x_opt_ipiv, pstate, wiener, drift,
-                diffusion, drift_jac, dims, dims, t, time_step, eps, max_iter );
+                diffusion, drift_jac, diffusion_jac, dims, dims, t, time_step,
+                eps, max_iter );
+            if( errcode != optimisation::SUCCESS )
+                LOG(FATAL) << "integration error code: " << errcode;
 
             // Renormalise the length of the magnetisation
             if( renorm  )
@@ -157,13 +164,11 @@ struct simulation::results simulation::full_dynamics(
     } // end sampling loop
 
     delete[] state;
-    delete[] A_res;
-    delete[] B_res;
-    delete[] aux;
-    delete[] A_RHS;
-    delete[] A_LHS;
-    delete[] B_RHS;
-    delete[] x_trial;
+    delete[] a_work;
+    delete[] b_work;
+    delete[] adash_work;
+    delete[] bdash_work;
+    delete[] x_guess;
     delete[] x_opt_tmp;
     delete[] x_opt_jac;
     delete[] x_opt_ipiv;
