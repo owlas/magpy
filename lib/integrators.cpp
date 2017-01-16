@@ -219,7 +219,7 @@ int integrator::stm(
             B( B_RHS, in, t );
             for( unsigned int i=0; i<n_dim; i++ )
             {
-                out[i] = in[i] - 0.5*A_RHS[i]*dt-x0[i] -0.5*A_res[i]*dt;
+                out[i] = in[i] - 0.5*A_RHS[i]*dt-x0[i] - 0.5*A_res[i]*dt;
                 for( unsigned int j=0; j<w_dim; j++ )
                     out[i] -= 0.5*( B_RHS[i*w_dim+j] + B_res[i*w_dim+j] )*dw[j];
             }
@@ -242,4 +242,90 @@ int integrator::stm(
         x, x_opt_tmp, x_opt_jac, x_opt_ipiv, &err_code,
         RHS, LHS, x_trial, n_dim, eps, max_iter );
     return flag==0 ? 0 : -1;
+}
+
+int integrator::implicit_midpoint(
+    double *x,
+    double *dwm,
+    double *a_work,
+    double *b_work,
+    double *adash_work,
+    double *bdash_work,
+    double *x_guess,
+    double *x_opt_tmp,
+    double *x_opt_jac,
+    lapack_int *x_opt_ipiv,
+    const double *x0,
+    const double *dw,
+    const sde_function A,
+    const sde_function B,
+    const sde_function Adash,
+    const sde_function Bdash,
+    const size_t n_dim,
+    const size_t w_dim,
+    const double t,
+    const double dt,
+    const double eps,
+    const size_t max_iter )
+{
+    // Implicit method depends on a modified random variable
+    // See http://epubs.siam.org/doi/pdf/10.1137/S0036142901395588 for details
+    double Ah = std::sqrt( 2*dt*std::abs( std::log( dt ) ) );
+    for( unsigned int i=0; i<w_dim; i++ )
+        dwm[i] = std::max( -Ah, std::min( Ah, dw[i] ) );
+
+    // The initial guess will be an Euler step
+    A( a_work, x0, t );
+    B( b_work, x0, t );
+    for( unsigned int i=0; i<n_dim; i++ )
+    {
+        x_guess[i] = a_work[i]*dt;
+        for( unsigned int j=0; j<w_dim; j++ )
+            x_guess[i] += b_work[i*w_dim+j]*dwm[j];
+    }
+    // Convert this into (x1+x2)/2
+    for( unsigned int i=0; i<n_dim; i++ )
+        x_guess[i] = ( x_guess[i]+x0[i] ) / 2;
+
+    // construct F(x)
+    auto F = [A,a_work,B,b_work,t,dt,n_dim,x0,w_dim,dwm]
+        (double *out, const double *in)->void
+        {
+            A( a_work, in, t+dt/2 );
+            B( b_work, in, t );
+            for( unsigned int i=0; i<n_dim; i++ )
+            {
+                out[i] = in[i] - 0.5*a_work[i]*dt - x0[i];
+                for( unsigned int j=0; j<w_dim; j++ )
+                    out[i] -= 0.5*b_work[i*w_dim+j]*dwm[j];
+            }
+        };
+
+    // Construct J(x) - Jacobian of F
+    auto J = [Adash,adash_work,t,dt,Bdash,bdash_work,n_dim,w_dim,dwm]
+        (double *out, const double *in)->void
+        {
+            Adash( adash_work, in, t+dt/2 );
+            Bdash( bdash_work, in, t+dt/2 );
+            for( unsigned int i=0; i<n_dim; i++ )
+                for( unsigned int j=0; j<n_dim; j++ )
+                {
+                    out[i*n_dim+j] = (i==j) - 0.5*adash_work[i*n_dim+j];
+                    for( unsigned int k=0; k<w_dim; k++ )
+                        out[i*n_dim+j] -= 0.5*bdash_work[i*w_dim*n_dim+k*n_dim+j]*dwm[k];
+                }
+        };
+
+    // Solve the nonlinear equations to get the next step
+    lapack_int err_code;
+    auto flag = optimisation::newton_raphson_noinv(
+        x, x_opt_tmp, x_opt_jac, x_opt_ipiv, &err_code, F, J,
+        x_guess, n_dim, eps, max_iter );
+
+    // Recover the next state from the current
+    for( unsigned int i=0; i<n_dim; i++ )
+        x[i] = 2*x[i] - x0[i];
+
+    // Return error code
+    return flag;
 }

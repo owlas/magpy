@@ -89,7 +89,7 @@ namespace integrator
                    const CSTATES &drift, const CDIFF &diffusion,
                    const CSTATES &wiener_increments, const double step_size );
 
-    // Stochastic theta method
+    // Stochastic implicit theta method
     int stm(
         double *x, double *A_res, double *B_res, double *aux, double *A_RHS,
         double *A_LHS, double *B_RHS, double *x_trial, double *x_opt_tmp,
@@ -98,6 +98,19 @@ namespace integrator
         const std::function<void(double*,const double*,const double)> A,
         const std::function<void(double*,const double*,const double)> B,
         const std::function<void(double*,const double*,const double)> Adash,
+        const size_t n_dim, const size_t w_dim, const double t, const double dt,
+        const double eps, const size_t max_iter );
+
+    // Fully implicit midpoint method
+    int implicit_midpoint(
+        double *x, double *dwm, double *a_work, double *b_work,
+        double *adash_work, double *bdash_work, double *x_guess,
+        double *x_opt_tmp, double *x_opt_jac, lapack_int *x_opt_ipiv,
+        const double *x0, const double *dw,
+        const std::function<void(double*,const double*,const double)> A,
+        const std::function<void(double*,const double*,const double)> B,
+        const std::function<void(double*,const double*,const double)> Adash,
+        const std::function<void(double*,const double*,const double)> Bdash,
         const size_t n_dim, const size_t w_dim, const double t, const double dt,
         const double eps, const size_t max_iter );
 
