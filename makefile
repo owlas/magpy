@@ -24,7 +24,7 @@ else
 	override CXXFLAGS+=--std=c++11 -W -Wall -pedantic -pthread -g -fopenmp -DVERSION=\"$(GIT_VERSION)\"
 endif
 
-LDLIBS=-llapack -lblas
+LDLIBS=-llapacke -lblas
 
 SOURCES=$(wildcard $(LIB_PATH)/*.cpp)
 OBJ_FILES=$(addprefix $(OBJ_PATH)/,$(notdir $(SOURCES:.cpp=.o)))
