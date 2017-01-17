@@ -30,5 +30,12 @@ namespace moma_config
       Returns 0 if success else -1
     */
     int write( std::string, const json );
+
+    /*
+      Provides an interface between normalised json config files and
+      simulation functions. Main entry point for launching simulations
+      from the CLI.
+    */
+    void launch_simulation( const json input );
 }
 #endif

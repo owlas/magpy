@@ -198,7 +198,9 @@ TEST( moma_config, normalise_json )
                 {"simulation-time", 1e-9},
                 {"time-step", 1e-14},
                 {"renormalisation", true},
-                {"enable-steady-state-condition", false}
+                {"enable-steady-state-condition", false},
+                {"seeds", {100, 200}},
+                {"max-samples", 1000}
             }},
         {"output", {
                 {"directory", "output"}
@@ -227,7 +229,9 @@ TEST( moma_config, normalise_json )
                 {"time-step", 0.000179815211117},
                 {"time-factor", 17981521111.752434},
                 {"renormalisation", true},
-                {"enable-steady-state-condition", false}
+                {"enable-steady-state-condition", false},
+                {"seeds", {100, 200}},
+                {"max-samples", 1000}
             }},
         {"output", {
                 {"directory", "output"}
