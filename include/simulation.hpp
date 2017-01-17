@@ -128,7 +128,7 @@ namespace simulation
         const bool renorm,
         const int max_samples,
         const size_t ensemble_size,
-        const double steady_state_condition=1e-5 );
+        const double steady_state_condition=1e-3 );
 
     // Save a results file
     void save_results( const std::string fname, const struct results& );
