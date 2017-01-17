@@ -11,9 +11,11 @@
 #include <random>
 #include <string>
 #include <cstdlib>
+#include <vector>
 #include "rng.hpp"
 
 using d3 = std::array<double,3>;
+using rng_vec=std::vector<std::shared_ptr<Rng>>;
 
 
 namespace simulation
@@ -62,6 +64,54 @@ namespace simulation
         const int max_samples );
 
     /*
+      Simulate an ensemble of identical systems and average
+      their results.
+      Initial condition can be specified once for all particles
+      or a vector of initial conditions can be specified.
+    */
+    struct results ensemble_dynamics(
+        const double damping,
+        const double thermal_field_strength,
+        const d3 anis_axis,
+        const std::function<double(double)> applied_field,
+        const std::vector<d3> initial_mags,
+        const double time_step,
+        const double end_time,
+        const rng_vec rngs,
+        const bool renorm,
+        const int max_samples,
+        const size_t ensemble_size );
+    struct results ensemble_dynamics(
+        const double damping,
+        const double thermal_field_strength,
+        const d3 anis_axis,
+        const std::function<double(double)> applied_field,
+        const d3 initial_mag,
+        const double time_step,
+        const double end_time,
+        const rng_vec rngs,
+        const bool renorm,
+        const int max_samples,
+        const size_t ensemble_size );
+
+    /*
+      Runs a full simulation and returns the final state of each of the systems
+      in the ensemble.
+    */
+    std::vector<d3> ensemble_final_state(
+        const double damping,
+        const double thermal_field_strength,
+        const d3 anis_axis,
+        const std::function<double(double)> applied_field,
+        const std::vector<d3> initial_mags,
+        const double time_step,
+        const double end_time,
+        const rng_vec rngs,
+        const bool renorm,
+        const int max_samples,
+        const size_t ensemble_size );
+
+    /*
       Simulates the dynamics for a single cycle of the applied
       alternating field. Simulated repeatedly until the magnetisation
       reaches a steady state.
@@ -74,10 +124,11 @@ namespace simulation
         const d3 initial_magnetisation,
         const double time_step,
         const double applied_field_period,
-        Rng &rng,
+        const rng_vec rngs,
         const bool renorm,
         const int max_samples,
-        const double steady_state_condition=1e-6 );
+        const size_t ensemble_size,
+        const double steady_state_condition=1e-5 );
 
     // Save a results file
     void save_results( const std::string fname, const struct results& );

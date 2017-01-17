@@ -176,6 +176,118 @@ struct simulation::results simulation::full_dynamics(
     return res; // Ensure elison else copy is made and dtor is called!
 }
 
+struct simulation::results simulation::ensemble_dynamics(
+    const double damping,
+    const double thermal_field_strength,
+    const d3 anis_axis,
+    const std::function<double(double)> applied_field,
+    const std::vector<d3> initial_mags,
+    const double time_step,
+    const double end_time,
+    const rng_vec rngs,
+    const bool renorm,
+    const int max_samples,
+    const size_t ensemble_size )
+{
+    // Initialise space for the ensemble results
+    struct simulation::results ensemble( max_samples );
+    simulation::zero_results( ensemble ); // initialise all values to zero
+
+    // MONTE CARLO RUNS
+    // Embarrassingly parallel - simulation per thread
+    #pragma omp parallel for schedule(dynamic, 1) shared(ensemble)
+    for( unsigned int run_id=0; run_id<ensemble_size; run_id++ )
+    {
+        // Simulate a single realisation of the system
+        auto results = simulation::full_dynamics(
+            damping, thermal_field_strength, anis_axis, applied_field,
+            initial_mags[run_id], time_step, end_time, *(rngs[run_id].get()),
+            renorm, max_samples );
+
+        // Copy the results into the ensemble
+        for( unsigned int j=0; j<results.N; j++ )
+        {
+            #pragma omp atomic
+            ensemble.mx[j] += results.mx[j];
+            #pragma omp atomic
+            ensemble.my[j] += results.my[j];
+            #pragma omp atomic
+            ensemble.mz[j] += results.mz[j];
+        } // end copying to ensemble
+
+        // Copy in the field and time values
+        if( run_id==0 )
+            for( unsigned int j=0; j<results.N; j++ )
+            {
+                ensemble.time[j] = results.time[j];
+                ensemble.field[j] = results.field[j];
+            }
+        #pragma omp critical
+        LOG(INFO) << "Completed simulation " << run_id << "/"
+                  << ensemble_size;
+    } // end Monte-Carlo loop
+    return ensemble;
+}
+
+struct simulation::results simulation::ensemble_dynamics(
+    const double damping,
+    const double thermal_field_strength,
+    const d3 anis_axis,
+    const std::function<double(double)> applied_field,
+    const d3 initial_mag,
+    const double time_step,
+    const double end_time,
+    const rng_vec rngs,
+    const bool renorm,
+    const int max_samples,
+    const size_t ensemble_size )
+{
+    std::vector<d3> init_mags;
+    for( unsigned int i=0; i<ensemble_size; i++ )
+        init_mags.push_back( initial_mag );
+    return simulation::ensemble_dynamics(
+        damping, thermal_field_strength, anis_axis, applied_field, init_mags,
+        time_step, end_time, rngs, renorm, max_samples, ensemble_size );
+}
+
+std::vector<d3> simulation::ensemble_final_state(
+    const double damping,
+    const double thermal_field_strength,
+    const d3 anis_axis,
+    const std::function<double(double)> applied_field,
+    const std::vector<d3> initial_mags,
+    const double time_step,
+    const double end_time,
+    const rng_vec rngs,
+    const bool renorm,
+    const int max_samples,
+    const size_t ensemble_size )
+{
+    // Initialise the total states
+    std::vector<d3> states( initial_mags );
+
+    // MONTE CARLO RUNS
+    // Embarrassingly parallel - simulation per thread
+    #pragma omp parallel for schedule(dynamic, 1) shared(states)
+    for( unsigned int run_id=0; run_id<ensemble_size; run_id++ )
+    {
+        // Simulate a single realisation of the system
+        auto results = simulation::full_dynamics(
+            damping, thermal_field_strength, anis_axis, applied_field,
+            initial_mags[run_id], time_step, end_time, *(rngs[run_id].get()),
+            renorm, max_samples );
+        // Copy in the final state
+        #pragma omp critical
+        {
+            states[run_id][0] = results.mx[results.N-1];
+            states[run_id][1] = results.my[results.N-1];
+            states[run_id][2] = results.mz[results.N-1];
+            LOG(INFO) << "Completed simulation " << run_id << "/" << ensemble_size;
+        }
+    } // end Monte-Carlo loop
+    return states;
+}
+
 struct simulation::results simulation::steady_state_cycle_dynamics(
     const double damping,
     const double thermal_field_strength,
@@ -184,31 +296,52 @@ struct simulation::results simulation::steady_state_cycle_dynamics(
     const d3 initial_magnetisation,
     const double time_step,
     const double applied_field_period,
-    Rng &rng,
+    const rng_vec rngs,
     const bool renorm,
     const int max_samples,
+    const size_t ensemble_size,
     const double steady_state_condition )
 {
-    d3 mag = initial_magnetisation;
+    std::vector<d3> prev_mags;
+    for( unsigned int i=0; i<ensemble_size; i++ )
+        prev_mags.push_back( initial_magnetisation );
+
+    unsigned int n_field_cycles=0;
+    // Keep simulating until the steady state condition is met
     while ( true )
     {
-        // Run the simulation
-        auto res = simulation::full_dynamics(
+        n_field_cycles++;
+        auto mags = simulation::ensemble_final_state(
             damping, thermal_field_strength, anis_axis, applied_field,
-            mag, time_step, applied_field_period, rng,
-            renorm, max_samples );
+            prev_mags, time_step, applied_field_period, rngs,
+            renorm, max_samples, ensemble_size );
+
+        // Compute the ensemble magnetisation before and after
+        // Assume magnetisation is taken in the z-direction
+        double mag_before=0, mag_after=0;
+        for( unsigned int i=0; i<ensemble_size; i++ )
+        {
+            mag_before += prev_mags[i][2];
+            mag_after += mags[i][2];
+        }
+        mag_before /= ensemble_size;
+        mag_after /= ensemble_size;
 
         // Check the steady state condition
-        if( std::abs( res.mz[0] - res.mz[res.N-1] ) < steady_state_condition )
-            return res;
-
-        // If not reached - run another cycle from the current state
-        else
+        if( std::abs( mag_before - mag_after ) < steady_state_condition )
         {
-            mag[0] = res.mx[res.N-1];
-            mag[1] = res.my[res.N-1];
-            mag[2] = res.mz[res.N-1];
+            auto full_res = simulation::ensemble_dynamics(
+                damping, thermal_field_strength, anis_axis, applied_field,
+                mags, time_step, applied_field_period, rngs, renorm,
+                max_samples, ensemble_size );
+            LOG(INFO) << "Steady state reached after " << n_field_cycles
+                      << " field cycles";
+            return full_res;
         }
+        // If not reached - run another cycle from the current state
+        prev_mags = mags;
+        LOG(INFO) << "Error after cycle " << n_field_cycles
+                  << ": " << std::abs( mag_before - mag_after );
     }
 }
 
