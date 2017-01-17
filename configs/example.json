@@ -1,6 +1,6 @@
 {
     "simulation": {
-        "ensemble-size": 10,
+        "ensemble-size": 1,
         "max-samples": 10000,
         "simulation-time": 3.333333333e-9,
         "time-step": 1e-12,
