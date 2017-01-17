@@ -19,9 +19,9 @@ GTEST_FLAGS=-isystem $(GTEST_DIR)/include
 GIT_VERSION := $(shell git describe --abbrev=4 --dirty --always --tags)
 
 ifeq ($(CXX),icpc)
-	override CXXFLAGS+=--std=c++11 -W -Wall -pedantic -pthread -g -fopenmp -simd -qopenmp -xHost -DVERSION=\"$(GIT_VERSION)\"
+	override CXXFLAGS+=--std=c++11 -W -Wall -pedantic -pthread -O3 -g -fopenmp -simd -qopenmp -xHost -DVERSION=\"$(GIT_VERSION)\"
 else
-	override CXXFLAGS+=--std=c++11 -W -Wall -pedantic -pthread -g -fopenmp -DVERSION=\"$(GIT_VERSION)\"
+	override CXXFLAGS+=--std=c++11 -W -Wall -pedantic -pthread -O3 -g -fopenmp -DVERSION=\"$(GIT_VERSION)\"
 endif
 
 LDLIBS=-llapacke -lblas
