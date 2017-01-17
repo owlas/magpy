@@ -21,32 +21,26 @@ using rng_vec=std::vector<std::shared_ptr<Rng>>;
 namespace simulation
 {
     // This struct holds the results from the simulation
-    // data is dynamically allocated and handled by the dtor
+    // data is dynamically allocated using unique_ptrs
     // magnetisation - [Nx3] x,y,z compononents of the magnetisation
     // field - [N] the value of the field at time t_n
     // time - [N] the time at n
     // N - the number of steps taken
     struct results {
-        double *mx;
-        double *my;
-        double *mz;
-        double *field;
-        double *time;
+        std::unique_ptr<double[]> mx;
+        std::unique_ptr<double[]> my;
+        std::unique_ptr<double[]> mz;
+        std::unique_ptr<double[]> field;
+        std::unique_ptr<double[]> time;
         size_t N;
 
         results( size_t _N ) {
             N=_N;
-            mx = new double[N];
-            my = new double[N];
-            mz = new double[N];
-            field = new double[N];
-            time = new double[N];
-        }
-
-        ~results() {
-            delete [] mx; delete [] my; delete [] mz;
-            delete [] field;
-            delete [] time;
+            mx = std::unique_ptr<double[]>( new double[N] );
+            my = std::unique_ptr<double[]>( new double[N] );
+            mz = std::unique_ptr<double[]>( new double[N] );
+            field = std::unique_ptr<double[]>( new double[N] );
+            time = std::unique_ptr<double[]>( new double[N] );
         }
     };
 
