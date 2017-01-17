@@ -349,7 +349,7 @@ double simulation::power_loss(
     const struct results &res,
     double v, double K, double Ms, double Hk, double f )
 {
-    double area = trap::trapezoidal( res.field, res.mz, res.N );
+    double area = trap::trapezoidal( res.field.get(), res.mz.get(), res.N );
     return 2*K*Ms*Hk*area*f/v;
 }
 
@@ -362,19 +362,19 @@ void simulation::save_results( const std::string fname, const struct results &re
     field_fname << fname << ".field";
     time_fname << fname << ".time";
     int err;
-    err = io::write_array( magx_fname.str(), res.mx, res.N );
+    err = io::write_array( magx_fname.str(), res.mx.get(), res.N );
     if( err != 0 )
         throw std::runtime_error( "failed to write file" );
-    err = io::write_array( magy_fname.str(), res.my, res.N );
+    err = io::write_array( magy_fname.str(), res.my.get(), res.N );
     if( err != 0 )
         throw std::runtime_error( "failed to write file" );
-    err = io::write_array( magz_fname.str(), res.mz, res.N );
+    err = io::write_array( magz_fname.str(), res.mz.get(), res.N );
     if( err != 0 )
         throw std::runtime_error( "failed to write file" );
-    err = io::write_array( field_fname.str(), res.field, res.N );
+    err = io::write_array( field_fname.str(), res.field.get(), res.N );
     if( err != 0 )
         throw std::runtime_error( "failed to write file" );
-    err = io::write_array( time_fname.str(), res.time, res.N );
+    err = io::write_array( time_fname.str(), res.time.get(), res.N );
     if( err != 0 )
         throw std::runtime_error( "failed to write file" );
 }
