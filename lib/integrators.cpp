@@ -4,6 +4,7 @@
 
 #include "../include/integrators.hpp"
 #include "../include/optimisation.hpp"
+#include <cmath>
 
 using sde_function = std::function<void(double*,const double*,const double)>;
 
@@ -237,7 +238,7 @@ int integrator::stm(
         x_trial[i] = aux[i] + A_res[i]*dt;
 
     // Determine the next step!
-    lapack_int err_code;
+    int err_code;
     auto flag = optimisation::newton_raphson_noinv(
         x, x_opt_tmp, x_opt_jac, x_opt_ipiv, &err_code,
         RHS, LHS, x_trial, n_dim, eps, max_iter );
@@ -317,7 +318,7 @@ int integrator::implicit_midpoint(
         };
 
     // Solve the nonlinear equations to get the next step
-    lapack_int err_code;
+    int err_code;
     auto flag = optimisation::newton_raphson_noinv(
         x, x_opt_tmp, x_opt_jac, x_opt_ipiv, &err_code, F, J,
         x_guess, n_dim, eps, max_iter );

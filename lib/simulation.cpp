@@ -12,7 +12,11 @@
 #include "../include/easylogging++.h"
 #include "../include/optimisation.hpp"
 #include <exception>
+#ifdef USEMKL
+#include <mkl_cblas.h>
+#else
 #include <cblas.h>
+#endif
 
 using namespace std::placeholders;
 using sde_function = std::function<void(double*,const double*,const double)>;

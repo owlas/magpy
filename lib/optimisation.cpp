@@ -4,7 +4,11 @@
 // O.Laslett@soton.ac.uk
 #include "../include/optimisation.hpp"
 #include <cmath>
+#ifdef USEMKL
+#include <mkl_cblas.h>
+#else
 #include <cblas.h>
+#endif
 
 int optimisation::newton_raphson_1(
     double *x_root,
