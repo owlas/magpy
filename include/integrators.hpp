@@ -9,8 +9,12 @@
 #ifndef INTEGRATORS_H
 #define INTEGRATORS_H
 
-#include <functional>
+#ifdef USEMKL
+#include <mkl_lapacke.h>
+#else
 #include <lapacke.h>
+#endif
+#include <functional>
 
 // The drivers can be used to solve ODEs and SDEs over a grid. The
 // drivers take an array (states) of length NxM where N is the number

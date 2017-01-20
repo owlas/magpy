@@ -12,7 +12,11 @@
 #include "../include/stochastic_processes.hpp"
 #include <cmath>
 #include <random>
+#ifdef USEMKL
+#include <mkl_lapacke.h>
+#else
 #include <lapacke.h>
+#endif
 #include <stdexcept>
 
 INITIALIZE_EASYLOGGINGPP

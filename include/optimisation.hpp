@@ -6,7 +6,11 @@
 #ifndef OPTIM_H
 #define OPTIM_H
 #include <functional>
+#ifdef USEMKL
+#include <mkl_lapacke.h>
+#else
 #include <lapacke.h>
+#endif
 
 namespace optimisation {
     const int SUCCESS = 0b0;
