@@ -576,10 +576,10 @@ TEST( simulation, power_loss )
     res.mz[3] = 0;
     res.mz[4] = 0;
 
-    double area = trap::trapezoidal( res.field, res.mz, 5 );
+    double area = trap::trapezoidal( res.field.get(), res.mz.get(), 5 );
     ASSERT_DOUBLE_EQ( 0.5, area );
 
     double power = simulation::power_loss(
-        res, 0.5, 3, 5, 2, 100 );
-    ASSERT_DOUBLE_EQ( 2*3*5*2*100*area/0.5, power );
+        res, 3, 5, 2, 100 );
+    ASSERT_DOUBLE_EQ( 2*3*5*2*100*area, power );
 }
