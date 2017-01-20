@@ -197,7 +197,6 @@ void moma_config::launch_simulation( const json norm_config )
         // Compute the power emitted by the particle ensemble
         double power = simulation::power_loss(
             results,
-            norm_config["particle"]["volume"],
             norm_config["particle"]["anisotropy"],
             norm_config["particle"]["saturation-magnetisation"],
             norm_config["global"]["anisotropy-field"],
