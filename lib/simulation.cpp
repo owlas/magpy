@@ -230,6 +230,13 @@ struct simulation::results simulation::ensemble_dynamics(
         LOG(INFO) << "Completed simulation " << run_id << "/"
                   << ensemble_size;
     } // end Monte-Carlo loop
+
+    for( unsigned int i=0; i<ensemble.N; i++ )
+    {
+        ensemble.mx[i] /= ensemble_size;
+        ensemble.my[i] /= ensemble_size;
+        ensemble.mz[i] /= ensemble_size;
+    }
     return ensemble;
 }
 
