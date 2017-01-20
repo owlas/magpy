@@ -347,10 +347,10 @@ struct simulation::results simulation::steady_state_cycle_dynamics(
 
 double simulation::power_loss(
     const struct results &res,
-    double v, double K, double Ms, double Hk, double f )
+    double K, double Ms, double Hk, double f )
 {
     double area = trap::trapezoidal( res.field.get(), res.mz.get(), res.N );
-    return 2*K*Ms*Hk*area*f/v;
+    return 2*K*Ms*Hk*area*f;
 }
 
 void simulation::save_results( const std::string fname, const struct results &res )
