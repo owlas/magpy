@@ -6,3 +6,9 @@ objects/*
 .dir-locals.el
 output/*
 test/output/*
+test/logs*
+test/*.o
+test/*.a
+test/convergence
+test/equilibrium
+tmp/*
