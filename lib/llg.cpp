@@ -92,3 +92,46 @@ void llg::diffusion_jacobian( double *jacobian, const double *state,
     jacobian[25] = 2*alpha*sr*state[2];
     jacobian[26] = 0;
 }
+
+void llg::sde_with_update( double *drift,
+                           double *diffusion,
+                           double *heff,
+                           const double *state,
+                           const double a_t,
+                           const double b_t,
+                           const double *happ,
+                           const double *aaxis,
+                           const double alpha,
+                           const double sr )
+{
+    // Compute the effective field
+    field::uniaxial_anisotropy( heff, state, aaxis );
+    heff[0] += happ[0];
+    heff[1] += happ[1];
+    heff[2] += happ[2];
+
+    // Compute the drift and diffusion
+    llg::drift( drift, state, a_t, alpha, heff );
+    llg::diffusion( diffusion, state, b_t, sr, alpha );
+}
+
+void llg::jacobians_with_update( double *drift,
+                                 double *diffusion,
+                                 double *drift_jac,
+                                 double *diffusion_jac,
+                                 double *heff,
+                                 double *heff_jac,
+                                 const double *state,
+                                 const double a_t,
+                                 const double b_t,
+                                 const double *happ,
+                                 const double *aaxis,
+                                 const double alpha,
+                                 const double s )
+{
+    llg::sde_with_update( drift, diffusion, heff, state, a_t, b_t,
+                          happ, aaxis, alpha, s );
+    field::uniaxial_anisotropy_jacobian( heff_jac, aaxis );
+    llg::drift_jacobian( drift_jac, state, a_t, alpha, heff, heff_jac );
+    llg::diffusion_jacobian( diffusion_jac, state, b_t, s, alpha );
+}
