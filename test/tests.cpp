@@ -10,6 +10,7 @@
 #include "../include/optimisation.hpp"
 #include "../include/rng.hpp"
 #include "../include/stochastic_processes.hpp"
+#include "../include/field.hpp"
 #include <cmath>
 #include <random>
 #ifdef USEMKL
@@ -50,6 +51,41 @@ TEST(llg, diffusion)
     EXPECT_EQ ( -42, deriv[6] );
     EXPECT_EQ ( -76, deriv[7] );
     EXPECT_EQ ( 78, deriv[8] );
+}
+
+/*
+  Equations evaluated symbolically with Mathematica then evaluated
+  with test values.
+*/
+TEST( field, uniaxial )
+{
+    double h[3];
+    const double state[3] = { 1.0, 1.2, 2.2 };
+    const double aaxis[3] = { 1.0, 2.0, 1.5 };
+    field::uniaxial_anisotropy( h, state, aaxis );
+    ASSERT_DOUBLE_EQ( 6.7, h[0] );
+    ASSERT_DOUBLE_EQ( 13.4, h[1] );
+    ASSERT_DOUBLE_EQ( 10.05, h[2] );
+}
+
+/*
+  Equations evaluated symbolically with Mathematica then evaluated
+  with test values.
+*/
+TEST( field, uniaxial_jacobian )
+{
+    double jac[3*3];
+    const double aaxis[3] = { 1.0, 2.0, 1.5 };
+    field::uniaxial_anisotropy_jacobian( jac, aaxis );
+    ASSERT_DOUBLE_EQ( 1.0, jac[0] );
+    ASSERT_DOUBLE_EQ( 2.0, jac[1] );
+    ASSERT_DOUBLE_EQ( 1.5, jac[2] );
+    ASSERT_DOUBLE_EQ( 2.0, jac[3] );
+    ASSERT_DOUBLE_EQ( 4.0, jac[4] );
+    ASSERT_DOUBLE_EQ( 3.0, jac[5] );
+    ASSERT_DOUBLE_EQ( 1.5, jac[6] );
+    ASSERT_DOUBLE_EQ( 3.0, jac[7] );
+    ASSERT_DOUBLE_EQ( 2.25, jac[8] );
 }
 
 TEST(heun, multiplicative )
