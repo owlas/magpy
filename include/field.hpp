@@ -23,5 +23,15 @@ namespace field
     // Computes the anisotropy field
     void uniaxial_anisotropy( double *h_anis, const double *magnetisation,
                               const double *anis_axis );
+
+    /*
+      Compute the Jacobian of the uniaxial anisotropy field with respect
+      to the magnetisation.
+      >> J = ∂h(m)/∂m
+      axis: IN is the 3 dimensional anisotropy axis
+      jac: OUT is the 3x3 dimensional Jacobian
+    */
+    void uniaxial_anisotropy_jacobian( double *jac, const double *axis );
+
 }
 #endif

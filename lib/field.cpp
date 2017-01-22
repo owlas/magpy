@@ -37,3 +37,11 @@ void field::uniaxial_anisotropy(
     h_anis[1] = dot*axis[1];
     h_anis[2] = dot*axis[2];
 }
+
+void field::uniaxial_anisotropy_jacobian(
+    double *jac, const double *axis )
+{
+    for( unsigned int i=0; i<3; i++ )
+        for( unsigned int j=0; j<3; j++ )
+            jac[i*3+j] = axis[i]*axis[j];
+}
