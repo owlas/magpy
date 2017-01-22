@@ -1,8 +1,24 @@
-// llg.cpp
-// llg implementation
+/**
+ * @namespace llg
+ * @brief Functions for evaluating the Landau-Lifshitz-Gilbert equation
+ * @details Includes the basic equation as well as Jacobians and
+ * combined functions to update fields during integration.
+ * @author Oliver Laslett
+ * @date 2017
+ */
 #include "../include/llg.hpp"
 #include "../include/field.hpp"
 
+/// Deterministic drift component of the stochastic LLG
+/**
+ * @param[out] deriv  drift derivative of the deterministic part
+ * of the stochastic llg [length 3]
+ * @param[in] state current state of the magnetisation vector [length
+ * 3]
+ * @param[in] t time (has no effect)
+ * @param[in] alpha damping ratio
+ * @param[in] the effective field on the magnetisation [length 3]
+ */
 void llg::drift( double *deriv, const double *state, const double,
                  const double alpha, const double *heff )
 {
@@ -20,6 +36,21 @@ void llg::drift( double *deriv, const double *state, const double,
                              + state[1]*heff[1]));
 }
 
+/// Jacobian of the deterministic drift component of the stochastic
+/// LLG
+/**
+ * Since, in the general case, the effective field is a function of
+ * the magnetisation, the Jacobian of the effective field must be
+ * known in order to compute the Jacobian of the drift component.
+ * @param[out] jac Jacobian of the drift [length 3x3]
+ * @param[in]  m state of the magnetisation vector [length 3]
+ * @param[in]  t time (has no effect)
+ * @param[in]  a damping ratio \f$\alpha\f$
+ * @param[in]  h effective field acting on the magnetisation [length
+ * 3]
+ * @param[in]  hj Jacobian of the effective field evaluated at the
+ * current value of `m` [length 3x3]
+ */
 void llg::drift_jacobian( double *jac, const double *m, const double,
                           const double a, const double *h,
                           const double *hj )
@@ -35,6 +66,15 @@ void llg::drift_jacobian( double *jac, const double *m, const double,
     jac[8] =  m[1]*hj[2] - m[0]*hj[5] + a*( -m[0]*h[0] - m[1]*h[1] + ( m[0]*m[0] + m[1]*m[1] )*hj[8] - m[2]*( m[0]*hj[2] + m[1]*hj[5] ) );
 }
 
+/// The stochastic diffusion component of the stochastic LLG
+/**
+ * @param[out] deriv diffusion derivatives [length 3x3]
+ * @param[in] state current state of the magnetisation [length 3]
+ * @param[in] t time (has no effect)
+ * @param[in] sr normalised noise power of the thermal field (see notes
+ * on LLG normalisation for details)
+ * @param[in] alpha damping ratio
+ */
 void llg::diffusion( double *deriv, const double *state, const double,
                      const double sr, const double alpha )
 {
@@ -51,6 +91,16 @@ void llg::diffusion( double *deriv, const double *state, const double,
     deriv[8] = alpha*sr*(state[0]*state[0]+state[1]*state[1]);
 }
 
+/// Jacobian of the stochastic diffusion component of the LLG
+/**
+ * @param[out] jacobian Jacobian of the LLG diffusion [length 3x3]
+ * @param[in]  state current state of the magnetisation vector [length
+ * 3]
+ * @param[in] t time (has no effect)
+ * @param[in] sr normalised noise power of the thermal field (see notes
+ * on LLG normalisation for details)
+ * @param[in] alpha damping ratio
+ */
 void llg::diffusion_jacobian( double *jacobian, const double *state,
                               const double,
                               const double sr, const double alpha )
@@ -93,6 +143,25 @@ void llg::diffusion_jacobian( double *jacobian, const double *state,
     jacobian[26] = 0;
 }
 
+/// Computes drift and diffusion of LLG after updating the field
+/**
+ * The effective field is first computed based on the applied field
+ * and current state of the magnetisation. This is then used to
+ * compute the current drift and diffusion components of the LLG.
+ * Assumes uniaxial anisotropy.
+ * @param[out] drift deterministic component of the LLG [length 3]
+ * @param[out] diffusion stochastic component of the LLG [length 3x3]
+ * @param[out] heff effective field including the applied field
+ * contribution [length 3]
+ * @param[in] state current state of the magnetisation [length 3]
+ * @param[in] a_t time at which to evaluate the drift
+ * @param[in] b_t time at which to evaluate the diffusion
+ * @param[in] happ the applied field at time `a_t` [length 3]
+ * @param[in] aaxis the anisotropy axis of the particle [length 3]
+ * @param[in] alpha damping ratio
+ * @param[in] sr normalised noise power of the thermal field (see notes
+ * on LLG normalisation for details)
+ */
 void llg::sde_with_update( double *drift,
                            double *diffusion,
                            double *heff,
@@ -115,6 +184,30 @@ void llg::sde_with_update( double *drift,
     llg::diffusion( diffusion, state, b_t, sr, alpha );
 }
 
+/// Computes effective field, drift, diffusion and Jacobians of LLG
+/**
+ * The effective field is first computed based on the applied field
+ * and current state of the magnetisation. This is then used to
+ * compute the drift, diffusion, and their respective Jacobians.
+ * Assumes uniaxial anisotropy.
+ * @param[out] drift deterministic component of the LLG [length 3]
+ * @param[out] diffusion stochastic component of the LLG [length 3x3]
+ * @param[out] drift_jac Jacobian of the deterministic component
+ * [length 3x3]
+ * @param[out] diffusion_jac Jacobian of the diffusion component
+ * [length 3x3x3]
+ * @param[out] heff effective field including the applied field
+ * contribution [length 3]
+ * @param[out] heff_jac Jacobian of the effective field [length 3x3]
+ * @param[in] state current state of the magnetisation [length 3]
+ * @param[in] a_t time at which to evaluate the drift
+ * @param[in] b_t time at which to evaluate the diffusion
+ * @param[in] happ the applied field at time `a_t` [length 3]
+ * @param[in] aaxis the anisotropy axis of the particle [length 3]
+ * @param[in] alpha damping ratio
+ * @param[in] s normalised noise power of the thermal field (see notes
+ * on LLG normalisation for details)
+ */
 void llg::jacobians_with_update( double *drift,
                                  double *diffusion,
                                  double *drift_jac,
