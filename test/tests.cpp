@@ -70,7 +70,7 @@ TEST(llg, drift_jacobian )
     ASSERT_DOUBLE_EQ(  19.33 , jac[2] );
     ASSERT_DOUBLE_EQ(  11.878, jac[3] );
     ASSERT_DOUBLE_EQ( - 2.977, jac[4] );
-    ASSERT_DOUBLE_EQ( - 2.082, jac[5] );
+    EXPECT_NEAR( - 2.082, jac[5], 1e-10 );
     ASSERT_DOUBLE_EQ( -14.046, jac[6] );
     ASSERT_DOUBLE_EQ(   3.8  , jac[7] );
     ASSERT_DOUBLE_EQ( - 4.051, jac[8] );
