@@ -20,6 +20,8 @@
 
 using namespace std::placeholders;
 using sde_function = std::function<void(double*,const double*,const double)>;
+using sde_jac = std::function<void(double*,double*,double*,double*,
+                                   const double*,const double, const double)>;
 
 struct simulation::results simulation::full_dynamics(
     const double damping,
@@ -81,8 +83,10 @@ struct simulation::results simulation::full_dynamics(
     // The wiener paths
     double wiener[3];
 
-    // The effective field is updated at each time step
+    // The effective field and its Jacobian is updated at each time step
     double heff[3];
+    double heffjac[9];
+    double happ[3];
 
     // Vars for loops
     unsigned int step = 0;
@@ -113,23 +117,15 @@ struct simulation::results simulation::full_dynamics(
             // errors
             t = max_samples==-1 ? sample*sampling_time : step*time_step;
 
-            // Compute the anisotropy field
-            field::uniaxial_anisotropy( heff, pstate, anis_axis.data() );
-
             // Compute the applied field - always in the z-direction
-            hz = applied_field( t );
-            heff[2] += hz;
+            happ[2] = applied_field( t );
 
-            // bind parameters to the LLG functions
-            sde_function drift = std::bind(
-                llg::drift, _1, _2, _3, damping, heff );
-            sde_function diffusion = std::bind(
-                llg::diffusion, _1, _2, _3, thermal_field_strength, damping );
-            sde_function drift_jac = std::bind(
-                llg::drift_jacobian, _1, _2, _3, damping, heff );
-            sde_function diffusion_jac = std::bind(
-                llg::diffusion_jacobian, _1, _2, _3, thermal_field_strength,
-                damping );
+            // Assumes that applied field is constant over the period
+            // Bind the parameters to create the required SDE function
+            sde_jac sde = std::bind(
+                llg::jacobians_with_update, _1, _2, _3, _4, heff, heffjac,
+                _5, _6, _7, happ, anis_axis.data(), damping,
+                thermal_field_strength );
 
             // Generate the wiener increments
             for( unsigned int i=0; i<3; i++ )
@@ -138,9 +134,8 @@ struct simulation::results simulation::full_dynamics(
             // perform integration step
             int errcode = integrator::implicit_midpoint(
                 nstate, dwm, a_work, b_work, adash_work, bdash_work, x_guess,
-                x_opt_tmp, x_opt_jac, x_opt_ipiv, pstate, wiener, drift,
-                diffusion, drift_jac, diffusion_jac, dims, dims, t, time_step,
-                eps, max_iter );
+                x_opt_tmp, x_opt_jac, x_opt_ipiv, pstate, wiener, sde,
+                dims, dims, t, time_step, eps, max_iter );
             if( errcode != optimisation::SUCCESS )
                 LOG(FATAL) << "integration error code: " << errcode;
 
