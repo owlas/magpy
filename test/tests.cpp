@@ -42,15 +42,15 @@ TEST(llg, diffusion)
     const double time=0,  sr=2, alpha=3;
     llg::diffusion( deriv, state, time, sr, alpha );
 
-    ASSERT_EQ( 150, deriv[0] );
-    ASSERT_EQ( -28, deriv[1] );
-    ASSERT_EQ ( -54, deriv[2] );
-    ASSERT_EQ ( -44, deriv[3] );
-    ASSERT_EQ ( 120, deriv[4] );
-    ASSERT_EQ ( -68, deriv[5] );
-    ASSERT_EQ ( -42, deriv[6] );
-    ASSERT_EQ ( -76, deriv[7] );
-    ASSERT_EQ ( 78, deriv[8] );
+    EXPECT_EQ( 150, deriv[0] );
+    EXPECT_EQ( -28, deriv[1] );
+    EXPECT_EQ ( -54, deriv[2] );
+    EXPECT_EQ ( -44, deriv[3] );
+    EXPECT_EQ ( 120, deriv[4] );
+    EXPECT_EQ ( -68, deriv[5] );
+    EXPECT_EQ ( -42, deriv[6] );
+    EXPECT_EQ ( -76, deriv[7] );
+    EXPECT_EQ ( 78, deriv[8] );
 }
 
 /*
@@ -65,15 +65,15 @@ TEST(llg, drift_jacobian )
     const double heff_jac[9] = {1.0, 2.0, 1.5, 2.0, 4.0, 3.0, 1.5, 3.0, 2.25 };
     const double time=0, alpha=0.1;
     llg::drift_jacobian( jac, state, time, alpha, heff, heff_jac );
-    ASSERT_DOUBLE_EQ( - 1.161, jac[0] );
-    ASSERT_DOUBLE_EQ( - 4.466, jac[1] );
-    ASSERT_DOUBLE_EQ(  19.33 , jac[2] );
-    ASSERT_DOUBLE_EQ(  11.878, jac[3] );
-    ASSERT_DOUBLE_EQ( - 2.977, jac[4] );
+    EXPECT_DOUBLE_EQ( - 1.161, jac[0] );
+    EXPECT_DOUBLE_EQ( - 4.466, jac[1] );
+    EXPECT_DOUBLE_EQ(  19.33 , jac[2] );
+    EXPECT_DOUBLE_EQ(  11.878, jac[3] );
+    EXPECT_DOUBLE_EQ( - 2.977, jac[4] );
     EXPECT_NEAR( - 2.082, jac[5], 1e-10 );
-    ASSERT_DOUBLE_EQ( -14.046, jac[6] );
-    ASSERT_DOUBLE_EQ(   3.8  , jac[7] );
-    ASSERT_DOUBLE_EQ( - 4.051, jac[8] );
+    EXPECT_DOUBLE_EQ( -14.046, jac[6] );
+    EXPECT_DOUBLE_EQ(   3.8  , jac[7] );
+    EXPECT_DOUBLE_EQ( - 4.051, jac[8] );
 }
 
 /*
@@ -86,9 +86,9 @@ TEST( field, uniaxial )
     const double state[3] = { 1.0, 1.2, 2.2 };
     const double aaxis[3] = { 1.0, 2.0, 1.5 };
     field::uniaxial_anisotropy( h, state, aaxis );
-    ASSERT_DOUBLE_EQ( 6.7, h[0] );
-    ASSERT_DOUBLE_EQ( 13.4, h[1] );
-    ASSERT_DOUBLE_EQ( 10.05, h[2] );
+    EXPECT_DOUBLE_EQ( 6.7, h[0] );
+    EXPECT_DOUBLE_EQ( 13.4, h[1] );
+    EXPECT_DOUBLE_EQ( 10.05, h[2] );
 }
 
 /*
@@ -100,15 +100,15 @@ TEST( field, uniaxial_jacobian )
     double jac[3*3];
     const double aaxis[3] = { 1.0, 2.0, 1.5 };
     field::uniaxial_anisotropy_jacobian( jac, aaxis );
-    ASSERT_DOUBLE_EQ( 1.0, jac[0] );
-    ASSERT_DOUBLE_EQ( 2.0, jac[1] );
-    ASSERT_DOUBLE_EQ( 1.5, jac[2] );
-    ASSERT_DOUBLE_EQ( 2.0, jac[3] );
-    ASSERT_DOUBLE_EQ( 4.0, jac[4] );
-    ASSERT_DOUBLE_EQ( 3.0, jac[5] );
-    ASSERT_DOUBLE_EQ( 1.5, jac[6] );
-    ASSERT_DOUBLE_EQ( 3.0, jac[7] );
-    ASSERT_DOUBLE_EQ( 2.25, jac[8] );
+    EXPECT_DOUBLE_EQ( 1.0, jac[0] );
+    EXPECT_DOUBLE_EQ( 2.0, jac[1] );
+    EXPECT_DOUBLE_EQ( 1.5, jac[2] );
+    EXPECT_DOUBLE_EQ( 2.0, jac[3] );
+    EXPECT_DOUBLE_EQ( 4.0, jac[4] );
+    EXPECT_DOUBLE_EQ( 3.0, jac[5] );
+    EXPECT_DOUBLE_EQ( 1.5, jac[6] );
+    EXPECT_DOUBLE_EQ( 3.0, jac[7] );
+    EXPECT_DOUBLE_EQ( 2.25, jac[8] );
 }
 
 TEST(heun, multiplicative )
@@ -139,8 +139,8 @@ TEST(heun, multiplicative )
         current_state, wiener_steps, drift, diffusion, n_dims, wiener_dims,
         t, step_size );
 
-    ASSERT_DOUBLE_EQ( 1.03019352, next_state[0] );
-    ASSERT_DOUBLE_EQ( 2.571186252, next_state[1] );
+    EXPECT_DOUBLE_EQ( 1.03019352, next_state[0] );
+    EXPECT_DOUBLE_EQ( 2.571186252, next_state[1] );
 }
 
 TEST(io, write_array)
@@ -157,9 +157,9 @@ TEST(io, write_array)
     fclose( in );
 
     ASSERT_EQ( 3, nread );
-    ASSERT_DOUBLE_EQ( 1, arrback[0] );
-    ASSERT_DOUBLE_EQ( 2, arrback[1] );
-    ASSERT_DOUBLE_EQ( 3, arrback[2] );
+    EXPECT_DOUBLE_EQ( 1, arrback[0] );
+    EXPECT_DOUBLE_EQ( 2, arrback[1] );
+    EXPECT_DOUBLE_EQ( 3, arrback[2] );
 
 }
 
@@ -183,20 +183,20 @@ TEST( simulation, save_results )
     in=fopen( "output/test.out.mx", "rb" );
     nread = fread( arr, sizeof(double), 2, in );
     ASSERT_EQ( 2, nread );
-    ASSERT_DOUBLE_EQ( 2, arr[0] );
-    ASSERT_DOUBLE_EQ( 3, arr[1] );
+    EXPECT_DOUBLE_EQ( 2, arr[0] );
+    EXPECT_DOUBLE_EQ( 3, arr[1] );
 
     in=fopen( "output/test.out.field", "rb" );
     nread = fread( arr, sizeof(double), 2, in );
     ASSERT_EQ( 2, nread );
-    ASSERT_DOUBLE_EQ( 4, arr[0] );
-    ASSERT_DOUBLE_EQ( 5, arr[1] );
+    EXPECT_DOUBLE_EQ( 4, arr[0] );
+    EXPECT_DOUBLE_EQ( 5, arr[1] );
 
     in=fopen( "output/test.out.time", "rb" );
     nread = fread( arr, sizeof(double), 2, in );
     ASSERT_EQ( 2, nread );
-    ASSERT_DOUBLE_EQ( 6, arr[0] );
-    ASSERT_DOUBLE_EQ( 7, arr[1] );
+    EXPECT_DOUBLE_EQ( 6, arr[0] );
+    EXPECT_DOUBLE_EQ( 7, arr[1] );
 }
 
 TEST( heun_driver, ou )
@@ -320,26 +320,26 @@ TEST( moma_config, normalise_json )
             }}
     };
     nlohmann::json out = moma_config::normalise( in );
-    ASSERT_EQ( ref_out["simulation"]["ensemble-size"], out["simulation"]["ensemble-size"]);
-    ASSERT_NEAR( ref_out["simulation"]["time-step"].get<double>(), out["simulation"]["time-step"].get<double>(), 1e-14);
-    ASSERT_DOUBLE_EQ( ref_out["simulation"]["simulation-time"], out["simulation"]["simulation-time"]);
-    ASSERT_DOUBLE_EQ( ref_out["simulation"]["time-factor"], out["simulation"]["time-factor"]);
-    ASSERT_EQ( ref_out["simulation"]["renormalisation"], out["simulation"]["renormalisation"] );
-    ASSERT_EQ( ref_out["simulation"]["enable-steady-state-condition"], out["simulation"]["enable-steady-state-condition"] );
-    ASSERT_EQ( ref_out["output"]["directory"], out["output"]["directory"]);
-    ASSERT_DOUBLE_EQ( ref_out["global"]["temperature"], out["global"]["temperature"]);
-    ASSERT_DOUBLE_EQ( ref_out["global"]["applied-field"]["frequency"], out["global"]["applied-field"]["frequency"]);
-    ASSERT_EQ( ref_out["global"]["applied-field"]["shape"], out["global"]["applied-field"]["shape"]);
-    ASSERT_DOUBLE_EQ( ref_out["global"]["applied-field"]["amplitude"], out["global"]["applied-field"]["amplitude"]);
-    ASSERT_DOUBLE_EQ( ref_out["global"]["anisotropy-field"], out["global"]["anisotropy-field"]);
-    ASSERT_DOUBLE_EQ( ref_out["particle"]["damping"], out["particle"]["damping"]);
-    ASSERT_DOUBLE_EQ( ref_out["particle"]["volume"], out["particle"]["volume"]);
-    ASSERT_DOUBLE_EQ( ref_out["particle"]["radius"], out["particle"]["radius"]);
-    ASSERT_DOUBLE_EQ( ref_out["particle"]["anisotropy"], out["particle"]["anisotropy"]);
-    ASSERT_EQ( ref_out["particle"]["anisotropy-axis"], out["particle"]["anisotropy-axis"]);
-    ASSERT_EQ( ref_out["particle"]["initial-magnetisation"], out["particle"]["initial-magnetisation"]);
-    ASSERT_DOUBLE_EQ( ref_out["particle"]["thermal-field-strength"], out["particle"]["thermal-field-strength"]);
-    ASSERT_DOUBLE_EQ( ref_out["particle"]["stability-ratio"], out["particle"]["stability-ratio"]);
+    EXPECT_EQ( ref_out["simulation"]["ensemble-size"], out["simulation"]["ensemble-size"]);
+    EXPECT_NEAR( ref_out["simulation"]["time-step"].get<double>(), out["simulation"]["time-step"].get<double>(), 1e-14);
+    EXPECT_DOUBLE_EQ( ref_out["simulation"]["simulation-time"], out["simulation"]["simulation-time"]);
+    EXPECT_DOUBLE_EQ( ref_out["simulation"]["time-factor"], out["simulation"]["time-factor"]);
+    EXPECT_EQ( ref_out["simulation"]["renormalisation"], out["simulation"]["renormalisation"] );
+    EXPECT_EQ( ref_out["simulation"]["enable-steady-state-condition"], out["simulation"]["enable-steady-state-condition"] );
+    EXPECT_EQ( ref_out["output"]["directory"], out["output"]["directory"]);
+    EXPECT_DOUBLE_EQ( ref_out["global"]["temperature"], out["global"]["temperature"]);
+    EXPECT_DOUBLE_EQ( ref_out["global"]["applied-field"]["frequency"], out["global"]["applied-field"]["frequency"]);
+    EXPECT_EQ( ref_out["global"]["applied-field"]["shape"], out["global"]["applied-field"]["shape"]);
+    EXPECT_DOUBLE_EQ( ref_out["global"]["applied-field"]["amplitude"], out["global"]["applied-field"]["amplitude"]);
+    EXPECT_DOUBLE_EQ( ref_out["global"]["anisotropy-field"], out["global"]["anisotropy-field"]);
+    EXPECT_DOUBLE_EQ( ref_out["particle"]["damping"], out["particle"]["damping"]);
+    EXPECT_DOUBLE_EQ( ref_out["particle"]["volume"], out["particle"]["volume"]);
+    EXPECT_DOUBLE_EQ( ref_out["particle"]["radius"], out["particle"]["radius"]);
+    EXPECT_DOUBLE_EQ( ref_out["particle"]["anisotropy"], out["particle"]["anisotropy"]);
+    EXPECT_EQ( ref_out["particle"]["anisotropy-axis"], out["particle"]["anisotropy-axis"]);
+    EXPECT_EQ( ref_out["particle"]["initial-magnetisation"], out["particle"]["initial-magnetisation"]);
+    EXPECT_DOUBLE_EQ( ref_out["particle"]["thermal-field-strength"], out["particle"]["thermal-field-strength"]);
+    EXPECT_DOUBLE_EQ( ref_out["particle"]["stability-ratio"], out["particle"]["stability-ratio"]);
 }
 
 TEST( moma_config, validate_compute_options )
@@ -359,9 +359,9 @@ TEST( newton_raphson, 1d_function )
 
     int res = optimisation::newton_raphson_1(
         &x_root, f, fdash, x0, eps, max_iter );
-    ASSERT_LE( std::abs( x_root - 3.2 ), eps );
     ASSERT_EQ( optimisation::SUCCESS, res );
-}
+    ASSERT_LE( std::abs( x_root - 3.2 ), eps );
+    }
 
 TEST( newton_raphson, 1d_funtion_max_iter )
 {
@@ -409,8 +409,8 @@ TEST( newton_raphson_noinv, 2d_function_2_sols )
         x_root, x_tmp, jac_out, ipiv, &lapack_err,
         fj, x0, dim, eps, max_iter );
     ASSERT_EQ( optimisation::SUCCESS, flag );
-    ASSERT_LE( std::abs( x_root[0] + 5 ), eps );
-    ASSERT_LE( std::abs( x_root[1] - 4.9 ), eps );
+    EXPECT_LE( std::abs( x_root[0] + 5 ), eps );
+    EXPECT_LE( std::abs( x_root[1] - 4.9 ), eps );
 
     // Find the second solution
     x0[0] = x0[1] = 1.0;
@@ -418,8 +418,8 @@ TEST( newton_raphson_noinv, 2d_function_2_sols )
         x_root, x_tmp, jac_out, ipiv, &lapack_err,
         fj, x0, dim, eps, max_iter );
     ASSERT_EQ( optimisation::SUCCESS, flag );
-    ASSERT_LE( std::abs( x_root[0] - 2 ), eps );
-    ASSERT_LE( std::abs( x_root[1] ), eps );
+    EXPECT_LE( std::abs( x_root[0] - 2 ), eps );
+    EXPECT_LE( std::abs( x_root[1] ), eps );
 }
 
 TEST( newton_raphson_noinv, 2d_function_singular )
@@ -457,11 +457,11 @@ TEST( rng, mt_norm )
 {
     // Test the mt algorithm
     RngMtNorm rng( 999, 0.2 ); // seed, standard deviation
-    ASSERT_DOUBLE_EQ(  0.27100401702487437, rng.get() );
-    ASSERT_DOUBLE_EQ( -0.18950297511996847, rng.get() );
-    ASSERT_DOUBLE_EQ( -0.27620532277321042, rng.get() );
-    ASSERT_DOUBLE_EQ( -0.10214651921310165, rng.get() );
-    ASSERT_DOUBLE_EQ( -0.19125423381292103, rng.get() );
+    EXPECT_DOUBLE_EQ(  0.27100401702487437, rng.get() );
+    EXPECT_DOUBLE_EQ( -0.18950297511996847, rng.get() );
+    EXPECT_DOUBLE_EQ( -0.27620532277321042, rng.get() );
+    EXPECT_DOUBLE_EQ( -0.10214651921310165, rng.get() );
+    EXPECT_DOUBLE_EQ( -0.19125423381292103, rng.get() );
 }
 
 TEST( rng, array )
@@ -469,11 +469,11 @@ TEST( rng, array )
     // Test a pre-allocated array
     double arr[5] = {0.01, 0.2, 1, 5, -0.1};
     RngArray rng( arr, 5 );
-    ASSERT_DOUBLE_EQ( 0.01, rng.get() );
-    ASSERT_DOUBLE_EQ(  0.2, rng.get() );
-    ASSERT_DOUBLE_EQ(    1, rng.get() );
-    ASSERT_DOUBLE_EQ(    5, rng.get() );
-    ASSERT_DOUBLE_EQ( -0.1, rng.get() );
+    EXPECT_DOUBLE_EQ( 0.01, rng.get() );
+    EXPECT_DOUBLE_EQ(  0.2, rng.get() );
+    EXPECT_DOUBLE_EQ(    1, rng.get() );
+    EXPECT_DOUBLE_EQ(    5, rng.get() );
+    EXPECT_DOUBLE_EQ( -0.1, rng.get() );
 
     // Check that error is thrown if too many calls
     try
@@ -497,8 +497,8 @@ TEST( rng, array_stride_3 )
     // Test a pre-allocated array
     double arr[5] = {0.01, 0.2, 1, 5, -0.1};
     RngArray rng( arr, 5, 3 );
-    ASSERT_DOUBLE_EQ( 0.01, rng.get() ); // 0th index
-    ASSERT_DOUBLE_EQ(    5, rng.get() ); // 3rd index
+    EXPECT_DOUBLE_EQ( 0.01, rng.get() ); // 0th index
+    EXPECT_DOUBLE_EQ(    5, rng.get() ); // 3rd index
 
     // Next call will be 6th index which exceeds array length
     try
@@ -535,10 +535,10 @@ TEST( rng, rng_mt_downsample )
     ref_3 += rng_ref.get();
     ref_4 += rng_ref.get();
 
-    ASSERT_DOUBLE_EQ( ref_1, rng.get() );
-    ASSERT_DOUBLE_EQ( ref_2, rng.get() );
-    ASSERT_DOUBLE_EQ( ref_3, rng.get() );
-    ASSERT_DOUBLE_EQ( ref_4, rng.get() );
+    EXPECT_DOUBLE_EQ( ref_1, rng.get() );
+    EXPECT_DOUBLE_EQ( ref_2, rng.get() );
+    EXPECT_DOUBLE_EQ( ref_3, rng.get() );
+    EXPECT_DOUBLE_EQ( ref_4, rng.get() );
 }
 
 TEST( implicit_integrator_midpoint, atest )
@@ -586,8 +586,8 @@ TEST( implicit_integrator_midpoint, atest )
     ASSERT_EQ( optimisation::SUCCESS, ans );
 
     // Solutions from Kloeden & Platen (1992) pp.397
-    ASSERT_NEAR( 1.01202953, x[0], 1e-7 );
-    ASSERT_NEAR( 2.00902904, x[1], 1e-7 );
+    EXPECT_NEAR( 1.01202953, x[0], 1e-7 );
+    EXPECT_NEAR( 2.00902904, x[1], 1e-7 );
 }
 
 TEST( simulation, power_loss )
@@ -609,5 +609,5 @@ TEST( simulation, power_loss )
 
     double power = simulation::power_loss(
         res, 3, 5, 2, 100 );
-    ASSERT_DOUBLE_EQ( 2*3*5*2*100*area, power );
+    EXPECT_DOUBLE_EQ( 2*3*5*2*100*area, power );
 }
