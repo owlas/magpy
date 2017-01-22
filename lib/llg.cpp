@@ -1,6 +1,7 @@
 // llg.cpp
 // llg implementation
 #include "../include/llg.hpp"
+#include "../include/field.hpp"
 
 void llg::drift( double *deriv, const double *state, const double,
                  const double alpha, const double *heff )
@@ -19,21 +20,19 @@ void llg::drift( double *deriv, const double *state, const double,
                              + state[1]*heff[1]));
 }
 
-void llg::drift_jacobian( double *jacobian, const double *state,
-                          const double, const double alpha,
-                          const double *heff )
+void llg::drift_jacobian( double *jac, const double *m, const double,
+                          const double a, const double *h,
+                          const double *hj )
 {
-    jacobian[0] = -alpha*( state[1]*heff[1] - state[2]*heff[2] );
-    jacobian[1] = -heff[2] + alpha*( 2*state[1]*heff[0] - state[0]*heff[1] );
-    jacobian[2] = heff[1]+alpha*( 2*state[2]*heff[0] - state[0]*heff[2] );
-
-    jacobian[3] = heff[2] + alpha*( 2*state[0]*heff[1] - heff[0]*state[1] );
-    jacobian[4] = -alpha*( state[0]*heff[0] + state[2]*heff[2] );
-    jacobian[5] = -heff[0] + alpha*( 2*state[2]*heff[1] - state[1]*heff[2] );
-
-    jacobian[6] = -heff[1] + alpha*( 2*state[0]*heff[2] - heff[0]*state[2] );
-    jacobian[7] = heff[0] + alpha*( 2*state[1]*heff[1] - state[2]*heff[1] );
-    jacobian[8] = -alpha*( state[0]*heff[0] + state[1]*heff[1] );
+    jac[0] =  m[2]*hj[3] - m[1]*hj[6] + a*( -m[1]*h[1] - m[2]*h[2] + ( m[1]*m[1] + m[2]*m[2] )*hj[0] - m[0]*( m[1]*hj[3] + m[2]*hj[6] ) );
+    jac[1] = -h[2] + m[2]*hj[4] - m[1]*hj[7] + a*( 2*m[1]*h[0] + ( m[1]*m[1] + m[2]*m[2] )*hj[1] - m[0]*( h[1] + m[1]*hj[4] + m[2]*hj[7] ) );
+    jac[2] =  h[1] + m[2]*hj[5] - m[1]*hj[8] + a*( 2*m[2]*h[0] + ( m[1]*m[1] + m[2]*m[2] )*hj[2] - m[0]*( h[2] + m[1]*hj[5] + m[2]*hj[8] ) );
+    jac[3] =  h[2] - m[2]*hj[0] + m[0]*hj[6] + a*( 2*m[0]*h[1] + ( m[0]*m[0] + m[2]*m[2] )*hj[3] - m[1]*( h[0] + m[0]*hj[0] + m[2]*hj[6] ) );
+    jac[4] = -m[2]*hj[1] + m[0]*hj[7] + a*( -m[0]*h[0] - m[2]*h[2] + ( m[0]*m[0] + m[2]*m[2] )*hj[4] - m[1]*( m[0]*hj[1] + m[2]*hj[7] ) );
+    jac[5] = -h[0] - m[2]*hj[2] + m[0]*hj[8] + a*( 2*m[2]*h[1] + ( m[0]*m[0] + m[2]*m[2] )*hj[5] - m[1]*( h[2] + m[0]*hj[2] + m[2]*hj[8] ) );
+    jac[6] = -h[1] + m[1]*hj[0] - m[0]*hj[3] + a*( 2*m[0]*h[2] + ( m[0]*m[0] + m[1]*m[1] )*hj[6] - m[2]*( h[0] + m[0]*hj[0] + m[1]*hj[3] ) );
+    jac[7] =  h[0] + m[1]*hj[1] - m[0]*hj[4] + a*( 2*m[1]*h[2] + ( m[0]*m[0] + m[1]*m[1] )*hj[7] - m[2]*( h[1] + m[0]*hj[1] + m[1]*hj[4] ) );
+    jac[8] =  m[1]*hj[2] - m[0]*hj[5] + a*( -m[0]*h[0] - m[1]*h[1] + ( m[0]*m[0] + m[1]*m[1] )*hj[8] - m[2]*( m[0]*hj[2] + m[1]*hj[5] ) );
 }
 
 void llg::diffusion( double *deriv, const double *state, const double,

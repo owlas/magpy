@@ -57,6 +57,29 @@ TEST(llg, diffusion)
   Equations evaluated symbolically with Mathematica then evaluated
   with test values.
 */
+TEST(llg, drift_jacobian )
+{
+    double jac[3*3];
+    const double state[3] = { 1.0, 1.2, 2.2 };
+    const double heff[3] = { 6.7, 13.4, 10.05 };
+    const double heff_jac[9] = {1.0, 2.0, 1.5, 2.0, 4.0, 3.0, 1.5, 3.0, 2.25 };
+    const double time=0, alpha=0.1;
+    llg::drift_jacobian( jac, state, time, alpha, heff, heff_jac );
+    ASSERT_DOUBLE_EQ( - 1.161, jac[0] );
+    ASSERT_DOUBLE_EQ( - 4.466, jac[1] );
+    ASSERT_DOUBLE_EQ(  19.33 , jac[2] );
+    ASSERT_DOUBLE_EQ(  11.878, jac[3] );
+    ASSERT_DOUBLE_EQ( - 2.977, jac[4] );
+    ASSERT_DOUBLE_EQ( - 2.082, jac[5] );
+    ASSERT_DOUBLE_EQ( -14.046, jac[6] );
+    ASSERT_DOUBLE_EQ(   3.8  , jac[7] );
+    ASSERT_DOUBLE_EQ( - 4.051, jac[8] );
+}
+
+/*
+  Equations evaluated symbolically with Mathematica then evaluated
+  with test values.
+*/
 TEST( field, uniaxial )
 {
     double h[3];
