@@ -40,8 +40,7 @@ int optimisation::newton_raphson_noinv (
     double *jac_out,
     lapack_int *ipiv,
     int *lapack_err_code,
-    const std::function<void(double*,const double* )> f,
-    const std::function<void(double*,const double*)> jacobian,
+    const std::function<void(double*,double*,const double* )> fj,
     const double *x0,
     const lapack_int dim,
     const double eps,
@@ -62,8 +61,7 @@ int optimisation::newton_raphson_noinv (
         for( int i=0; i<dim; i++ )
             x_tmp[i] = x_root[i];
 
-        f( x_root, x_tmp );
-        jacobian( jac_out, x_tmp );
+        fj( x_root, jac_out, x_tmp );
 
         // Arrange into form J(xprev)(xnext-xprev)=-F(xprev)
         for( int i=0; i<dim; i++ )

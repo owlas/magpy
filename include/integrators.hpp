@@ -99,10 +99,7 @@ namespace integrator
         double *adash_work, double *bdash_work, double *x_guess,
         double *x_opt_tmp, double *x_opt_jac, lapack_int *x_opt_ipiv,
         const double *x0, const double *dw,
-        const std::function<void(double*,const double*,const double)> A,
-        const std::function<void(double*,const double*,const double)> B,
-        const std::function<void(double*,const double*,const double)> Adash,
-        const std::function<void(double*,const double*,const double)> Bdash,
+        const std::function<void(double*,double*,double*,double*,const double*,const double,const double)> sde,
         const size_t n_dim, const size_t w_dim, const double t, const double dt,
         const double eps, const size_t max_iter );
 
