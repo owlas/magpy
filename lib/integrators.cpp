@@ -7,6 +7,7 @@
 #include <cmath>
 
 using sde_function = std::function<void(double*,const double*,const double)>;
+using sde_jac = std::function<void(double*,double*,double*,double*,const double*,const double,const double)>;
 
 void integrator::rk4(
     double *next_state,
@@ -188,10 +189,7 @@ int integrator::implicit_midpoint(
     lapack_int *x_opt_ipiv,
     const double *x0,
     const double *dw,
-    const sde_function A,
-    const sde_function B,
-    const sde_function Adash,
-    const sde_function Bdash,
+    const sde_jac sde,
     const size_t n_dim,
     const size_t w_dim,
     const double t,
@@ -206,8 +204,7 @@ int integrator::implicit_midpoint(
         dwm[i] = std::max( -Ah, std::min( Ah, dw[i] ) );
 
     // The initial guess will be an Euler step
-    A( a_work, x0, t );
-    B( b_work, x0, t );
+    sde( a_work, b_work, adash_work, bdash_work, x0, t, t );
     for( unsigned int i=0; i<n_dim; i++ )
     {
         x_guess[i] = a_work[i]*dt;
@@ -218,39 +215,33 @@ int integrator::implicit_midpoint(
     for( unsigned int i=0; i<n_dim; i++ )
         x_guess[i] = ( x_guess[i]+x0[i] ) / 2;
 
-    // construct F(x)
-    auto F = [A,a_work,B,b_work,t,dt,n_dim,x0,w_dim,dwm]
-        (double *out, const double *in)->void
+    // construct F(x) and J(x) - Jacobian of F
+    auto FJ = [sde, a_work,b_work,t,dt,n_dim,x0,w_dim,dwm,adash_work,bdash_work]
+        (double *fout, double *jacout, const double *in)->void
         {
-            A( a_work, in, t+dt/2 );
-            B( b_work, in, t );
+            // F(X)
+            sde(a_work,b_work,adash_work,bdash_work,in,t+dt/2,t);
             for( unsigned int i=0; i<n_dim; i++ )
             {
-                out[i] = in[i] - 0.5*a_work[i]*dt - x0[i];
+                fout[i] = in[i] - 0.5*a_work[i]*dt - x0[i];
                 for( unsigned int j=0; j<w_dim; j++ )
-                    out[i] -= 0.5*b_work[i*w_dim+j]*dwm[j];
+                    fout[i] -= 0.5*b_work[i*w_dim+j]*dwm[j];
             }
-        };
 
-    // Construct J(x) - Jacobian of F
-    auto J = [Adash,adash_work,t,dt,Bdash,bdash_work,n_dim,w_dim,dwm]
-        (double *out, const double *in)->void
-        {
-            Adash( adash_work, in, t+dt/2 );
-            Bdash( bdash_work, in, t+dt/2 );
+            // J(X)
             for( unsigned int i=0; i<n_dim; i++ )
                 for( unsigned int j=0; j<n_dim; j++ )
                 {
-                    out[i*n_dim+j] = (i==j) - 0.5*adash_work[i*n_dim+j];
+                    jacout[i*n_dim+j] = (i==j) - 0.5*adash_work[i*n_dim+j];
                     for( unsigned int k=0; k<w_dim; k++ )
-                        out[i*n_dim+j] -= 0.5*bdash_work[i*w_dim*n_dim+k*n_dim+j]*dwm[k];
+                        jacout[i*n_dim+j] -= 0.5*bdash_work[i*w_dim*n_dim+k*n_dim+j]*dwm[k];
                 }
         };
 
     // Solve the nonlinear equations to get the next step
     int err_code;
     auto flag = optimisation::newton_raphson_noinv(
-        x, x_opt_tmp, x_opt_jac, x_opt_ipiv, &err_code, F, J,
+        x, x_opt_tmp, x_opt_jac, x_opt_ipiv, &err_code, FJ,
         x_guess, n_dim, eps, max_iter );
 
     // Recover the next state from the current

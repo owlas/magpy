@@ -392,24 +392,22 @@ TEST( newton_raphson_noinv, 2d_function_2_sols )
       F(x,y)==0 has 2 solutions:
         x,y=-5,4.9    x,y=2,0
     */
-    auto f = []( double*out,const double*in )->void
+    auto fj = []( double*fout,double*jacout,const double*in )->void
     {
-        out[0] = -( in[0]-2 )*( in[0]-2 ) - 2*in[0]*in[1];
-        out[1] = -in[1]*( in[0]+1 ) - 4*in[1];
-    };
-    auto jac = []( double*out,const double*in )->void
-    {
-        out[0] = -2*in[0] - 2*in[1] + 4;
-        out[1] = -2*in[0];
-        out[2] = -in[1];
-        out[3] = -in[0]-5;
+        fout[0] = -( in[0]-2 )*( in[0]-2 ) - 2*in[0]*in[1];
+        fout[1] = -in[1]*( in[0]+1 ) - 4*in[1];
+
+        jacout[0] = -2*in[0] - 2*in[1] + 4;
+        jacout[1] = -2*in[0];
+        jacout[2] = -in[1];
+        jacout[3] = -in[0]-5;
     };
 
     // Find the first solution
     x0[0] = x0[1] = -5.2;
     auto flag = optimisation::newton_raphson_noinv(
         x_root, x_tmp, jac_out, ipiv, &lapack_err,
-        f, jac, x0, dim, eps, max_iter );
+        fj, x0, dim, eps, max_iter );
     ASSERT_EQ( optimisation::SUCCESS, flag );
     ASSERT_LE( std::abs( x_root[0] + 5 ), eps );
     ASSERT_LE( std::abs( x_root[1] - 4.9 ), eps );
@@ -418,7 +416,7 @@ TEST( newton_raphson_noinv, 2d_function_2_sols )
     x0[0] = x0[1] = 1.0;
     flag = optimisation::newton_raphson_noinv(
         x_root, x_tmp, jac_out, ipiv, &lapack_err,
-        f, jac, x0, dim, eps, max_iter );
+        fj, x0, dim, eps, max_iter );
     ASSERT_EQ( optimisation::SUCCESS, flag );
     ASSERT_LE( std::abs( x_root[0] - 2 ), eps );
     ASSERT_LE( std::abs( x_root[1] ), eps );
@@ -435,24 +433,22 @@ TEST( newton_raphson_noinv, 2d_function_singular )
       This function has infinite solutions which will create
       a singular matrix in the LU factorisation in lapack routine
     */
-    auto f = []( double*out,const double*in )->void
-    {
-        out[0] = -( in[0]-2 )*( in[0]-2 ) - 2*in[0]*in[1];
-        out[1] = out[0]*5.9;
-    };
-    auto jac = []( double*out,const double*in )->void
-    {
-        out[0] = -2*in[0] - 2*in[1] + 4;
-        out[1] = -2*in[0];
-        out[2] = out[0]*5.9;
-        out[3] = out[1]*5.9;
-    };
+    auto fj = []( double*fout,double*jacout,const double*in )->void
+        {
+            fout[0] = -( in[0]-2 )*( in[0]-2 ) - 2*in[0]*in[1];
+            fout[1] = 2.0*fout[0];
 
-    // Find the first solution
+            jacout[0] = -2*in[0] - 2*in[1] + 4;
+            jacout[1] = -2*in[0];
+            jacout[2] = 2.0*jacout[0];
+            jacout[3] = 2.0*jacout[1];
+        };
+
     x0[0] = x0[1] = -5.2;
     auto flag = optimisation::newton_raphson_noinv(
         x_root, x_tmp, jac_out, ipiv, &lapack_err,
-        f, jac, x0, dim, eps, max_iter );
+        fj, x0, dim, eps, max_iter );
+
     ASSERT_EQ( optimisation::LAPACK_ERR, flag );
     ASSERT_GE( lapack_err, 0 );
 }
@@ -559,20 +555,31 @@ TEST( implicit_integrator_midpoint, atest )
     const size_t max_iter=200;
 
     const double a=5, b=0.1; //try b=10.0 too
-    auto A = [a,b](double*out,const double*in,const double)
-        {out[0]=a*(in[1]-in[0])-0.5*b*b*in[0];
-         out[1]=a*(in[0]-in[1])-0.5*b*b*in[1];};
-    auto Adash = [a,b](double*out,const double*,const double)
-        {out[0]=-a-0.5*b*b;out[1]=a;out[2]=a;out[3]=-a-0.5*b*b;};
-    auto B = [b](double*out,const double*in, const double)
-        {out[0]=b*in[0];out[1]=b*in[1];};
-    auto Bdash = [b](double*out,const double*, const double)
-        {out[0]=b;out[1]=0;out[2]=0;out[3]=b;};
+    auto sde = [a,b]
+        (double*aout,double*bout,double*adashout,double*bdashout,
+         const double*in,const double, const double )
+        {
+            aout[0]=a*(in[1]-in[0])-0.5*b*b*in[0];
+            aout[1]=a*(in[0]-in[1])-0.5*b*b*in[1];
+
+            adashout[0]=-a-0.5*b*b;
+            adashout[1]=a;
+            adashout[2]=a;
+            adashout[3]=-a-0.5*b*b;
+
+            bout[0]=b*in[0];
+            bout[1]=b*in[1];
+
+            bdashout[0]=b;
+            bdashout[1]=0;
+            bdashout[2]=0;
+            bdashout[3]=b;
+        };
 
     int ans = integrator::implicit_midpoint(
         x, dwm, a_work, b_work, adash_work, bdash_work,
         x_guess, x_opt_tmp, x_opt_jac, x_opt_ipiv,
-        x0, dw, A, B, Adash, Bdash, n_dim, w_dim,
+        x0, dw, sde, n_dim, w_dim,
         t, dt, eps, max_iter );
 
     // Assert the integrator was successful

@@ -55,8 +55,7 @@ namespace optimisation {
         double *jac_out,
         lapack_int *ipiv,
         int *lapack_err_code,
-        const std::function<void(double*,const double* )> f,
-        const std::function<void(double*,const double* )> jacobian,
+        const std::function<void(double*,double*,const double* )> func_and_jacobian,
         const double *x0, const lapack_int dim,
         const double eps=1e-7,
         const size_t max_iter=1000 );
