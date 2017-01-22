@@ -42,15 +42,15 @@ TEST(llg, diffusion)
     const double time=0,  sr=2, alpha=3;
     llg::diffusion( deriv, state, time, sr, alpha );
 
-    EXPECT_EQ( 150, deriv[0] );
-    EXPECT_EQ( -28, deriv[1] );
-    EXPECT_EQ ( -54, deriv[2] );
-    EXPECT_EQ ( -44, deriv[3] );
-    EXPECT_EQ ( 120, deriv[4] );
-    EXPECT_EQ ( -68, deriv[5] );
-    EXPECT_EQ ( -42, deriv[6] );
-    EXPECT_EQ ( -76, deriv[7] );
-    EXPECT_EQ ( 78, deriv[8] );
+    ASSERT_EQ( 150, deriv[0] );
+    ASSERT_EQ( -28, deriv[1] );
+    ASSERT_EQ ( -54, deriv[2] );
+    ASSERT_EQ ( -44, deriv[3] );
+    ASSERT_EQ ( 120, deriv[4] );
+    ASSERT_EQ ( -68, deriv[5] );
+    ASSERT_EQ ( -42, deriv[6] );
+    ASSERT_EQ ( -76, deriv[7] );
+    ASSERT_EQ ( 78, deriv[8] );
 }
 
 /*
@@ -139,8 +139,8 @@ TEST(heun, multiplicative )
         current_state, wiener_steps, drift, diffusion, n_dims, wiener_dims,
         t, step_size );
 
-    EXPECT_DOUBLE_EQ( 1.03019352, next_state[0] );
-    EXPECT_DOUBLE_EQ( 2.571186252, next_state[1] );
+    ASSERT_DOUBLE_EQ( 1.03019352, next_state[0] );
+    ASSERT_DOUBLE_EQ( 2.571186252, next_state[1] );
 }
 
 TEST(io, write_array)
@@ -487,7 +487,7 @@ TEST( rng, array )
     }
     catch( std::out_of_range const & err )
     {
-        EXPECT_EQ( err.what(),
+        ASSERT_EQ( err.what(),
                    std::string("Exceeded allocated random number array size"));
     }
     catch( ... )
@@ -512,7 +512,7 @@ TEST( rng, array_stride_3 )
     }
     catch( std::out_of_range const & err )
     {
-        EXPECT_EQ( err.what(),
+        ASSERT_EQ( err.what(),
                    std::string("Exceeded allocated random number array size"));
     }
     catch( ... )
