@@ -385,3 +385,19 @@ void simulation::zero_results( struct simulation::results &res )
     for( unsigned int i=0; i<res.N; i++ )
         res.mx[i] = res.my[i] = res.mz[i] = res.field[i] = res.time[i] = 0;
 }
+
+
+// struct simulation::results simulation::dom_ensemble_dynamics(
+//     const double damping,
+//     const double radius,
+//     const d3 anis_axis,
+//     const std::function<double(double)> applied_field,
+//     const std::vector<d3> initial_mags,
+//     const double time_step,
+//     const double sim_time,
+//     const rng_vec rngs,
+//     const int max_samples,
+//     const size_t ensemble_size )
+// {
+
+// }
