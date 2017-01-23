@@ -19,6 +19,9 @@ namespace stochastic
     void ito_to_strato( double *strato_drift, const double *ito_drift,
                         const double *diffusion, const double *diffusion_jacobian,
                         const size_t n_dims, const size_t wiener_dims );
+
+    void master_equation(double *derivs, const double *transition_matrix,
+                         const double *current_state, const size_t dim );
 }
 
 #endif

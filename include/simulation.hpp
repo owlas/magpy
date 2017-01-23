@@ -135,5 +135,10 @@ namespace simulation
 
     // Sets all of the arrays in the results struct to zero
     void zero_results( struct results& );
+
+    /*
+      Computes the probability trajectories based on a master equation
+      approximation
+    */
 }
 #endif
