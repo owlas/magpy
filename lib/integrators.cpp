@@ -39,7 +39,7 @@ void integrator::rk4(
     derivs( k4, next_state, t + h );
     for( unsigned int i=0; i<n_dims; i++ )
         next_state[i] = current_state[i]
-            + ( k1[i] + k2[i] + k3[i] + k4[i] ) * h/6.0;
+            + ( k1[i] + 2*k2[i] + 2*k3[i] + k4[i] ) * h/6.0;
 }
 
 void driver::rk4(

@@ -611,3 +611,26 @@ TEST( simulation, power_loss )
         res, 3, 5, 2, 100 );
     EXPECT_DOUBLE_EQ( 2*3*5*2*100*area, power );
 }
+
+TEST( rk4, time_dependent_step )
+{
+    auto ode = [](double*dx,const double*x,const double t)
+    {
+        dx[0] =  x[1] * t;
+        dx[1] = -x[0] - 5;
+    };
+
+    double x2[2], k1[2], k2[2], k3[2], k4[4], x1[2]={1,2};
+    integrator::rk4( x2, k1, k2, k3, k4, x1, ode, 2, 0.5, 0.01 );
+
+    ASSERT_EQ( 1.0, k1[0] );
+    ASSERT_EQ( -6.0, k1[1] );
+    ASSERT_EQ( 0.99485, k2[0] );
+    ASSERT_EQ( -6.005, k2[1] );
+    ASSERT_EQ( 0.994837375, k3[0] );
+    ASSERT_EQ( -6.00497425, k3[1] );
+    ASSERT_EQ( 0.989374631325, k4[0] );
+    ASSERT_EQ( -6.0099483737499995, k4[1] );
+    ASSERT_EQ( 1.0099479156355418, x2[0] );
+    ASSERT_EQ( 1.9399501718770833, x2[1] );
+}
