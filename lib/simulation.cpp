@@ -165,6 +165,7 @@ struct simulation::results simulation::full_dynamics(
     delete[] state;
     delete[] a_work;
     delete[] b_work;
+    delete[] dwm;
     delete[] adash_work;
     delete[] bdash_work;
     delete[] x_guess;
@@ -194,7 +195,7 @@ struct simulation::results simulation::ensemble_dynamics(
 
     // MONTE CARLO RUNS
     // Embarrassingly parallel - simulation per thread
-    #pragma omp parallel for schedule(dynamic, 1) shared(ensemble)
+#pragma omp parallel for schedule(dynamic, 1) shared(ensemble) firstprivate(ensemble_size, damping, thermal_field_strength, anis_axis, applied_field, initial_mags, time_step, end_time, rngs, renorm, max_samples) default(none)
     for( unsigned int run_id=0; run_id<ensemble_size; run_id++ )
     {
         // Simulate a single realisation of the system
@@ -204,13 +205,11 @@ struct simulation::results simulation::ensemble_dynamics(
             renorm, max_samples );
 
         // Copy the results into the ensemble
+	#pragma omp critical
         for( unsigned int j=0; j<results.N; j++ )
         {
-            #pragma omp atomic
             ensemble.mx[j] += results.mx[j];
-            #pragma omp atomic
             ensemble.my[j] += results.my[j];
-            #pragma omp atomic
             ensemble.mz[j] += results.mz[j];
         } // end copying to ensemble
 
@@ -221,9 +220,6 @@ struct simulation::results simulation::ensemble_dynamics(
                 ensemble.time[j] = results.time[j];
                 ensemble.field[j] = results.field[j];
             }
-        #pragma omp critical
-        LOG(INFO) << "Completed simulation " << run_id << "/"
-                  << ensemble_size;
     } // end Monte-Carlo loop
 
     for( unsigned int i=0; i<ensemble.N; i++ )
@@ -274,7 +270,7 @@ std::vector<d3> simulation::ensemble_final_state(
 
     // MONTE CARLO RUNS
     // Embarrassingly parallel - simulation per thread
-    #pragma omp parallel for schedule(dynamic, 1) shared(states)
+#pragma omp parallel for schedule(dynamic, 1) shared(states) firstprivate(ensemble_size, damping, thermal_field_strength, anis_axis, applied_field, initial_mags, time_step, end_time, rngs, renorm, max_samples) default(none)
     for( unsigned int run_id=0; run_id<ensemble_size; run_id++ )
     {
         // Simulate a single realisation of the system
@@ -288,7 +284,6 @@ std::vector<d3> simulation::ensemble_final_state(
             states[run_id][0] = results.mx[results.N-1];
             states[run_id][1] = results.my[results.N-1];
             states[run_id][2] = results.mz[results.N-1];
-            LOG(INFO) << "Completed simulation " << run_id << "/" << ensemble_size;
         }
     } // end Monte-Carlo loop
     return states;
