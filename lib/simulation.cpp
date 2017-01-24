@@ -67,7 +67,7 @@ struct simulation::results simulation::full_dynamics(
     double *x_guess = new double[dims];
     double *x_opt_tmp = new double[dims];
     double *x_opt_jac = new double[dims*dims];
-    lapack_int *x_opt_ipiv = new lapack_int[2];
+    lapack_int *x_opt_ipiv = new lapack_int[dims];
 
     // Limits for the implicit solver
     const double eps=1e-9;
