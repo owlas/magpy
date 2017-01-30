@@ -253,21 +253,21 @@ TEST( trapezoidal_method, triangle )
     ASSERT_DOUBLE_EQ( 8.75, area );
 }
 
-TEST( moma_config, normalise_json )
+json test_llg_config()
 {
-    nlohmann::json in;
-    in = {
+    nlohmann::json j;
+    j = {
+        {"simulation-mode", "llg"},
         {"simulation", {
                 {"ensemble-size", 1},
                 {"simulation-time", 1e-9},
                 {"time-step", 1e-14},
                 {"renormalisation", true},
-                {"enable-steady-state-condition", false},
-                {"seeds", {100, 200}},
-                {"max-samples", 1000}
+                {"seeds", {100, 200}}
             }},
         {"output", {
-                {"directory", "output"}
+                {"directory", "output"},
+                {"max-samples", 1000}
             }},
         {"global", {
                 {"temperature", 300},
@@ -282,70 +282,117 @@ TEST( moma_config, normalise_json )
                 {"radius", 7e-9},
                 {"anisotropy", 23e3},
                 {"anisotropy-axis", {0, 0, 1}},
-                {"initial-magnetisation", {446e3, 0, 0}}
+                {"magnetisation", 446e3},
+                {"magnetisation-direction", {1, 0, 0}}
             }}
     };
+    return j;
+}
 
-    nlohmann::json ref_out = {
+json test_dom_config()
+{
+    nlohmann::json j;
+    j = {
+        {"simulation-mode", "dom"},
         {"simulation", {
-                {"ensemble-size", 1},
-                {"simulation-time", 17.981521111752436},
-                {"time-step", 0.000179815211117},
-                {"time-factor", 17981521111.752434},
-                {"renormalisation", true},
-                {"enable-steady-state-condition", false},
-                {"seeds", {100, 200}},
-                {"max-samples", 1000}
+                {"simulation-time", 1e-9},
+                {"time-step", 1e-14},
             }},
         {"output", {
-                {"directory", "output"}
+                {"directory", "output"},
+                {"max-samples", 1000}
             }},
         {"global", {
                 {"temperature", 300},
                 {"applied-field", {
-                        {"frequency", 1.6683794331722291e-05},
                         {"shape", "sine"},
-                        {"amplitude", 6.0919579213043464}
+                        {"frequency", 300e3},
+                        {"amplitude", 5e5}
                     }},
-                {"anisotropy-field", 82075.419177049276}
+                {"tau0", 1e-10}
             }},
         {"particle", {
-                {"damping", 0.1},
-                {"volume", 1.436755040241732e-24},
                 {"radius", 7e-9},
                 {"anisotropy", 23e3},
-                {"anisotropy-axis", {0, 0, 1}},
-                {"initial-magnetisation", {1, 0, 0}},
-                {"thermal-field-strength", 0.11140026492035397},
-                {"stability-ratio", 7.97822314341568}
+                {"magnetisation", 446e3},
+                {"initial-probs", {1, 0}}
             }}
     };
-    nlohmann::json out = moma_config::normalise( in );
-    EXPECT_EQ( ref_out["simulation"]["ensemble-size"], out["simulation"]["ensemble-size"]);
-    EXPECT_NEAR( ref_out["simulation"]["time-step"].get<double>(), out["simulation"]["time-step"].get<double>(), 1e-14);
-    EXPECT_DOUBLE_EQ( ref_out["simulation"]["simulation-time"], out["simulation"]["simulation-time"]);
-    EXPECT_DOUBLE_EQ( ref_out["simulation"]["time-factor"], out["simulation"]["time-factor"]);
-    EXPECT_EQ( ref_out["simulation"]["renormalisation"], out["simulation"]["renormalisation"] );
-    EXPECT_EQ( ref_out["simulation"]["enable-steady-state-condition"], out["simulation"]["enable-steady-state-condition"] );
-    EXPECT_EQ( ref_out["output"]["directory"], out["output"]["directory"]);
-    EXPECT_DOUBLE_EQ( ref_out["global"]["temperature"], out["global"]["temperature"]);
-    EXPECT_DOUBLE_EQ( ref_out["global"]["applied-field"]["frequency"], out["global"]["applied-field"]["frequency"]);
-    EXPECT_EQ( ref_out["global"]["applied-field"]["shape"], out["global"]["applied-field"]["shape"]);
-    EXPECT_DOUBLE_EQ( ref_out["global"]["applied-field"]["amplitude"], out["global"]["applied-field"]["amplitude"]);
-    EXPECT_DOUBLE_EQ( ref_out["global"]["anisotropy-field"], out["global"]["anisotropy-field"]);
-    EXPECT_DOUBLE_EQ( ref_out["particle"]["damping"], out["particle"]["damping"]);
-    EXPECT_DOUBLE_EQ( ref_out["particle"]["volume"], out["particle"]["volume"]);
-    EXPECT_DOUBLE_EQ( ref_out["particle"]["radius"], out["particle"]["radius"]);
-    EXPECT_DOUBLE_EQ( ref_out["particle"]["anisotropy"], out["particle"]["anisotropy"]);
-    EXPECT_EQ( ref_out["particle"]["anisotropy-axis"], out["particle"]["anisotropy-axis"]);
-    EXPECT_EQ( ref_out["particle"]["initial-magnetisation"], out["particle"]["initial-magnetisation"]);
-    EXPECT_DOUBLE_EQ( ref_out["particle"]["thermal-field-strength"], out["particle"]["thermal-field-strength"]);
-    EXPECT_DOUBLE_EQ( ref_out["particle"]["stability-ratio"], out["particle"]["stability-ratio"]);
+    return j;
 }
 
-TEST( moma_config, validate_compute_options )
+TEST( moma_config, valid_llg_input )
 {
-    // removed test for validate
+    nlohmann::json in = test_llg_config();
+    // This should be a valid input
+
+    moma_config::validate_for_llg( in );
+}
+
+TEST( moma_config, valid_dom_input )
+{
+    nlohmann::json in = test_dom_config();
+    moma_config::validate_for_dom( in );
+}
+
+TEST( moma_config, transform_llg )
+{
+    nlohmann::json in = test_llg_config();
+    auto out = moma_config::transform_input_parameters_for_llg( in );
+
+    EXPECT_EQ( 1,
+               out.at("simulation").at("ensemble-size").get<int>() );
+    EXPECT_NEAR( 0.000179815211117,
+                 out.at("simulation").at("time-step").get<double>(), 1e-14);
+    EXPECT_DOUBLE_EQ( 17.981521111752436,
+                      out.at("simulation").at("simulation-time").get<double>() );
+    EXPECT_DOUBLE_EQ( 17981521111.752434,
+                      out.at("simulation").at("time-factor").get<double>() );
+    EXPECT_EQ( true,
+               out.at("simulation").at("renormalisation").get<bool>() );
+    EXPECT_EQ( false,
+               out.at("simulation").at("steady-cycle-activated").get<bool>() );
+    EXPECT_EQ( "output",
+               out.at("output").at("directory").get<std::string>() );
+    EXPECT_EQ( 1000,
+               out.at("output").at("max-samples").get<int>() );
+    EXPECT_DOUBLE_EQ( 300,
+                      out.at("global").at("temperature").get<double>() );
+    EXPECT_DOUBLE_EQ( 1.6683794331722291e-05,
+                      out.at("global").at("applied-field").at("frequency").get<double>() );
+    EXPECT_DOUBLE_EQ( 6.0919579213043464,
+                      out.at("global").at("applied-field").at("amplitude").get<double>() );
+    EXPECT_DOUBLE_EQ( 82075.419177049276,
+                      out.at("global").at("anisotropy-field"));
+    EXPECT_DOUBLE_EQ( 0.1,
+                      out.at("particle").at("damping") );
+    EXPECT_DOUBLE_EQ( 1.436755040241732e-24,
+                      out.at("particle").at("volume"));
+    EXPECT_DOUBLE_EQ( 7e-9,
+                      out.at("particle").at("radius"));
+    EXPECT_DOUBLE_EQ( 23e3,
+                      out.at("particle").at("anisotropy"));
+    EXPECT_DOUBLE_EQ( 0.11140026492035397,
+                      out.at("particle").at("thermal-field-strength"));
+    EXPECT_DOUBLE_EQ( 7.97822314341568,
+                      out.at("particle").at("stability-ratio"));
+}
+
+TEST( moma_config, transform_dom )
+{
+    nlohmann::json in = test_dom_config();
+    auto out = moma_config::transform_input_parameters_for_dom( in );
+
+    EXPECT_EQ( false,
+               out.at("simulation").at("steady-cycle-activated").get<bool>() );
+    EXPECT_DOUBLE_EQ( 1.436755040241732e-24,
+                      out.at("particle").at("volume").get<double>() );
+    EXPECT_DOUBLE_EQ( 7.97822314341568,
+                      out.at("particle").at("stability-ratio").get<double>() );
+    EXPECT_DOUBLE_EQ( 82075.419177049276,
+                      out.at("global").at("anisotropy-field").get<double>() );
+    EXPECT_DOUBLE_EQ( 6.0919579213043464,
+                      out.at("global").at("applied-field").at("amplitude").get<double>() );
 }
 
 TEST( newton_raphson, 1d_function )

@@ -1,27 +1,45 @@
-// simulation.cpp
-// implementation of functions for simulating magnetic dynamics
-//
-// Oliver W. Laslett (2016)
-// O.Laslett@soton.ac.uk
 #include "../include/simulation.hpp"
-#include "../include/llg.hpp"
-#include "../include/integrators.hpp"
-#include "../include/io.hpp"
-#include "../include/field.hpp"
-#include "../include/trap.hpp"
-#include "../include/easylogging++.h"
-#include "../include/optimisation.hpp"
-#include <exception>
-#ifdef USEMKL
-#include <mkl_cblas.h>
-#else
-#include <cblas.h>
-#endif
 
-using namespace std::placeholders;
-using sde_function = std::function<void(double*,const double*,const double)>;
-using sde_jac = std::function<void(double*,double*,double*,double*,
-                                   const double*,const double, const double)>;
+double simulation::power_loss(
+    const struct results &res,
+    double K, double Ms, double Hk, double f )
+{
+    double area = trap::trapezoidal( res.field.get(), res.mz.get(), res.N );
+    return 2*K*Ms*Hk*area*f;
+}
+
+
+void simulation::save_results( const std::string fname, const struct results &res )
+{
+    std::stringstream magx_fname, magy_fname, magz_fname, field_fname, time_fname;
+    magx_fname << fname << ".mx";
+    magy_fname << fname << ".my";
+    magz_fname << fname << ".mz";
+    field_fname << fname << ".field";
+    time_fname << fname << ".time";
+    int err;
+    err = io::write_array( magx_fname.str(), res.mx.get(), res.N );
+    if( err != 0 )
+        throw std::runtime_error( "failed to write file" );
+    err = io::write_array( magy_fname.str(), res.my.get(), res.N );
+    if( err != 0 )
+        throw std::runtime_error( "failed to write file" );
+    err = io::write_array( magz_fname.str(), res.mz.get(), res.N );
+    if( err != 0 )
+        throw std::runtime_error( "failed to write file" );
+    err = io::write_array( field_fname.str(), res.field.get(), res.N );
+    if( err != 0 )
+        throw std::runtime_error( "failed to write file" );
+    err = io::write_array( time_fname.str(), res.time.get(), res.N );
+    if( err != 0 )
+        throw std::runtime_error( "failed to write file" );
+}
+
+void simulation::zero_results( struct simulation::results &res )
+{
+    for( unsigned int i=0; i<res.N; i++ )
+        res.mx[i] = res.my[i] = res.mz[i] = res.field[i] = res.time[i] = 0;
+}
 
 struct simulation::results simulation::full_dynamics(
     const double damping,
@@ -176,228 +194,122 @@ struct simulation::results simulation::full_dynamics(
     return res; // Ensure elison else copy is made and dtor is called!
 }
 
-struct simulation::results simulation::ensemble_dynamics(
-    const double damping,
-    const double thermal_field_strength,
-    const d3 anis_axis,
+/// Simulates a single particle under the discrete orientation model
+/**
+ * Simulates a single uniaxial magnetic nanoparticle using the master
+ * equation. Assumes that the anisotropy axis is aligned with the
+ * external field in the $z$ direction.
+ *
+ * The system is modelled as having two possible states (up and
+ * down). Given the initial probability that the system is in these
+ * two states, the master equation simulates the time-evolution of the
+ * probability of states. The magnetisation in the $z$ direction is
+ * computed as a function of the states.
+ * @param[in] damping damping ratio - dimensionless
+ * @param[in] anisotropy anisotropy constant  - Kgm-3 ?
+ * @param[in] temperature temperature - K
+ * @param[in] tau0 reciprocal of the attempt frequency \f$1/f\f$ - s-1
+ * @param[in] applied_field a scalar in-out function that returns the
+ * value of the applied field in the z-direction at time t
+ * @param[in] initial_prbs length 2 array of doubles with the initial
+ * probability of each state of the system.
+ * @param[in] time_step time_step for the integrator
+ * @param[in] end_time total length of the simulation
+ * @param[in] max_samples integer number of times to sample the
+ * output. Setting to -1 will sample the output at every time step of
+ * the integrator.
+ * @returns simulation::results struct containing the results of the
+ * simulation. The x and y components of the magnetisation are always
+ * zero.
+ */
+struct simulation::results simulation::dom_ensemble_dynamics(
+    const double volume,
+    const double anisotropy,
+    const double temperature,
+    const double tau0,
     const std::function<double(double)> applied_field,
-    const std::vector<d3> initial_mags,
+    const std::array<double,2> initial_probs,
     const double time_step,
     const double end_time,
-    const rng_vec rngs,
-    const bool renorm,
-    const int max_samples,
-    const size_t ensemble_size )
+    const int max_samples )
 {
-    // Initialise space for the ensemble results
-    struct simulation::results ensemble( max_samples );
-    simulation::zero_results( ensemble ); // initialise all values to zero
+    // Allocate array for work dims*dims
+    const size_t n_dims = 2;
+    double work[4];
 
-    // MONTE CARLO RUNS
-    // Embarrassingly parallel - simulation per thread
-#pragma omp parallel for schedule(dynamic, 1) shared(ensemble) firstprivate(ensemble_size, damping, thermal_field_strength, anis_axis, applied_field, initial_mags, time_step, end_time, rngs, renorm, max_samples) default(none)
-    for( unsigned int run_id=0; run_id<ensemble_size; run_id++ )
+    // Allocate array for state and copy in initial condition
+    double last_state[2], next_state[2];
+    next_state[0] = initial_probs[0];
+    next_state[1] = initial_probs[1];
+
+    // Allocate arrays for the RK4 integrator
+    double k1[2], k2[2], k3[2], k4[2];
+
+    // Construct the time dependent master equation
+    std::function<void(double*,const double*,const double)> master_equation =
+        std::bind(dom::master_equation_with_update, _1, work, anisotropy,
+                  volume, temperature, tau0, _3, _2, applied_field );
+
+    /*
+      To ease memory requirements - can specify the maximum number of
+      samples to store in memory. This is used to compute the number
+      of integration steps per write to the in-memory results arrays.
+
+      max_samples=-1 is equivalent to max_samples=N_steps
+
+      The sampling interval is taken to be regularly spaced and is interpolated
+      from the integration steps using a zero-order-hold technique.
+    */
+    const size_t N_samples = max_samples==-1 ?
+        int( end_time / time_step ) + 1
+        : max_samples;
+    const double sampling_time = end_time / ( N_samples-1 );
+
+    // allocate memory for results and copy in initial state
+    simulation::results res( N_samples );
+    simulation::zero_results( res );
+    res.mz[0] = next_state[0] - next_state[1];
+
+    // Variables needed in the loop
+    double t=0;
+    unsigned int step=0;
+    for( unsigned int sample=1; sample<N_samples; sample++ )
     {
-        // Simulate a single realisation of the system
-        auto results = simulation::full_dynamics(
-            damping, thermal_field_strength, anis_axis, applied_field,
-            initial_mags[run_id], time_step, end_time, *(rngs[run_id].get()),
-            renorm, max_samples );
-
-        // Copy the results into the ensemble
-	#pragma omp critical
-        for( unsigned int j=0; j<results.N; j++ )
+        // Perform a simulation step until we breach the next sampling point
+        while ( t <= sample*sampling_time )
         {
-            ensemble.mx[j] += results.mx[j];
-            ensemble.my[j] += results.my[j];
-            ensemble.mz[j] += results.mz[j];
-        } // end copying to ensemble
+            // take a step
+            last_state[0] = next_state[0];
+            last_state[1] = next_state[1];
+            step++;
 
-        // Copy in the field and time values
-        if( run_id==0 )
-            for( unsigned int j=0; j<results.N; j++ )
-            {
-                ensemble.time[j] = results.time[j];
-                ensemble.field[j] = results.field[j];
-            }
-    } // end Monte-Carlo loop
+            // Compute current time
+            // When max_samples=-1 uses sampling_time directly to avoid rounding
+            // errors
+            t = max_samples==-1 ? sample*sampling_time : step*time_step;
 
-    for( unsigned int i=0; i<ensemble.N; i++ )
-    {
-        ensemble.mx[i] /= ensemble_size;
-        ensemble.my[i] /= ensemble_size;
-        ensemble.mz[i] /= ensemble_size;
+            // perform integration step
+            integrator::rk4( next_state, k1, k2, k3, k4, last_state,
+                             master_equation, n_dims, t, time_step );
+
+        } // end integration stepping loop
+        /*
+          Once this point is reached, we are currently one step beyond
+          the desired sampling point. Use a zero-order-hold:
+          i.e. take the previous state before the sampling time as the
+          state at the sampling time.
+        */
+        /**
+           The magnetisation is computed as the magnetisation of
+           each state multiplied by it's probability.
+           \f$M(t) = M_1p_1(t) + M_2p_2(t)\f$
+           For a uniaxial particle we take \f$M_1=1,M_2=-1\f$
+           Thus the magnetisation is the difference between the two
+           state probabilities.
+        */
+        res.mz[sample] = next_state[0] - next_state[1];
+        res.time[sample] = t;
+        res.field[sample] = applied_field(t);
     }
-    return ensemble;
+    return res;
 }
-
-struct simulation::results simulation::ensemble_dynamics(
-    const double damping,
-    const double thermal_field_strength,
-    const d3 anis_axis,
-    const std::function<double(double)> applied_field,
-    const d3 initial_mag,
-    const double time_step,
-    const double end_time,
-    const rng_vec rngs,
-    const bool renorm,
-    const int max_samples,
-    const size_t ensemble_size )
-{
-    std::vector<d3> init_mags;
-    for( unsigned int i=0; i<ensemble_size; i++ )
-        init_mags.push_back( initial_mag );
-    return simulation::ensemble_dynamics(
-        damping, thermal_field_strength, anis_axis, applied_field, init_mags,
-        time_step, end_time, rngs, renorm, max_samples, ensemble_size );
-}
-
-std::vector<d3> simulation::ensemble_final_state(
-    const double damping,
-    const double thermal_field_strength,
-    const d3 anis_axis,
-    const std::function<double(double)> applied_field,
-    const std::vector<d3> initial_mags,
-    const double time_step,
-    const double end_time,
-    const rng_vec rngs,
-    const bool renorm,
-    const int max_samples,
-    const size_t ensemble_size )
-{
-    // Initialise the total states
-    std::vector<d3> states( initial_mags );
-
-    // MONTE CARLO RUNS
-    // Embarrassingly parallel - simulation per thread
-#pragma omp parallel for schedule(dynamic, 1) shared(states) firstprivate(ensemble_size, damping, thermal_field_strength, anis_axis, applied_field, initial_mags, time_step, end_time, rngs, renorm, max_samples) default(none)
-    for( unsigned int run_id=0; run_id<ensemble_size; run_id++ )
-    {
-        // Simulate a single realisation of the system
-        auto results = simulation::full_dynamics(
-            damping, thermal_field_strength, anis_axis, applied_field,
-            initial_mags[run_id], time_step, end_time, *(rngs[run_id].get()),
-            renorm, max_samples );
-        // Copy in the final state
-        #pragma omp critical
-        {
-            states[run_id][0] = results.mx[results.N-1];
-            states[run_id][1] = results.my[results.N-1];
-            states[run_id][2] = results.mz[results.N-1];
-        }
-    } // end Monte-Carlo loop
-    return states;
-}
-
-struct simulation::results simulation::steady_state_cycle_dynamics(
-    const double damping,
-    const double thermal_field_strength,
-    const d3 anis_axis,
-    const std::function<double(double)> applied_field,
-    const d3 initial_magnetisation,
-    const double time_step,
-    const double applied_field_period,
-    const rng_vec rngs,
-    const bool renorm,
-    const int max_samples,
-    const size_t ensemble_size,
-    const double steady_state_condition )
-{
-    std::vector<d3> prev_mags;
-    for( unsigned int i=0; i<ensemble_size; i++ )
-        prev_mags.push_back( initial_magnetisation );
-
-    unsigned int n_field_cycles=0;
-    // Keep simulating until the steady state condition is met
-    while ( true )
-    {
-        n_field_cycles++;
-        auto mags = simulation::ensemble_final_state(
-            damping, thermal_field_strength, anis_axis, applied_field,
-            prev_mags, time_step, applied_field_period, rngs,
-            renorm, max_samples, ensemble_size );
-
-        // Compute the ensemble magnetisation before and after
-        // Assume magnetisation is taken in the z-direction
-        double mag_before=0, mag_after=0;
-        for( unsigned int i=0; i<ensemble_size; i++ )
-        {
-            mag_before += prev_mags[i][2];
-            mag_after += mags[i][2];
-        }
-        mag_before /= ensemble_size;
-        mag_after /= ensemble_size;
-
-        // Check the steady state condition
-        if( std::abs( mag_before - mag_after ) < steady_state_condition )
-        {
-            auto full_res = simulation::ensemble_dynamics(
-                damping, thermal_field_strength, anis_axis, applied_field,
-                mags, time_step, applied_field_period, rngs, renorm,
-                max_samples, ensemble_size );
-            LOG(INFO) << "Steady state reached after " << n_field_cycles
-                      << " field cycles";
-            return full_res;
-        }
-        // If not reached - run another cycle from the current state
-        prev_mags = mags;
-        LOG(INFO) << "Error after cycle " << n_field_cycles
-                  << ": " << std::abs( mag_before - mag_after );
-    }
-}
-
-double simulation::power_loss(
-    const struct results &res,
-    double K, double Ms, double Hk, double f )
-{
-    double area = trap::trapezoidal( res.field.get(), res.mz.get(), res.N );
-    return 2*K*Ms*Hk*area*f;
-}
-
-void simulation::save_results( const std::string fname, const struct results &res )
-{
-    std::stringstream magx_fname, magy_fname, magz_fname, field_fname, time_fname;
-    magx_fname << fname << ".mx";
-    magy_fname << fname << ".my";
-    magz_fname << fname << ".mz";
-    field_fname << fname << ".field";
-    time_fname << fname << ".time";
-    int err;
-    err = io::write_array( magx_fname.str(), res.mx.get(), res.N );
-    if( err != 0 )
-        throw std::runtime_error( "failed to write file" );
-    err = io::write_array( magy_fname.str(), res.my.get(), res.N );
-    if( err != 0 )
-        throw std::runtime_error( "failed to write file" );
-    err = io::write_array( magz_fname.str(), res.mz.get(), res.N );
-    if( err != 0 )
-        throw std::runtime_error( "failed to write file" );
-    err = io::write_array( field_fname.str(), res.field.get(), res.N );
-    if( err != 0 )
-        throw std::runtime_error( "failed to write file" );
-    err = io::write_array( time_fname.str(), res.time.get(), res.N );
-    if( err != 0 )
-        throw std::runtime_error( "failed to write file" );
-}
-
-void simulation::zero_results( struct simulation::results &res )
-{
-    for( unsigned int i=0; i<res.N; i++ )
-        res.mx[i] = res.my[i] = res.mz[i] = res.field[i] = res.time[i] = 0;
-}
-
-
-// struct simulation::results simulation::dom_ensemble_dynamics(
-//     const double damping,
-//     const double radius,
-//     const d3 anis_axis,
-//     const std::function<double(double)> applied_field,
-//     const std::vector<d3> initial_mags,
-//     const double time_step,
-//     const double sim_time,
-//     const rng_vec rngs,
-//     const int max_samples,
-//     const size_t ensemble_size )
-// {
-
-// }

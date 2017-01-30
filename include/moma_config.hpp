@@ -14,22 +14,24 @@ using json = nlohmann::json;
 namespace moma_config
 {
     /*
+      Validate that the config is correctly formatted for the
+      simulation type.
+    */
+    void validate_for_llg( const json input );
+    void validate_for_dom( const json input );
+
+    /*
       Takes a json config file and normalises the parameters for
       simulation. Returns the normalised params.
     */
-    json normalise( const json input );
-
-    /*
-      Validate that the config is correctly formatted.
-      Returns 0 if ok. Returns -1 otherwise.
-    */
-    int validate( const json input );
+    json transform_input_parameters_for_llg( const json input );
+    json transform_input_parameters_for_dom( const json input );
 
     /*
       Takes a json and pretty prints it to a file.
       Returns 0 if success else -1
     */
-    int write( std::string, const json );
+    int write( const std::string, const json );
 
     /*
       Provides an interface between normalised json config files and
@@ -37,5 +39,7 @@ namespace moma_config
       from the CLI.
     */
     void launch_simulation( const json input );
+    void launch_dom_simulation( const json input );
+    void launch_llg_simulation( const json input );
 }
 #endif
