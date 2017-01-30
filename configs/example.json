@@ -1,11 +1,10 @@
 {
+    "simulation-mode": "llg",
     "simulation": {
         "ensemble-size": 1,
-        "max-samples": 10000,
-        "simulation-time": 3.333333333e-9,
-        "time-step": 1e-12,
         "renormalisation": false,
-        "enable-steady-state-condition": false,
+        "time-step": 1e-12,
+        "simulation-time": 3.333333333e-9,
         "seeds": [
             6683439711596033246,
             7864481324381512219,
@@ -29,7 +28,8 @@
             8349846600115061633
         ]},
     "output": {
-        "directory": "output"
+        "directory": "output",
+        "max-samples": 10000
     },
     "global": {
         "temperature": 270,
@@ -44,6 +44,7 @@
         "radius": 12e-9,
         "anisotropy": 23e3,
         "anisotropy-axis": [0, 0, 1],
-        "initial-magnetisation": [0, 0, 446e3]
+        "magnetisation": 446e3,
+        "magnetisation-direction": [0, 0, 1]
     }
 }

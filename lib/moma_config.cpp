@@ -10,6 +10,7 @@
 #include <array>
 #include <string>
 #include <omp.h>
+#include <exception>
 #include "../include/constants.hpp"
 #include "../include/easylogging++.h"
 #include "../include/field.hpp"
@@ -19,103 +20,256 @@
 using d3=std::array<double,3>;
 using rng_vec=std::vector<std::shared_ptr<Rng>>;
 
-json moma_config::normalise( const json in )
+/// Validate that fields for llg simulation are in json
+/**
+ * Inspects a json file to check that it has the right structure and
+ * that parameters match assumptions required for simulation
+ * (e.g. temperature is not negative).
+ * Fatal logs on failure.
+ * @param[in] input json config object
+ */
+void moma_config::validate_for_llg( const json input )
 {
-    // Simulation parameters
-    double sim_time = in["simulation"]["simulation-time"];
-    double time_step = in["simulation"]["time-step"];
-    bool renorm = in.at("simulation").at("renormalisation");
-    bool steady_state = in.at("simulation").at("enable-steady-state-condition");
+    // Check simulation parameters
+    bool renorm = input.at("simulation").at("renormalisation");
+    bool steady_cycle;
+    double sim_time;
+    if( input.at("simulation").at("simulation-time").is_string() )
+        steady_cycle = true;
+    else {
+        steady_cycle = false;
+        sim_time = input.at("simulation").at("simulation-time").get<double>();
+    }
+    double time_step = input.at("simulation").at("time-step");
+    if( time_step < 0 )
+        LOG( FATAL ) << "Time_Step must be greater than 0";
+    int ensemble_size = input.at("simulation").at("ensemble-size");
+    if ( ensemble_size < 1 )
+        LOG( FATAL ) << "Ensemble size must be interger value at least 1";
+    std::vector<long> seeds = input.at("simulation").at("seeds");
+    if ( seeds.size() < ensemble_size )
+        LOG( FATAL ) << "Not enough seeds. Must have as many seeds as ensemble size.";
 
-    // Get output parameters
-    std::string dir = in["output"]["directory"];
+    // Check output
+    std::string dir = input.at("output").at("directory");
+    int max_samples = input.at("output").at("max-samples");
+    if ( ( max_samples < 1 ) && ( max_samples != -1 ) )
+        LOG( FATAL ) << "Valid values for max-samples are -1 or integers greater than 0";
 
-    // Global system parameters
-    double T = in["global"]["temperature"];
-    double H = in["global"]["applied-field"]["amplitude"];
-    double f = in["global"]["applied-field"]["frequency"];
+    // Check global
+    double temp = input.at("global").at("temperature");
+    if( temp < 0 )
+        LOG( FATAL ) << "Temperature must be greater than 0";
+    std::string shape = input.at("global").at("applied-field").at("shape");
+    if( shape.compare( "sine" ) )
+        LOG( FATAL ) << "Valid values for shape are 'sine'";
+    double freq = input.at("global").at("applied-field").at("frequency");
+    if( freq < 0 )
+        LOG( FATAL ) << "Frequency must be greater than 0";
+    double amp = input.at("global").at("applied-field").at("amplitude");
 
-    // Get particle parameters
-    double damping = in["particle"]["damping"];
-    double rad = in["particle"]["radius"];
-    double k = in["particle"]["anisotropy"];
-    d3 k_vec = { in["particle"]["anisotropy-axis"][0],
-                 in["particle"]["anisotropy-axis"][1],
-                 in["particle"]["anisotropy-axis"][2] };
-    d3 mag = { in["particle"]["initial-magnetisation"][0],
-               in["particle"]["initial-magnetisation"][1],
-               in["particle"]["initial-magnetisation"][2] };
-    double ms = std::sqrt(
-        mag[0]*mag[0] + mag[1]*mag[1] + mag[2]*mag[2] );
+    // Check particle
+    double damping = input.at("particle").at("damping");
+    if( damping < 0 )
+        LOG( FATAL ) << "Damping must be greater than 0";
+    double radius = input.at("particle").at("radius");
+    if( radius < 0 )
+        LOG( FATAL ) << "Radius must be greater than 0";
+    double anisotropy = input.at("particle").at("anisotropy");
+    if( anisotropy < 0 )
+        LOG( FATAL ) << "Anisotropy must be greater than 0";
+    std::array<double,3> aaxis = {
+        input.at("particle").at("anisotropy-axis")[0],
+        input.at("particle").at("anisotropy-axis")[1],
+        input.at("particle").at("anisotropy-axis")[2]
+    };
+    double aaxis_mag = aaxis[0]*aaxis[0] + aaxis[1]*aaxis[1] + aaxis[2]*aaxis[2];
+    if( std::abs( aaxis_mag - 1 ) > 0.00001 )
+        LOG( FATAL ) << "Anisotropy axis must be unit vector but has magnitude " << aaxis_mag;
+    double magnetisation = input.at("particle").at("magnetisation");
+    if( magnetisation < 0 )
+        LOG( FATAL ) << "Magnetisation must be greater than 0";
+    std::array<double,3> magaxis = {
+        input.at("particle").at("magnetisation-direction")[0],
+        input.at("particle").at("magnetisation-direction")[1],
+        input.at("particle").at("magnetisation-direction")[2]
+    };
+    double magaxis_mag = magaxis[0]*magaxis[0] + magaxis[1]*magaxis[1] + magaxis[2]*magaxis[2];
+    if( std::abs( magaxis_mag - 1 ) > 0.00001 )
+        LOG( FATAL ) << "Magnetisation direction axis must be unit vector but has magnitude" << magaxis_mag;
+}
 
-    // stability ratio of particle
+/// Validate that fields for discerete-orientation-model simulation are in json
+/**
+ * Inspects a json file to check that it has the right structure and
+ * that parameters match assumptions required for simulation
+ * (e.g. temperature is not negative).
+ * Fatal logs on failure.
+ * @param[in] input json config object
+ */
+void moma_config::validate_for_dom( const json input )
+{
+    // Check simulation parameters
+    bool steady_cycle;
+    double sim_time;
+    if( input.at("simulation").at("simulation-time").is_string() )
+        steady_cycle = true;
+    else {
+        steady_cycle = false;
+        sim_time = input.at("simulation").at("simulation-time").get<double>();
+    }
+    double time_step = input.at("simulation").at("time-step");
+    if( time_step < 0 )
+        LOG( FATAL ) << "Time_Step must be greater than 0";
+
+    // Check output
+    std::string dir = input.at("output").at("directory");
+    int max_samples = input.at("output").at("max-samples");
+    if ( ( max_samples < 1 ) && ( max_samples != -1 ) )
+        LOG( FATAL ) << "Valid values for max-samples are -1 or integers greater than 0";
+
+    // Check global
+    double temp = input.at("global").at("temperature");
+    if( temp < 0 )
+        LOG( FATAL ) << "Temperature must be greater than 0";
+    std::string shape = input.at("global").at("applied-field").at("shape");
+    if( shape.compare( "sine" ) )
+        LOG( FATAL ) << "Valid values for shape are 'sine'";
+    double freq = input.at("global").at("applied-field").at("frequency");
+    if( freq < 0 )
+        LOG( FATAL ) << "Frequency must be greater than 0";
+    double amp = input.at("global").at("applied-field").at("amplitude");
+    double tau0 = input.at("global").at("tau0");
+
+    // Check particle
+    double radius = input.at("particle").at("radius");
+    if( radius < 0 )
+        LOG( FATAL ) << "Radius must be greater than 0";
+    double anisotropy = input.at("particle").at("anisotropy");
+    if( anisotropy < 0 )
+        LOG( FATAL ) << "Anisotropy must be greater than 0";
+    std::array<double,2> probs = {
+        input.at("particle").at("initial-probs")[0],
+        input.at("particle").at("initial-probs")[1]
+    };
+        double probs_sum = probs[0] + probs[1];
+    if( std::abs( probs_sum - 1 ) > 0.00001 )
+        LOG( FATAL ) << "Initial probabilities must sum to 1 but sum to " << probs_sum;
+    double magnetisation = input.at("particle").at("magnetisation");
+    if( magnetisation < 0 )
+        LOG( FATAL ) << "Magnetisation must be greater than 0";
+}
+
+
+json moma_config::transform_input_parameters_for_dom( const json in )
+{
+    /**
+     * Output json is initialised with the input json
+     */
+    json out = in;
+
+    /**
+     * Convert the sim_time input
+     */
+    bool steady_cycle; double sim_time;
+    if( in.at("simulation").at("simulation-time").is_string() )
+        steady_cycle = true;
+    else {
+        steady_cycle = false;
+        sim_time = in.at("simulation").at("simulation-time").get<double>();
+    }
+    out["simulation"]["steady-cycle-activated"] = steady_cycle;
+
+    /**
+     * The volume of the particle is computed from its radius.
+     */
+    double rad = out["particle"]["radius"];
     double volume = 4.0 / 3.0 * M_PI * rad * rad * rad;
+    out["particle"]["volume"] = volume;
+
+    /**
+     * The stability ratio \f$\frac{KV}{k_BT}\f$ is computed.
+     */
+    double k = out["particle"]["anisotropy"];
+    double T = out["global"]["temperature"];
     double stability = k*volume/constants::KB/T;
+    out["particle"]["stability-ratio"] = stability;
 
     // anisotropy field and reduced field
+    double ms = out["particle"]["magnetisation"];
+    double H = out["global"]["applied-field"]["amplitude"];
     double Hk = 2*k/constants::MU0/ms;
     double h = H/Hk;
+    out["global"]["anisotropy-field"] = Hk;
+    out["global"]["applied-field"]["amplitude"] = h;
 
-    // rescale time
-    double time_factor = constants::GYROMAG * constants::MU0 * Hk
-        / ( 1+damping*damping );
-    double sim_tau = sim_time * time_factor;
-    double tau_step = time_step * time_factor;
-    double f_in_tau = f / time_factor;
-
-    // normalised thermal field strength
-    double therm_strength = std::sqrt(
-        damping * constants::KB * T
-        / ( k * volume * ( 1 + damping * damping ) ) );
-
-    // reduced magnetisation
-    d3 unit_mag{ mag[0]/ms, mag[1]/ms, mag[2]/ms };
-
-    // write the reduced simulation parameters
-    json out = {
-        {"simulation", {
-                {"ensemble-size", in["simulation"]["ensemble-size"]},
-                {"simulation-time", sim_tau},
-                {"time-step", tau_step},
-                {"time-factor", time_factor},
-                {"renormalisation", renorm},
-                {"enable-steady-state-condition", steady_state},
-                {"seeds", in.at("simulation").at("seeds")},
-                {"max-samples", in.at("simulation").at("max-samples")}
-            }},
-        {"output", {
-                {"directory", dir}
-            }},
-        {"global", {
-                {"temperature", T},
-                {"applied-field", {
-                        {"frequency", f_in_tau},
-                        {"shape", in["global"]["applied-field"]["shape"]},
-                        {"amplitude", h},
-                    }},
-                 {"anisotropy-field", Hk}
-            }},
-        {"particle", {
-                {"damping", damping},
-                {"volume", volume},
-                {"radius", rad},
-                {"anisotropy", k},
-                {"anisotropy-axis", {k_vec[0], k_vec[1], k_vec[2]}},
-                {"initial-magnetisation", {unit_mag[0], unit_mag[1], unit_mag[2]}},
-                {"thermal-field-strength", therm_strength},
-                {"stability-ratio", stability},
-                {"saturation-magnetisation", ms}
-        }}
-    };
-
-    LOG(INFO) << "Normalised simulation parameters. New time-step->"
-              << tau_step << " simulation-time->" << sim_tau;
     return out;
 }
 
-int moma_config::validate( const json input )
+
+json moma_config::transform_input_parameters_for_llg( const json in )
 {
-    return 0;
+    /**
+     * Output json is initialised with the input json
+     */
+    json out = in;
+
+    // Resolve the simulation time
+    bool steady_cycle; double sim_time;
+    if( in.at("simulation").at("simulation-time").is_string() )
+        steady_cycle = true;
+    else {
+        steady_cycle = false;
+        sim_time = in.at("simulation").at("simulation-time").get<double>();
+    }
+    out["simulation"]["steady-cycle-activated"] = steady_cycle;
+
+
+    // Compute particle volume
+    double rad = in["particle"]["radius"];
+    double volume = 4.0 / 3.0 * M_PI * rad * rad * rad;
+    out["particle"]["volume"] = volume;
+
+    // Compute particle stability ratio
+    double k = in["particle"]["anisotropy"];
+    double T = in["global"]["temperature"];
+    double stability = k*volume/constants::KB/T;
+    out["particle"]["stability-ratio"] = stability;
+
+    // anisotropy field and reduced field
+    double ms = in["particle"]["magnetisation"];
+    double H = in["global"]["applied-field"]["amplitude"];
+    double Hk = 2*k/constants::MU0/ms;
+    double h = H/Hk;
+    out["global"]["anisotropy-field"] = Hk;
+    out["global"]["applied-field"]["amplitude"] = h;
+
+    // Compute the time rescaling
+    double damping = in["particle"]["damping"];
+    double time_factor = constants::GYROMAG * constants::MU0 * Hk
+        / ( 1+damping*damping );
+    out["simulation"]["time-factor"] = time_factor;
+
+    // Rescale time dependent parameters
+    double time_step = in["simulation"]["time-step"];
+    double tau_step = time_step * time_factor;
+    out["simulation"]["time-step"] = tau_step;
+    double f = in["global"]["applied-field"]["frequency"];
+    double f_in_tau = f / time_factor;
+    out["global"]["applied-field"]["frequency"] = f_in_tau;
+    if( !steady_cycle )
+    {
+        double sim_tau = sim_time * time_factor;
+        out["simulation"]["simulation-time"] = sim_tau;
+    }
+
+    // Compute the thermal field strength
+    double therm_strength = std::sqrt(
+        damping * constants::KB * T
+        / ( k * volume * ( 1 + damping * damping ) ) );
+    out["particle"]["thermal-field-strength"] = therm_strength;
+
+    return out;
 }
 
 int moma_config::write( const std::string fname, const json output )
@@ -135,111 +289,304 @@ int moma_config::write( const std::string fname, const json output )
     }
 }
 
-void moma_config::launch_simulation( const json norm_config )
+/// Main entry point for launching simulations from json config
+/**
+ * Runs simulations specified by the json configuration. The config
+ * must be normalised `moma_config::normalise`. Function does not
+ * return anything but will write results to disk (see logs and config
+ * options).
+ * @param[in] norm_config json object of the normalised configuration
+ * file
+ */
+void moma_config::launch_simulation( const json config )
 {
+    // Get the simulation mode
+    std::string sim_mode = config.at("simulation-mode");
+
+    // Transform the input for simulation
+    if( !sim_mode.compare( "dom" ) )
+        moma_config::launch_dom_simulation( config );
+    else if( !sim_mode.compare( "llg" ) )
+        moma_config::launch_llg_simulation( config );
+    else
+        LOG( FATAL ) << "Simulation-mode must be 'llg' or 'dom'";
+}
+
+void moma_config::launch_dom_simulation( const json in )
+{
+    /**
+     * Validates and transforms the input config to get additional
+     * simulation parameters and normalised parameters.
+     */
+    moma_config::validate_for_dom( in );
+    auto params = moma_config::transform_input_parameters_for_dom( in );
+
+    /**
+     * Writes the transformed json to file
+     */
+    std::ostringstream config_out_fname;
+    std::string dir = params["output"]["directory"];
+    config_out_fname << dir << "/config_norm.json";
+    moma_config::write( config_out_fname.str(), params );
+
+    /**
+     * Binds the applied field waveform
+     * @todo assumes sinusoidal for now
+     */
+    std::function<double(double)> happ = std::bind(
+        field::sinusoidal,
+        params["global"]["applied-field"]["amplitude"],
+        params["global"]["applied-field"]["frequency"],
+        std::placeholders::_1 );
+
+    // Get the temperature
+    double temperature = params.at("global").at("temperature");
+
+    // Get the particle properties
+    double volume = params.at("particle").at("volume");
+    double anisotropy = params.at("particle").at("anisotropy");
+
+    // Get simulation properties
+    double time_step = params.at("simulation").at("time-step");
+    int max_samples = params.at("output").at("max-samples");
+    double tau0 = params.at("global").at("tau0");
+
+    // Initialise results
+    simulation::results results( max_samples );
+
+    // Check if we should run until steady state
+    bool steady_cycle = params.at("simulation").at("steady-cycle-activated");
+    if( steady_cycle )
+    {
+        /**
+         * TRANSITION STATE DYNAMICS
+         * The run function is created. This function should return a
+         * simulation::results struct. For arguments that are constants
+         * across all simulations, the values are bound to the run
+         * function. The run function arguments are the parameters that
+         * are variable between simulations.
+         *
+         * Transition state simulation does not require random number
+         * generators. Only the initial state of the system.
+         * @todo need to finish this!
+         */
+        // Construct the run function
+        double sim_time = 1/ params.at("global").at("applied-field").at("frequency").get<double>();
+        std::function<simulation::results(d3)> run_function=
+                      [volume, anisotropy, temperature, tau0, happ, time_step, sim_time, max_samples]
+                      (d3 initial_mag)
+            {
+                // Convert initial magnetisation into states
+                std::array<double,2> initial_probs = {
+                    0.5*( initial_mag[2] + 1 ),
+                    0.5*( 1 - initial_mag[2] )
+                };
+
+                return simulation::dom_ensemble_dynamics(
+                    volume, anisotropy, temperature, tau0, happ,
+                    initial_probs, time_step, sim_time, max_samples );
+            };
+
+        std::array<double,2> init = {
+            params.at("particle").at("initial-probs")[0],
+            params.at("particle").at("initial-probs")[1]
+        };
+        d3 init_mag = {0, 0, init[0]-init[1] };
+        std::vector<d3> init_mags;
+        init_mags.push_back( init_mag );
+        double steady_state_condition = 1e-3;
+
+        results = simulation::steady_state_cycle_dynamics(
+            run_function,
+            max_samples,
+            steady_state_condition,
+            init_mags );
+    }
+
+    // Run a single simulation
+    else
+    {
+        std::array<double,2> init = {
+            params.at("particle").at("initial-probs")[0],
+            params.at("particle").at("initial-probs")[1]
+        };
+        double sim_time = params.at("simulation").at("simulation-time").get<double>();
+        results = simulation::dom_ensemble_dynamics(
+            volume, anisotropy, temperature, tau0, happ, init,
+            time_step, sim_time, max_samples );
+    }
+
+    // save the results
+    std::stringstream fname;
+    fname << params.at("output").at("directory").get<std::string>()
+          << "/results";
+    simulation::save_results( fname.str(), results );
+
+
+    // Compute the power emitted by the particle ensemble
+    double power = simulation::power_loss(
+        results,
+        params["particle"]["anisotropy"],
+        params["particle"]["magnetisation"],
+        params["global"]["anisotropy-field"],
+        params["global"]["applied-field"]["frequency"] );
+
+    json output;
+    output["power"] = power;
+
+    /**
+     * The current git commit version is written to the file. Made
+     * available through a compiler flag (see makefile)
+     */
+    output["git-version"] = VERSION;
+
+    // Write the normalised parameters to file
+    std::ostringstream output_fname;
+    output_fname << params.at("output").at("directory").get<std::string>()
+                 << "/output.json";
+    moma_config::write( output_fname.str(), output );
+}
+
+
+void moma_config::launch_llg_simulation( const json in )
+{
+    // Validate and transform the input
+    moma_config::validate_for_llg( in );
+    auto params = moma_config::transform_input_parameters_for_llg( in );
+
+    /**
+     * Writes the transformed json to file
+     */
+    std::ostringstream config_out_fname;
+    std::string dir = params["output"]["directory"];
+    config_out_fname << dir << "/config_norm.json";
+    moma_config::write( config_out_fname.str(), params );
+
     // Bind the applied field waveform
     // assumes sinusoidal for now
     std::function<double(double)> happ = std::bind(
         field::sinusoidal,
-        norm_config["global"]["applied-field"]["amplitude"],
-        norm_config["global"]["applied-field"]["frequency"],
+        params["global"]["applied-field"]["amplitude"],
+        params["global"]["applied-field"]["frequency"],
         std::placeholders::_1 );
-
-    // Get the initial magnetisation
-    std::array<double,3> init{
-        norm_config["particle"]["initial-magnetisation"][0],
-            norm_config["particle"]["initial-magnetisation"][1],
-            norm_config["particle"]["initial-magnetisation"][2] };
 
     // Get the uniaxial anisotropy axis
     std::array<double,3> aaxis{
-        norm_config["particle"]["anisotropy-axis"][0],
-            norm_config["particle"]["anisotropy-axis"][1],
-            norm_config["particle"]["anisotropy-axis"][2]
+        params["particle"]["anisotropy-axis"][0],
+            params["particle"]["anisotropy-axis"][1],
+            params["particle"]["anisotropy-axis"][2]
             };
 
     // Run the simulation N times for a full ensemble
-    size_t n_runs = norm_config["simulation"]["ensemble-size"];
+    size_t n_runs = params["simulation"]["ensemble-size"];
 
-    // Create the random number generators
+    // Get the particle properties
+    double damping = params.at("particle").at("damping");
+    double thermal_field = params.at("particle").at("thermal-field-strength");
+
+    // Get simulation properties
+    double time_step = params.at("simulation").at("time-step");
+    bool renorm = params.at("simulation").at("renormalisation");
+    int max_samples = params.at("output").at("max-samples");
+    size_t ensemble_size = params.at("simulation").at("ensemble-size");
+    bool steady_cycle = params.at("simulation").at("steady-cycle-activated");
+
+    /**
+     * LANGEVIN DYNAMICS
+     * The initial state of the system is assumed to be the same for
+     * all particles.
+     */
+    std::array<double,3> init{
+        params["particle"]["magnetisation-direction"][0],
+            params["particle"]["magnetisation-direction"][1],
+            params["particle"]["magnetisation-direction"][2] };
+    std::vector<d3> init_mags;
+    for( unsigned int i=0; i<ensemble_size; i++ )
+        init_mags.push_back( init );
+
+    /**
+     * LANGEVIN DYNAMICS
+     * Each run of the simulation within the ensemble uses a different
+     * seed value. The list of seeds in the config json are used to
+     * create a vector of random number generators. One for each
+     * simulation.
+     */
     rng_vec rngs;
     for( unsigned int i=0; i<n_runs; i++ )
         rngs.push_back( std::make_shared<RngMtNorm>(
-                            norm_config.at("simulation").at("seeds")[i],
+                            params.at("simulation").at("seeds")[i],
                             std::sqrt(
-                                norm_config.at("simulation").at("time-step")
+                                params.at("simulation").at("time-step")
                                 .get<double>() ) ) );
 
-    LOG(INFO) << "Running " << n_runs << " simulations on "
-              << omp_get_max_threads() << " threads";
+    /**
+     * In steady state mode the simulation time is ignored and it is
+     * taken to be a single cycle of the applied magnetic field
+     * \f$1/f\f$
+     */
+    double simulation_time = steady_cycle
+        ? 1 / params.at("global").at("applied-field").at("frequency").get<double>()
+        : params.at("simulation").at("simulation-time").get<double>();
 
-    if( norm_config.at("simulation").at("enable-steady-state-condition") )
+    /**
+     * Langevin dynamics run function accepts two arguments. The
+     * initial state of the system for each run and a random number
+     * generator
+     */
+    std::function<simulation::results(d3, std::shared_ptr<Rng>)> run_function =
+        [damping,thermal_field,aaxis,happ,time_step,simulation_time,renorm,max_samples,ensemble_size]
+        (d3 initial_mag, std::shared_ptr<Rng> rng)
+        {
+            return simulation::full_dynamics(
+                damping, thermal_field, aaxis, happ, initial_mag, time_step,
+                simulation_time, *(rng.get()), renorm, max_samples );
+        };
+
+    simulation::results results( max_samples );
+    if( steady_cycle )
     {
-        double cycle_time = 1 /
-            norm_config.at("global").at("applied-field").at("frequency").get<double>();
-
-        auto results = simulation::steady_state_cycle_dynamics(
-            norm_config.at("particle").at("damping"),
-            norm_config.at("particle").at("thermal-field-strength"),
-            aaxis, happ, init,
-            norm_config.at("simulation").at("time-step"),
-            cycle_time, rngs,
-            norm_config.at("simulation").at("renormalisation"),
-            norm_config.at("simulation").at("max-samples"),
-            norm_config.at("simulation").at("ensemble-size") );
-
-        // save the results
-        std::stringstream fname;
-        fname << norm_config.at("output").at("directory").get<std::string>()
-              << "/results";
-        simulation::save_results( fname.str(), results );
-
-        // Compute the power emitted by the particle ensemble
-        double power = simulation::power_loss(
-            results,
-            norm_config["particle"]["anisotropy"],
-            norm_config["particle"]["saturation-magnetisation"],
-            norm_config["global"]["anisotropy-field"],
-            norm_config["global"]["applied-field"]["frequency"] );
-
-        json output;
-        output["power"] = power;
-        output["git-version"] = VERSION; // from compiler flag variable (see makefile)
-
-        // Write the normalised parameters to file
-        std::ostringstream output_fname;
-        output_fname << norm_config.at("output").at("directory").get<std::string>()
-                     << "/output.json";
-        moma_config::write( output_fname.str(), output );
-
-    } // end steady state ensemble dynamics sim
+        double steady_state_condition = 1e-3;
+        results = simulation::steady_state_cycle_dynamics(
+            run_function,
+            max_samples,
+            steady_state_condition,
+            init_mags,
+            rngs );
+    }
     else
-    {
-        auto results = simulation::ensemble_dynamics(
-            norm_config.at("particle").at("damping"),
-            norm_config.at("particle").at("thermal-field-strength"),
-            aaxis, happ, init,
-            norm_config.at("simulation").at("time-step"),
-            norm_config.at("simulation").at("simulation-time"),
-            rngs,
-            norm_config.at("simulation").at("renormalisation"),
-            norm_config.at("simulation").at("max-samples"),
-            n_runs );
+        results = simulation::ensemble_run(
+            max_samples,
+            run_function,
+            init_mags,
+            rngs );
 
-        // save the results
-        std::stringstream fname;
-        fname << norm_config.at("output").at("directory").get<std::string>()
-              << "/results";
-        simulation::save_results( fname.str(), results );
-        LOG(INFO) << "Successfully wrote results file to: " << fname.str();
+    // save the results
+    std::stringstream fname;
+    fname << params.at("output").at("directory").get<std::string>()
+          << "/results";
+    simulation::save_results( fname.str(), results );
 
-        json output;
-        output["git-version"] = VERSION; // from compiler flag variable (see makefile)
 
-        // Write the normalised parameters to file
-        std::ostringstream output_fname;
-        output_fname << norm_config.at("output").at("directory").get<std::string>()
-                     << "/output.json";
-        moma_config::write( output_fname.str(), output );
-    } // end ensemble dynamics sim
+    // Compute the power emitted by the particle ensemble
+    double power = simulation::power_loss(
+        results,
+        params["particle"]["anisotropy"],
+        params["particle"]["magnetisation"],
+        params["global"]["anisotropy-field"],
+        params["global"]["applied-field"]["frequency"] );
+
+    json output;
+    output["power"] = power;
+
+    /**
+     * The current git commit version is written to the file. Made
+     * available through a compiler flag (see makefile)
+     */
+    output["git-version"] = VERSION;
+
+    // Write the normalised parameters to file
+    std::ostringstream output_fname;
+    output_fname << params.at("output").at("directory").get<std::string>()
+                 << "/output.json";
+    moma_config::write( output_fname.str(), output );
 }
