@@ -111,7 +111,7 @@ namespace simulation
 
     // Compute the power loss for a particle from its simulation results
     double power_loss(
-        const struct results&, double anisotropy,
+        const struct results&,
         double magnetisation, double anisotropy_field,
         double field_frequency );
 

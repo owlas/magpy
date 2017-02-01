@@ -426,7 +426,6 @@ void moma_config::launch_dom_simulation( const json in )
     // Compute the power emitted by the particle ensemble
     double power = simulation::power_loss(
         results,
-        params["particle"]["anisotropy"],
         params["particle"]["magnetisation"],
         params["global"]["anisotropy-field"],
         params["global"]["applied-field"]["frequency"] );
@@ -570,7 +569,6 @@ void moma_config::launch_llg_simulation( const json in )
     // Compute the power emitted by the particle ensemble
     double power = simulation::power_loss(
         results,
-        params["particle"]["anisotropy"],
         params["particle"]["magnetisation"],
         params["global"]["anisotropy-field"],
         params["global"]["applied-field"]["frequency"] );
