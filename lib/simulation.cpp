@@ -1,13 +1,12 @@
 #include "../include/simulation.hpp"
-
+#include "../include/constants.hpp"
 double simulation::power_loss(
     const struct results &res,
-    double K, double Ms, double Hk, double f )
+    double Ms, double Hk, double f )
 {
     double area = trap::trapezoidal( res.field.get(), res.mz.get(), res.N );
-    return 2*K*Ms*Hk*area*f;
+    return f*constants::MU0*Hk*Ms*area;
 }
-
 
 void simulation::save_results( const std::string fname, const struct results &res )
 {

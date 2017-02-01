@@ -12,6 +12,7 @@
 #include "../include/stochastic_processes.hpp"
 #include "../include/field.hpp"
 #include "../include/dom.hpp"
+#include "../include/constants.hpp"
 #include <cmath>
 #include <random>
 #ifdef USEMKL
@@ -656,8 +657,8 @@ TEST( simulation, power_loss )
     ASSERT_DOUBLE_EQ( 0.5, area );
 
     double power = simulation::power_loss(
-        res, 3, 5, 2, 100 );
-    EXPECT_DOUBLE_EQ( 2*3*5*2*100*area, power );
+        res, 5, 2, 100 );
+    EXPECT_DOUBLE_EQ( 5*2*100*constants::MU0*area, power );
 }
 
 TEST( rk4, time_dependent_step )
