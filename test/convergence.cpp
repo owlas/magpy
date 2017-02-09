@@ -31,13 +31,16 @@ int main( int argc, char *argv[] )
         LOG(FATAL) << "Could not open config json file: " << argv[1];
 
     LOG(INFO) << "Initialising simulation parameters";
-    json norm_config = moma_config::normalise( config );
+
+    // Validate the config and transform params
+    //moma_config::validate_for_llg( config );
+    json norm_config = moma_config::transform_input_parameters_for_llg( config );
 
     // Get the initial magnetisation
     std::array<double,3> init{
-        norm_config["particle"]["initial-magnetisation"][0],
-            norm_config["particle"]["initial-magnetisation"][1],
-            norm_config["particle"]["initial-magnetisation"][2] };
+        norm_config["particle"]["magnetisation-direction"][0],
+            norm_config["particle"]["magnetisation-direction"][1],
+            norm_config["particle"]["magnetisation-direction"][2] };
 
     // Get the uniaxial anisotropy axis
     std::array<double,3> aaxis{
@@ -85,7 +88,7 @@ int main( int argc, char *argv[] )
                 norm_config["simulation"]["simulation-time"],
                 rng,
                 config["simulation"]["renormalisation"],
-                config["simulation"]["max-samples"] );
+                config["output"]["max-samples"] );
             // Store the results
             sols[i*N_time_steps*3 + ts_factor*3 + 0] = results.mx[results.N-1];
             sols[i*N_time_steps*3 + ts_factor*3 + 1] = results.my[results.N-1];

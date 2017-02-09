@@ -31,7 +31,9 @@ int main( int argc, char *argv[] )
         LOG(FATAL) << "Could not open config json file: " << argv[1];
 
     LOG(INFO) << "Initialising simulation parameters";
-    json norm_config = moma_config::normalise( config );
+
+    // Validate the config and transform params
+    json norm_config = moma_config::transform_input_parameters_for_llg( config );
 
     // Write the normalised parameters to file
     std::ostringstream config_out_fname;
@@ -41,9 +43,9 @@ int main( int argc, char *argv[] )
 
     // Get the initial magnetisation
     std::array<double,3> init{
-        norm_config["particle"]["initial-magnetisation"][0],
-            norm_config["particle"]["initial-magnetisation"][1],
-            norm_config["particle"]["initial-magnetisation"][2] };
+        norm_config["particle"]["magnetisation-direction"][0],
+            norm_config["particle"]["magnetisation-direction"][1],
+            norm_config["particle"]["magnetisation-direction"][2] };
 
     // Get the uniaxial anisotropy axis
     std::array<double,3> aaxis{
@@ -62,29 +64,36 @@ int main( int argc, char *argv[] )
     // each time step
     auto sols = new double[n_runs];
 
-    // Create the RNG
-    RngMtNorm rng(
-        0, std::sqrt(
-            norm_config.at("simulation").at("time-step").get<double>() ) );
-
-    // Run the simulation for each particle in the ensemble
-    // For each particle we solve the system for the same wiener paths
-    // with different sampling rates.
-    for( unsigned i=0; i<n_runs; i++ )
+    // Create a vector of RNGs
+    std::vector<std::shared_ptr<Rng> > rngs;
+    for( unsigned int i=0; i<n_runs; i++ )
     {
-        auto results = simulation::full_dynamics(
-            norm_config["particle"]["damping"],
-            norm_config["particle"]["thermal-field-strength"],
-            aaxis, happ, init,
-            norm_config.at("simulation").at("time-step").get<double>(),
-            norm_config["simulation"]["simulation-time"],
-            rng,
-            config["simulation"]["renormalisation"],
-            config["simulation"]["max-samples"] );
+        unsigned int seed = i;
+        double time_step = norm_config.at("simulation").at("time-step");
+        rngs.push_back(
+            std::make_shared<RngMtNorm>( seed, std::sqrt(time_step) ) );
+    }
 
-        // Store the results
-        sols[i] = results.mz[results.N-1];
-    } // end for each path
+    // Run the same simulation many times with a different random number generator.
+    // Create run function here
+    std::function<simulation::results(std::shared_ptr<Rng>)> run_function =
+                  [=]( std::shared_ptr<Rng> rng )
+        {
+            return simulation::full_dynamics(
+                norm_config["particle"]["damping"],
+                norm_config["particle"]["thermal-field-strength"],
+                aaxis, happ, init,
+                norm_config.at("simulation").at("time-step").get<double>(),
+                norm_config["simulation"]["simulation-time"],
+                *rng,
+                config["simulation"]["renormalisation"],
+                config["output"]["max-samples"] );
+        };
+
+    // Execute the run_function many times with different rngs
+    auto final_states = simulation::ensemble_run_final_state( run_function, rngs );
+    for( unsigned int i=0; i<n_runs; i++ )
+        sols[i] = final_states[i][2];
 
     // Write results to disk
     std::ostringstream outfilename;
