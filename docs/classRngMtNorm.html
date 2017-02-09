@@ -4,7 +4,7 @@
 <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.11"/>
-<title>MOMA: RngArray Class Reference</title>
+<title>MOMA: RngMtNorm Class Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -88,59 +88,54 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="header">
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
-<a href="classRngArray-members.html">List of all members</a>  </div>
+<a href="classRngMtNorm-members.html">List of all members</a>  </div>
   <div class="headertitle">
-<div class="title">RngArray Class Reference</div>  </div>
+<div class="title">RngMtNorm Class Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
 
-<p>Provides an <code><a class="el" href="classRng.html" title="Abstract class for random number generators. ">Rng</a></code> interface to a predefined array of numbers.  
- <a href="classRngArray.html#details">More...</a></p>
+<p>Uses Mersenne Twister to generate normally distributed values.  
+ <a href="classRngMtNorm.html#details">More...</a></p>
 
 <p><code>#include &lt;<a class="el" href="rng_8hpp_source.html">rng.hpp</a>&gt;</code></p>
 <div class="dynheader">
-Inheritance diagram for RngArray:</div>
+Inheritance diagram for RngMtNorm:</div>
 <div class="dyncontent">
  <div class="center">
-  <img src="classRngArray.png" usemap="#RngArray_map" alt=""/>
-  <map id="RngArray_map" name="RngArray_map">
-<area href="classRng.html" title="Abstract class for random number generators. " alt="Rng" shape="rect" coords="0,0,67,24"/>
+  <img src="classRngMtNorm.png" usemap="#RngMtNorm_map" alt=""/>
+  <map id="RngMtNorm_map" name="RngMtNorm_map">
+<area href="classRng.html" title="Abstract class for random number generators. " alt="Rng" shape="rect" coords="0,0,78,24"/>
 </map>
  </div></div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a0804fad56bbbcfe2dd278706a0d3c66c"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classRngArray.html#a0804fad56bbbcfe2dd278706a0d3c66c">RngArray</a> (const double *arr, size_t arr_length, size_t stride=1)</td></tr>
-<tr class="memdesc:a0804fad56bbbcfe2dd278706a0d3c66c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default constructor for <a class="el" href="classRngArray.html" title="Provides an Rng interface to a predefined array of numbers. ">RngArray</a>.  <a href="#a0804fad56bbbcfe2dd278706a0d3c66c">More...</a><br /></td></tr>
-<tr class="separator:a0804fad56bbbcfe2dd278706a0d3c66c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a805ae8f0cedd59592e218ee41d3b0232"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classRngArray.html#a805ae8f0cedd59592e218ee41d3b0232">get</a> ()</td></tr>
-<tr class="memdesc:a805ae8f0cedd59592e218ee41d3b0232"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the next (possibly stridden) value from the array.  <a href="#a805ae8f0cedd59592e218ee41d3b0232">More...</a><br /></td></tr>
-<tr class="separator:a805ae8f0cedd59592e218ee41d3b0232"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a031871d8496c0089e83a21749bc5d59b"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classRngMtNorm.html#a031871d8496c0089e83a21749bc5d59b">RngMtNorm</a> (const unsigned long int seed, const double std)</td></tr>
+<tr class="memdesc:a031871d8496c0089e83a21749bc5d59b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default constructor for <a class="el" href="classRngMtNorm.html" title="Uses Mersenne Twister to generate normally distributed values. ">RngMtNorm</a>.  <a href="#a031871d8496c0089e83a21749bc5d59b">More...</a><br /></td></tr>
+<tr class="separator:a031871d8496c0089e83a21749bc5d59b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae7a8ae32555a7c699046b92cfc4e7fd3"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classRngMtNorm.html#ae7a8ae32555a7c699046b92cfc4e7fd3">get</a> ()</td></tr>
+<tr class="memdesc:ae7a8ae32555a7c699046b92cfc4e7fd3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Draw a single normally distributed value from the RNG.  <a href="#ae7a8ae32555a7c699046b92cfc4e7fd3">More...</a><br /></td></tr>
+<tr class="separator:ae7a8ae32555a7c699046b92cfc4e7fd3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>Provides an <code><a class="el" href="classRng.html" title="Abstract class for random number generators. ">Rng</a></code> interface to a predefined array of numbers. </p>
+<div class="textblock"><p>Uses Mersenne Twister to generate normally distributed values. </p>
+<p>Random numbers have a mean of zero and a user specified standard deviation. </p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a class="anchor" id="a0804fad56bbbcfe2dd278706a0d3c66c"></a>
+<a class="anchor" id="a031871d8496c0089e83a21749bc5d59b"></a>
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">RngArray::RngArray </td>
+          <td class="memname">RngMtNorm::RngMtNorm </td>
           <td>(</td>
-          <td class="paramtype">const double *&#160;</td>
-          <td class="paramname"><em>_arr</em>, </td>
+          <td class="paramtype">const unsigned long int&#160;</td>
+          <td class="paramname"><em>seed</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>_arr_length</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>_stride</em> = <code>1</code>&#160;</td>
+          <td class="paramtype">const double&#160;</td>
+          <td class="paramname"><em>std</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -150,12 +145,11 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Default constructor for <a class="el" href="classRngArray.html" title="Provides an Rng interface to a predefined array of numbers. ">RngArray</a>. </p>
+<p>Default constructor for <a class="el" href="classRngMtNorm.html" title="Uses Mersenne Twister to generate normally distributed values. ">RngMtNorm</a>. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">_arr</td><td>a predefined array of random numbers </td></tr>
-    <tr><td class="paramname">_arr_length</td><td>length of the predefined array </td></tr>
-    <tr><td class="paramname">_stride</td><td>the number of consecutive elements to stride for each call to <code>.<a class="el" href="classRngArray.html#a805ae8f0cedd59592e218ee41d3b0232" title="Get the next (possibly stridden) value from the array. ">get()</a></code> </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">seed</td><td>seed for random number generator </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">std</td><td>the standard deviation of the normally distributed numbers </td></tr>
   </table>
   </dd>
 </dl>
@@ -163,7 +157,7 @@ Public Member Functions</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a class="anchor" id="a805ae8f0cedd59592e218ee41d3b0232"></a>
+<a class="anchor" id="ae7a8ae32555a7c699046b92cfc4e7fd3"></a>
 <div class="memitem">
 <div class="memproto">
 <table class="mlabels">
@@ -171,7 +165,7 @@ Public Member Functions</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">double RngArray::get </td>
+          <td class="memname">double RngMtNorm::get </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -184,21 +178,16 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Get the next (possibly stridden) value from the array. </p>
-<p>The first call will always return the value at the 0th index. Each subsequent call will stride the array (default value is 1) and return that value. A call that extends beyond the end of the array will result in an error. </p><dl class="exception"><dt>Exceptions</dt><dd>
-  <table class="exception">
-    <tr><td class="paramname">std::out_of_range</td><td>when a call attempts to get a value beyond the maximum length of the predefined array. </td></tr>
-  </table>
-  </dd>
-</dl>
+<p>Draw a single normally distributed value from the RNG. </p>
+<dl class="section return"><dt>Returns</dt><dd>single normally distributed number </dd></dl>
 
 <p>Implements <a class="el" href="classRng.html#a4cf7fce79fe7c611723666a995dcb041">Rng</a>.</p>
 
 </div>
 </div>
 <hr/>The documentation for this class was generated from the following files:<ul>
-<li>/home/owl/Dropbox/Documents/PhD/moma/include/<a class="el" href="rng_8hpp_source.html">rng.hpp</a></li>
-<li>/home/owl/Dropbox/Documents/PhD/moma/lib/rng.cpp</li>
+<li>include/<a class="el" href="rng_8hpp_source.html">rng.hpp</a></li>
+<li>lib/rng.cpp</li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->

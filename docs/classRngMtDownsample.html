@@ -4,7 +4,7 @@
 <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.11"/>
-<title>MOMA: mnp::norm_params Struct Reference</title>
+<title>MOMA: RngMtDownsample Class Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -84,43 +84,47 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </iframe>
 </div>
 
-<div id="nav-path" class="navpath">
-  <ul>
-<li class="navelem"><b>mnp</b></li><li class="navelem"><a class="el" href="structmnp_1_1norm__params.html">norm_params</a></li>  </ul>
-</div>
 </div><!-- top -->
 <div class="header">
   <div class="summary">
-<a href="#pub-attribs">Public Attributes</a> &#124;
-<a href="structmnp_1_1norm__params-members.html">List of all members</a>  </div>
+<a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="classRngMtDownsample-members.html">List of all members</a>  </div>
   <div class="headertitle">
-<div class="title">mnp::norm_params Struct Reference</div>  </div>
+<div class="title">RngMtDownsample Class Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
+
+<p>Generate normally distributed values with downsampling.  
+ <a href="classRngMtDownsample.html#details">More...</a></p>
+
+<p><code>#include &lt;<a class="el" href="rng_8hpp_source.html">rng.hpp</a>&gt;</code></p>
+<div class="dynheader">
+Inheritance diagram for RngMtDownsample:</div>
+<div class="dyncontent">
+ <div class="center">
+  <img src="classRngMtDownsample.png" usemap="#RngMtDownsample_map" alt=""/>
+  <map id="RngMtDownsample_map" name="RngMtDownsample_map">
+<area href="classRng.html" title="Abstract class for random number generators. " alt="Rng" shape="rect" coords="0,0,119,24"/>
+</map>
+ </div></div>
 <table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
-Public Attributes</h2></td></tr>
-<tr class="memitem:ab089c9b9dc97bc957f10b6790c03a5e6"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ab089c9b9dc97bc957f10b6790c03a5e6"></a>
-double&#160;</td><td class="memItemRight" valign="bottom"><b>gamma</b></td></tr>
-<tr class="separator:ab089c9b9dc97bc957f10b6790c03a5e6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a62be5358eabd687afa2432d5ee05aade"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a62be5358eabd687afa2432d5ee05aade"></a>
-double&#160;</td><td class="memItemRight" valign="bottom"><b>alpha</b></td></tr>
-<tr class="separator:a62be5358eabd687afa2432d5ee05aade"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adcbe82764d4a7f8d0978287aada1fb32"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="adcbe82764d4a7f8d0978287aada1fb32"></a>
-double&#160;</td><td class="memItemRight" valign="bottom"><b>stability</b></td></tr>
-<tr class="separator:adcbe82764d4a7f8d0978287aada1fb32"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5db6d8b8835746732b43e27c32ff3081"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a5db6d8b8835746732b43e27c32ff3081"></a>
-double&#160;</td><td class="memItemRight" valign="bottom"><b>volume</b></td></tr>
-<tr class="separator:a5db6d8b8835746732b43e27c32ff3081"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acdb79f8d478f9f9d675bf9dc64ae8da7"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="acdb79f8d478f9f9d675bf9dc64ae8da7"></a>
-double&#160;</td><td class="memItemRight" valign="bottom"><b>temperature</b></td></tr>
-<tr class="separator:acdb79f8d478f9f9d675bf9dc64ae8da7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab7f1393b26a4071ad4d65607868b8b50"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ab7f1393b26a4071ad4d65607868b8b50"></a>
-axis&#160;</td><td class="memItemRight" valign="bottom"><b>anisotropy_axis</b></td></tr>
-<tr class="separator:ab7f1393b26a4071ad4d65607868b8b50"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
+Public Member Functions</h2></td></tr>
+<tr class="memitem:a7836a5aa3979dd929cc9f27bf827120c"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a7836a5aa3979dd929cc9f27bf827120c"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classRngMtDownsample.html#a7836a5aa3979dd929cc9f27bf827120c">RngMtDownsample</a> (const unsigned long int seed, const double std, const size_t dim, const size_t down_factor)</td></tr>
+<tr class="memdesc:a7836a5aa3979dd929cc9f27bf827120c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default constructor for <a class="el" href="classRngMtDownsample.html" title="Generate normally distributed values with downsampling. ">RngMtDownsample</a>. <br /></td></tr>
+<tr class="separator:a7836a5aa3979dd929cc9f27bf827120c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a58aa2c5f033999f5ed6db168fdceeb06"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a58aa2c5f033999f5ed6db168fdceeb06"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classRngMtDownsample.html#a58aa2c5f033999f5ed6db168fdceeb06">get</a> ()</td></tr>
+<tr class="memdesc:a58aa2c5f033999f5ed6db168fdceeb06"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get a single downsampled value from the random number generator. <br /></td></tr>
+<tr class="separator:a58aa2c5f033999f5ed6db168fdceeb06"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<hr/>The documentation for this struct was generated from the following file:<ul>
-<li>/home/owl/Dropbox/Documents/PhD/moma/include/<a class="el" href="mnps_8hpp_source.html">mnps.hpp</a></li>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>Generate normally distributed values with downsampling. </p>
+<p>Uses the Mersenne Twister to generate normally distributed random numbers. Down-samples the stream of random numbers by summing consecutive draws along each dimension. Function is usually used for generating coarse Wiener processes </p><dl class="deprecated"><dt><b><a class="el" href="deprecated.html#_deprecated000001">Deprecated:</a></b></dt><dd>Original purpose of this class (for Wiener processes) has been replaced with the <code><a class="el" href="classRngArray.html" title="Provides an Rng interface to a predefined array of numbers. ">RngArray</a></code> class. </dd></dl>
+</div><hr/>The documentation for this class was generated from the following files:<ul>
+<li>include/<a class="el" href="rng_8hpp_source.html">rng.hpp</a></li>
+<li>lib/rng.cpp</li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->
