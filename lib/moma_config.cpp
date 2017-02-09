@@ -11,6 +11,8 @@
 #include <string>
 #include <omp.h>
 #include <exception>
+#include <ctime>
+#include <omp.h>
 #include "../include/constants.hpp"
 #include "../include/easylogging++.h"
 #include "../include/field.hpp"
@@ -354,6 +356,9 @@ void moma_config::launch_dom_simulation( const json in )
     // Initialise results
     simulation::results results( max_samples );
 
+    // We'll compute the simulation duration here
+    double duration;
+
     // Check if we should run until steady state
     bool steady_cycle = params.at("simulation").at("steady-cycle-activated");
     if( steady_cycle )
@@ -396,11 +401,14 @@ void moma_config::launch_dom_simulation( const json in )
         init_mags.push_back( init_mag );
         double steady_state_condition = 1e-3;
 
+        // Run and time simulation
+        std::clock_t start = std::clock();
         results = simulation::steady_state_cycle_dynamics(
             run_function,
             max_samples,
             steady_state_condition,
             init_mags );
+        duration = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
     }
 
     // Run a single simulation
@@ -411,9 +419,11 @@ void moma_config::launch_dom_simulation( const json in )
             params.at("particle").at("initial-probs")[1]
         };
         double sim_time = params.at("simulation").at("simulation-time").get<double>();
+        std::clock_t start = std::clock();
         results = simulation::dom_ensemble_dynamics(
             volume, anisotropy, temperature, tau0, happ, init,
             time_step, sim_time, max_samples );
+        duration = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
     }
 
     // save the results
@@ -432,6 +442,8 @@ void moma_config::launch_dom_simulation( const json in )
 
     json output;
     output["power"] = power;
+    output["sim-duration"] = duration;
+    output["omp-threads"] = omp_get_num_threads();
 
     /**
      * The current git commit version is written to the file. Made
@@ -541,7 +553,12 @@ void moma_config::launch_llg_simulation( const json in )
                 simulation_time, *(rng.get()), renorm, max_samples );
         };
 
+
+    // Allocate mem for results
     simulation::results results( max_samples );
+
+    // Measure the duration of the simulation
+    std::clock_t start = std::clock();
     if( steady_cycle )
     {
         double steady_state_condition = 1e-3;
@@ -558,6 +575,7 @@ void moma_config::launch_llg_simulation( const json in )
             run_function,
             init_mags,
             rngs );
+    double duration = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
 
     // save the results
     std::stringstream fname;
@@ -575,6 +593,8 @@ void moma_config::launch_llg_simulation( const json in )
 
     json output;
     output["power"] = power;
+    output["sim-duration"] = duration;
+    output["omp-threads"] = omp_get_num_threads();
 
     /**
      * The current git commit version is written to the file. Made
