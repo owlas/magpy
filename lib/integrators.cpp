@@ -8,6 +8,7 @@
 
 using sde_function = std::function<void(double*,const double*,const double)>;
 using sde_jac = std::function<void(double*,double*,double*,double*,const double*,const double,const double)>;
+namespace ck = integrator::ck_butcher_table;
 
 void integrator::rk4(
     double *next_state,
@@ -64,6 +65,111 @@ void driver::rk4(
                          i*step_size, step_size );
 
     delete[] k1; delete[] k2; delete[] k3; delete[] k4;
+}
+
+/// RK45 adaptive step deterministic integrator
+/**
+ * Deterministic Runge-Kutta integrator step with adaptive step size
+ */
+void integrator::rk45(
+    double *next_state,
+    double *temp_state,
+    double *k1,
+    double *k2,
+    double *k3,
+    double *k4,
+    double *k5,
+    double *k6,
+    double *h_ptr,
+    double *t_ptr,
+    const double *current_state,
+    const sde_function derivs,
+    const size_t n_dims,
+    const double eps )
+{
+    bool step_success = false;
+    double err;
+    double h=*h_ptr;
+    double t=*t_ptr;
+    while( step_success == false )
+    {
+        derivs( k1, current_state, t);
+        for( unsigned int i=0; i<n_dims; i++ )
+            next_state[i] = k1[i] * h * ck::c11
+                + current_state[i];
+
+        derivs( k2, next_state, t + h*ck::hc1 );
+        for( unsigned int i=0; i<n_dims; i++ )
+            next_state[i] = current_state[i]
+                + h*( ck::c21 * k1[i] + ck::c22 * k2[i] );
+
+        derivs( k3, next_state, t + h*ck::hc2 );
+        for( unsigned int i=0; i<n_dims; i++ )
+            next_state[i] = current_state[i]
+                + h*( ck::c31*k1[i] + ck::c32*k2[i]
+                      + ck::c33*k3[i] );
+
+        derivs( k4, next_state, t + h*ck::hc3 );
+        for( unsigned int i=0; i<n_dims; i++ )
+            next_state[i] = current_state[i]
+                + h*( ck::c41*k1[i] + ck::c42*k2[i]
+                      + ck::c43*k3[i] + ck::c44*k4[i] );
+
+        derivs( k5, next_state, t + h*ck::hc4 );
+        for( unsigned int i=0; i<n_dims; i++ )
+            next_state[i] = current_state[i]
+                + h*( ck::c51*k1[i] + ck::c52*k2[i]
+                      + ck::c53*k3[i] + ck::c54*k4[i]
+                      + ck::c55*k5[i] );
+
+        derivs( k6, next_state, t + h*ck::hc5 );
+
+        // Compute order 5 estimate
+        for( unsigned int i=0; i<n_dims; i++ )
+            temp_state[i] = current_state[i]
+                + h*( ck::x11 * k1[i]
+                      + ck::x13 * k3[i]
+                      + ck::x14 * k4[i]
+                      + ck::x16 * k6[i] );
+
+        // Compute order 4 estimate
+        for( unsigned int i=0; i<n_dims; i++)
+            next_state[i] = current_state[i]
+                + h*( ck::x21 * k1[i]
+                      + ck::x23 * k3[i]
+                      + ck::x24 * k4[i]
+                      + ck::x25 * k5[i]
+                      + ck::x26 * k6[i] );
+
+        // Compute the error and scale according to (eps+eps*|state|)
+        err=0;
+        double mag=0;
+        for( unsigned int i=0; i<n_dims; i++ )
+            mag += current_state[i] * current_state[i];
+        mag = std::pow( mag, 0.5 );
+        for( unsigned int i=0; i<n_dims; i++ )
+            err += std::pow( std::abs( temp_state[i] - next_state[i] ), 2 );
+        err = pow( err, 0.5 );
+        err /= ( n_dims*eps*( 1 + mag ) );
+
+        // If relative error is below 1 then step was successful
+        // otherwise reduce the step size (max 10x reduction)
+        if( err < 1.0 )
+            step_success = true;
+        else
+        {
+            double hfactor = 0.84*pow( err, -0.2 );
+            hfactor = std::abs( hfactor ) < 0.1 ? 0.1 : hfactor;
+            h *= hfactor;
+        }
+    }
+    // Set the new time
+    *t_ptr = t+h;
+
+    // Set the next step size
+    double hfactor = err==0.0 ? 5.0 : 0.84*std::pow( err, -0.2 );
+    hfactor = hfactor > 5 ? 5.0 : hfactor;
+    *h_ptr = hfactor*h;
 }
 
 void integrator::eulerm(

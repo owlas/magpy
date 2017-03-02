@@ -242,7 +242,7 @@ struct simulation::results simulation::dom_ensemble_dynamics(
     next_state[1] = initial_probs[1];
 
     // Allocate arrays for the RK4 integrator
-    double k1[2], k2[2], k3[2], k4[2];
+    double k1[2], k2[2], k3[2], k4[2], k5[2], k6[2], tmpstate[2];
 
     // Construct the time dependent master equation
     std::function<void(double*,const double*,const double)> master_equation =
@@ -271,7 +271,9 @@ struct simulation::results simulation::dom_ensemble_dynamics(
 
     // Variables needed in the loop
     double t=0;
+    double dt = time_step;
     unsigned int step=0;
+    double eps=1e-8; // tolerance of the rk45 integrator
     for( unsigned int sample=1; sample<N_samples; sample++ )
     {
         // Perform a simulation step until we breach the next sampling point
@@ -282,14 +284,10 @@ struct simulation::results simulation::dom_ensemble_dynamics(
             last_state[1] = next_state[1];
             step++;
 
-            // Compute current time
-            // When max_samples=-1 uses sampling_time directly to avoid rounding
-            // errors
-            t = max_samples==-1 ? sample*sampling_time : step*time_step;
-
             // perform integration step
-            integrator::rk4( next_state, k1, k2, k3, k4, last_state,
-                             master_equation, n_dims, t, time_step );
+            integrator::rk45( next_state, tmpstate, k1, k2, k3, k4, k5, k6,
+                              &dt, &t, last_state, master_equation, n_dims,
+                              eps );
 
         } // end integration stepping loop
         /*

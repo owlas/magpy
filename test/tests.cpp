@@ -670,7 +670,9 @@ TEST( rk4, time_dependent_step )
     };
 
     double x2[2], k1[2], k2[2], k3[2], k4[4], x1[2]={1,2};
-    integrator::rk4( x2, k1, k2, k3, k4, x1, ode, 2, 0.5, 0.01 );
+    size_t dims=2;
+    double t=0.5, dt=0.01;
+    integrator::rk4( x2, k1, k2, k3, k4, x1, ode, dims, t, dt );
 
     ASSERT_DOUBLE_EQ( 1.0, k1[0] );
     ASSERT_DOUBLE_EQ( -6.0, k1[1] );
@@ -682,6 +684,36 @@ TEST( rk4, time_dependent_step )
     ASSERT_DOUBLE_EQ( -6.0099483737499995, k4[1] );
     ASSERT_DOUBLE_EQ( 1.0099479156355418, x2[0] );
     ASSERT_DOUBLE_EQ( 1.9399501718770833, x2[1] );
+}
+
+TEST( rk45, time_dependent_step )
+{
+    auto ode = [](double*dx,const double*x,const double t)
+        {
+            dx[0] =  x[1] * t;
+            dx[1] = -x[0] - 5;
+        };
+
+    double x2[2], tmp[2], k1[2], k2[2], k3[2], k4[2], k5[2], k6[2], x1[2]={1,2};
+    size_t dims=2;
+    double t=0.5, dt=0.01;
+    double eps = 1e-4;
+    integrator::rk45( x2, tmp, k1, k2, k3, k4, k5, k6, &dt, &t, x1, ode, dims, eps );
+
+    ASSERT_DOUBLE_EQ( 1.0, k1[0] );
+    ASSERT_DOUBLE_EQ( -6.0, k1[1] );
+    ASSERT_DOUBLE_EQ( 0.997976, k2[0] );
+    ASSERT_DOUBLE_EQ( -6.002, k2[1] );
+    ASSERT_DOUBLE_EQ( 0.9969437365, k3[0] );
+    ASSERT_DOUBLE_EQ( -6.002995446, k3[1] );
+    ASSERT_DOUBLE_EQ( 0.993774919651888, k4[0] );
+    ASSERT_DOUBLE_EQ( -6.005981540838, k4[1] );
+    ASSERT_DOUBLE_EQ( 0.9893745618215710, k5[0] );
+    ASSERT_DOUBLE_EQ( -6.009947940975117, k5[1] );
+    ASSERT_DOUBLE_EQ( 0.99077120433373344621, k6[0] );
+    ASSERT_DOUBLE_EQ( -6.00871032589945830438, k6[1] );
+    ASSERT_DOUBLE_EQ( 1.00994791563354557873, x2[0] );
+    ASSERT_DOUBLE_EQ( 1.93995017187702467609, x2[1] );
 }
 
 TEST( master_equation, 3d_system )
