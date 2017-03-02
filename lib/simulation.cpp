@@ -4,7 +4,7 @@ double simulation::power_loss(
     const struct results &res,
     double Ms, double Hk, double f )
 {
-    double area = trap::trapezoidal( res.field.get(), res.mz.get(), res.N );
+    double area = trap::trapezoidal( res.mz.get(), res.field.get(), res.N );
     return f*constants::MU0*Hk*Ms*area;
 }
 
