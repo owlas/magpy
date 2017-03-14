@@ -26,6 +26,7 @@ namespace simulation
     // field - [N] the value of the field at time t_n
     // time - [N] the time at n
     // N - the number of steps taken
+    // energyloss - the energy lost in the simulation
     struct results {
         std::unique_ptr<double[]> mx;
         std::unique_ptr<double[]> my;
@@ -33,6 +34,7 @@ namespace simulation
         std::unique_ptr<double[]> field;
         std::unique_ptr<double[]> time;
         size_t N;
+        double energy_loss;
 
         results( size_t _N ) {
             N=_N;
@@ -41,6 +43,7 @@ namespace simulation
             mz = std::unique_ptr<double[]>( new double[N] );
             field = std::unique_ptr<double[]>( new double[N] );
             time = std::unique_ptr<double[]>( new double[N] );
+            energy_loss=0;
         }
     };
 
@@ -66,6 +69,7 @@ namespace simulation
         const double anisotropy,
         const double temperature,
         const double tau0,
+        const double magnetisation,
         const std::function<double(double)> applied_field,
         const std::array<double,2> initial_mags,
         const double time_step,
@@ -109,11 +113,9 @@ namespace simulation
     // Save a results file
     void save_results( const std::string fname, const struct results& );
 
-    // Compute the power loss for a particle from its simulation results
-    double power_loss(
-        const struct results&,
-        double magnetisation, double anisotropy_field,
-        double field_frequency );
+    // Compute the energy loss for a particle from its simulation results
+    double energy_loss(
+        const struct results&, const double ms, const double hk );
 
     // Sets all of the arrays in the results struct to zero
     void zero_results( struct results& );

@@ -1,21 +1,51 @@
 #include "../include/simulation.hpp"
 #include "../include/constants.hpp"
-double simulation::power_loss(
+
+double simulation::energy_loss(
     const struct results &res,
-    double Ms, double Hk, double f )
+    const double ms,
+    const double hk )
 {
     double area = trap::trapezoidal( res.mz.get(), res.field.get(), res.N );
-    return f*constants::MU0*Hk*Ms*area;
+    return constants::MU0*ms*hk*area;
+}
+
+
+/// Compute energy loss from transition rates
+/*
+ * Computes the energy loss of a particle over a specified time. The
+ * loss is computed from the transition energies and probability
+ * derivatives.
+ * @param[in] p_derivs a pointer to a double array of values for the
+ * rate of change of the probability at time t
+ * @param[in] transition_energies pointer to double array of values of
+ * the transition energy at time t
+ * @param[in] time pointer to array of doubles for the time values
+ * @param[in] N size_t the length of the double arrays
+ * @returns the energy loss (double)
+ */
+double simulation::energy_loss(
+    double *p_derivs, double *transition_energies, double *time,
+    size_t N )
+{
+    double *integrand = new double[N];
+    for( unsigned int i=0; i<N; i++ )
+        integrand[i] = p_derivs[i]*transition_energies[i];
+    double energy = trap::trapezoidal( integrand, time, N );
+    delete[] integrand;
+    return energy;
 }
 
 void simulation::save_results( const std::string fname, const struct results &res )
 {
-    std::stringstream magx_fname, magy_fname, magz_fname, field_fname, time_fname;
+    std::stringstream magx_fname, magy_fname, magz_fname, field_fname, time_fname, energy_fname;
     magx_fname << fname << ".mx";
     magy_fname << fname << ".my";
     magz_fname << fname << ".mz";
     field_fname << fname << ".field";
     time_fname << fname << ".time";
+    energy_fname << fname << ".energy";
+
     int err;
     err = io::write_array( magx_fname.str(), res.mx.get(), res.N );
     if( err != 0 )
@@ -32,12 +62,14 @@ void simulation::save_results( const std::string fname, const struct results &re
     err = io::write_array( time_fname.str(), res.time.get(), res.N );
     if( err != 0 )
         throw std::runtime_error( "failed to write file" );
+    err = io::write_array( energy_fname.str(), &res.energy_loss, 1 );
 }
 
 void simulation::zero_results( struct simulation::results &res )
 {
     for( unsigned int i=0; i<res.N; i++ )
         res.mx[i] = res.my[i] = res.mz[i] = res.field[i] = res.time[i] = 0;
+    res.energy_loss = 0;
 }
 
 struct simulation::results simulation::full_dynamics(
@@ -108,7 +140,6 @@ struct simulation::results simulation::full_dynamics(
     // Vars for loops
     unsigned int step = 0;
     double t = 0;
-    double hz = 0;
     double pstate[3], nstate[3];
     nstate[0] = initial_magnetisation[0];
     nstate[1] = initial_magnetisation[1];
@@ -179,6 +210,9 @@ struct simulation::results simulation::full_dynamics(
         res.field[sample] = applied_field( sample*sampling_time );
     } // end sampling loop
 
+    /// @TODO compute energy loss for llg
+    res.energy_loss = 0;
+
     delete[] state;
     delete[] a_work;
     delete[] b_work;
@@ -207,9 +241,12 @@ struct simulation::results simulation::full_dynamics(
  * @param[in] damping damping ratio - dimensionless
  * @param[in] anisotropy anisotropy constant  - Kgm-3 ?
  * @param[in] temperature temperature - K
- * @param[in] tau0 reciprocal of the attempt frequency \f$1/f\f$ - s-1
+ * @param[in] tau0 reciprocal of the attempt frequency \f$1/f_0\f$ - s-1
+ * @param[in] magnetisation the saturation magnetisation of the particle
  * @param[in] applied_field a scalar in-out function that returns the
- * value of the applied field in the z-direction at time t
+ * value of the reduced applied field in the z-direction at time
+ * t. Reduced field is field value /f$h=H/H_k/f$ where /f$H_k/f$ is
+ * the anisotropy field
  * @param[in] initial_prbs length 2 array of doubles with the initial
  * probability of each state of the system.
  * @param[in] time_step time_step for the integrator
@@ -226,12 +263,16 @@ struct simulation::results simulation::dom_ensemble_dynamics(
     const double anisotropy,
     const double temperature,
     const double tau0,
+    const double magnetisation,
     const std::function<double(double)> applied_field,
     const std::array<double,2> initial_probs,
     const double time_step,
     const double end_time,
     const int max_samples )
 {
+    // Compute the anisotropy field
+    double hk = 2*anisotropy / constants::MU0 / magnetisation;
+
     // Allocate array for work dims*dims
     const size_t n_dims = 2;
     double work[4];
@@ -273,7 +314,7 @@ struct simulation::results simulation::dom_ensemble_dynamics(
     double t=0;
     double dt = time_step;
     unsigned int step=0;
-    double eps=1e-8; // tolerance of the rk45 integrator
+    double eps=1e-11; // tolerance of the rk45 integrator
     for( unsigned int sample=1; sample<N_samples; sample++ )
     {
         // Perform a simulation step until we breach the next sampling point
@@ -308,5 +349,8 @@ struct simulation::results simulation::dom_ensemble_dynamics(
         res.time[sample] = t;
         res.field[sample] = applied_field(t);
     }
+
+    // Compute the energy loss
+    res.energy_loss = simulation::energy_loss( res, magnetisation, hk );
     return res;
 }
