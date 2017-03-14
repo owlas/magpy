@@ -279,9 +279,10 @@ json test_llg_config()
         {"global", {
                 {"temperature", 300},
                 {"applied-field", {
-                        {"shape", "sine"},
+                        {"shape", "square-fourier"},
                         {"frequency", 300e3},
-                        {"amplitude", 5e5}
+                        {"amplitude", 5e5},
+                        {"components", 10}
                     }}
             }},
         {"particle", {
@@ -312,9 +313,10 @@ json test_dom_config()
         {"global", {
                 {"temperature", 300},
                 {"applied-field", {
-                        {"shape", "sine"},
+                        {"shape", "square-fourier"},
                         {"frequency", 300e3},
-                        {"amplitude", 5e5}
+                        {"amplitude", 5e5},
+                        {"components", 10}
                     }},
                 {"tau0", 1e-10}
             }},
