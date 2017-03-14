@@ -7,33 +7,7 @@ double simulation::energy_loss(
     const double hk )
 {
     double area = trap::trapezoidal( res.mz.get(), res.field.get(), res.N );
-    return constants::MU0*ms*hk*area;
-}
-
-
-/// Compute energy loss from transition rates
-/*
- * Computes the energy loss of a particle over a specified time. The
- * loss is computed from the transition energies and probability
- * derivatives.
- * @param[in] p_derivs a pointer to a double array of values for the
- * rate of change of the probability at time t
- * @param[in] transition_energies pointer to double array of values of
- * the transition energy at time t
- * @param[in] time pointer to array of doubles for the time values
- * @param[in] N size_t the length of the double arrays
- * @returns the energy loss (double)
- */
-double simulation::energy_loss(
-    double *p_derivs, double *transition_energies, double *time,
-    size_t N )
-{
-    double *integrand = new double[N];
-    for( unsigned int i=0; i<N; i++ )
-        integrand[i] = p_derivs[i]*transition_energies[i];
-    double energy = trap::trapezoidal( integrand, time, N );
-    delete[] integrand;
-    return energy;
+    return -constants::MU0*ms*hk*area;
 }
 
 void simulation::save_results( const std::string fname, const struct results &res )
