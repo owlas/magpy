@@ -21,6 +21,7 @@
         "radius": 12e-9,
         "anisotropy": 23e3,
         "initial-probs": [0.5, 0.5],
-        "magnetisation": 446e3
+        "magnetisation": 446e3,
+        "damping": 0.1
     }]
 }
