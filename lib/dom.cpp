@@ -6,8 +6,7 @@
 /// Compute the 2x2 transition matrix for a single particle
 /**
  * Assumes uniaxial anisotropy and an applied field h<1
- * Only valid for large energy barriers
- * @todo Document the normalised energy barrier limit for validity
+ * Only valid for large energy barriers: $\sigma(1-h)^2>>1$
  * @param[out] W transition matrix [2x2]
  * @param[in]  k anisotropy strength constant for the uniaxial
  * anisotropy

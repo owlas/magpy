@@ -9,18 +9,18 @@
         "max-samples": 10000
     },
     "global": {
-        "temperature": 298,
+        "temperature": 270,
         "applied-field": {
             "shape": "sine",
-            "frequency": 300e3,
+            "frequency": 300e4,
             "amplitude": 3.5e3
         },
         "tau0": 1e-10
     },
-    "particle": {
-        "radius": 10.2e-9,
-        "anisotropy": 1.1e4,
+    "particles": [{
+        "radius": 12e-9,
+        "anisotropy": 23e3,
         "initial-probs": [0.5, 0.5],
         "magnetisation": 446e3
-    }
+    }]
 }

@@ -43,7 +43,7 @@ struct simulation::results simulation::ensemble_run(
 
     // MONTE CARLO RUNS
     // Embarrassingly parallel - simulation per thread
-#pragma omp parallel for schedule(dynamic, 1) default(none) shared(ensemble) firstprivate(ensemble_size, run_functions)
+    #pragma omp parallel for schedule(dynamic, 1) default(none) shared(ensemble) firstprivate(ensemble_size, run_functions)
     for( unsigned int run_id=0; run_id<ensemble_size; run_id++ )
     {
         // Simulate a single realisation of the system
@@ -51,13 +51,16 @@ struct simulation::results simulation::ensemble_run(
 
         // Copy the results into the ensemble
         #pragma omp critical
-        for( unsigned int j=0; j<results.N; j++ )
         {
-            ensemble.mx[j] += results.mx[j];
-            ensemble.my[j] += results.my[j];
-            ensemble.mz[j] += results.mz[j];
-        } // end copying ensemble
+            ensemble.energy_loss += results.energy_loss;
+            for( unsigned int j=0; j<results.N; j++ )
+            {
+                ensemble.mx[j] += results.mx[j];
+                ensemble.my[j] += results.my[j];
+                ensemble.mz[j] += results.mz[j];
 
+            } // end copying ensemble
+        }
         // Copy in the field and time values
         if( run_id == 0 )
             for( unsigned int j=0; j<results.N; j++ )
@@ -74,6 +77,7 @@ struct simulation::results simulation::ensemble_run(
         ensemble.my[i] /= ensemble_size;
         ensemble.mz[i] /= ensemble_size;
     }
+    ensemble.energy_loss /= ensemble_size;
     return ensemble;
 }
 template <typename... T>
@@ -158,4 +162,3 @@ struct simulation::results simulation::steady_state_cycle_dynamics(
                   << ": " << std::abs( mag_before - mag_after );
     }
 }
-
