@@ -324,7 +324,8 @@ json test_dom_config()
                 {"radius", 7e-9},
                 {"anisotropy", 23e3},
                 {"magnetisation", 446e3},
-                {"initial-probs", {1, 0}}
+                {"initial-probs", {1, 0}},
+                {"damping", 0.01}
             }}}
     };
     return j;
@@ -739,12 +740,12 @@ TEST( master_equation, 3d_system )
 
 TEST( dom, uniaxial_transition_matrix )
 {
-    const double k=1, v=2e-21, h=0.5, T=10, tau0=5;
+    const double k=1, v=2e-21, h=0.5, T=10, ms=2.7, alpha=0.1;
     double W[4];
 
-    dom::transition_matrix( W, k, v, T, h, tau0 );
-    EXPECT_DOUBLE_EQ( -1.3992828128103028e-15, W[0] );
-    EXPECT_DOUBLE_EQ( 0.005348578632666809, W[1]);
-    EXPECT_DOUBLE_EQ( 1.3992828128103028e-15, W[2] );
-    EXPECT_DOUBLE_EQ( -0.005348578632666809, W[3] );
+    dom::transition_matrix( W, k, v, T, h, ms, alpha );
+    EXPECT_DOUBLE_EQ( -0.00021827108536028533, W[0] );
+    EXPECT_DOUBLE_EQ( 278104386.1896516, W[1]);
+    EXPECT_DOUBLE_EQ( 0.00021827108536028533, W[2] );
+    EXPECT_DOUBLE_EQ( -278104386.1896516, W[3] );
 }
