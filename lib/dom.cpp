@@ -14,9 +14,8 @@
  * @param[in]  T temperature of environment in Kelvin
  * @param[in]  h dimensionless applied field - normalised by
  *               \f$H_k=\frac{2K}{\mu_0M_s}\f$
- * @param[in]  tau0 \f$\tau_0=1/f_0\f$ where f0 is the attempt
- * frequency - this constant is often chosen as
- * \f$10^{-10}-10^{-12}\f$
+ * @param[in] ms saturation magnetisation
+ * @param[in] alpha dimensionless damping constant
  */
 void dom::transition_matrix(
     double *W,
@@ -24,13 +23,24 @@ void dom::transition_matrix(
     const double v,
     const double T,
     const double h,
-    const double tau0)
+    const double ms,
+    const double alpha )
 {
     double sigma = k*v/constants::KB/T;
+
+    /// Use Neel-Brown formulas
+    double taun = v * ms *( 1+alpha*alpha )
+        / 2.0 / constants::GYROMAG / alpha / constants::KB / T;
+
     double norm_ebar_1 = sigma*( 1-h )*( 1-h );
     double norm_ebar_2 = sigma*( 1+h )*( 1+h );
-    double rate1 = 1/( tau0*std::exp( norm_ebar_1 ) );
-    double rate2 = 1/( tau0*std::exp( norm_ebar_2 ) );
+
+    double prefactor = taun*std::sqrt(M_PI)
+        / std::pow( sigma, 1.5 ) / ( 1-h*h );
+
+    double rate1 = 1.0 / prefactor * ( 1-h ) * std::exp( -norm_ebar_1 );
+    double rate2 = 1.0 / prefactor * ( 1+h ) * std::exp( -norm_ebar_2 );
+
     W[0] = -rate2; W[1] =  rate1;
     W[2] =  rate2; W[3] = -rate1;
 }
@@ -46,7 +56,8 @@ void dom::transition_matrix(
  * anisotropy
  * @param[in]  v volume of the particle in meter^3
  * @param[in]  T temperature of environment in Kelvin
- * @param[in]  tau0 \f$\tau_0=1/f_0\f$ where f0 is the attempt
+ * @param[in] ms saturation magnetisation
+ * @param[in] alpha dimensionless damping constant
  * @param[in]  t time at which to evaluate the external field
  * @param[in]  state_probabilities the current state probabilities for
  * each of the 2 states (up and down) [length 2]
@@ -60,13 +71,14 @@ void dom::master_equation_with_update(
     const double k,
     const double v,
     const double T,
-    const double tau0,
+    const double ms,
+    const double alpha,
     const double t,
     const double *state_probabilities,
     const std::function<double(double)> applied_field )
 {
     dom::transition_matrix(
-        work, k, v, T, applied_field( t ), tau0 );
+        work, k, v, T, applied_field( t ), ms, alpha );
     stochastic::master_equation(
         derivs, work, state_probabilities, 2 );
 }

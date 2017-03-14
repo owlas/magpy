@@ -216,7 +216,9 @@ struct simulation::results simulation::full_dynamics(
  * @param[in] anisotropy anisotropy constant  - Kgm-3 ?
  * @param[in] temperature temperature - K
  * @param[in] tau0 reciprocal of the attempt frequency \f$1/f_0\f$ - s-1
- * @param[in] magnetisation the saturation magnetisation of the particle
+ * @param[in] magnetisation the saturation magnetisation of the
+ *            particle
+ * @param[in] alpha the dimensionless damping parameter of the particle
  * @param[in] applied_field a scalar in-out function that returns the
  * value of the reduced applied field in the z-direction at time
  * t. Reduced field is field value /f$h=H/H_k/f$ where /f$H_k/f$ is
@@ -236,8 +238,8 @@ struct simulation::results simulation::dom_ensemble_dynamics(
     const double volume,
     const double anisotropy,
     const double temperature,
-    const double tau0,
     const double magnetisation,
+    const double alpha,
     const std::function<double(double)> applied_field,
     const std::array<double,2> initial_probs,
     const double time_step,
@@ -262,7 +264,7 @@ struct simulation::results simulation::dom_ensemble_dynamics(
     // Construct the time dependent master equation
     std::function<void(double*,const double*,const double)> master_equation =
         std::bind(dom::master_equation_with_update, _1, work, anisotropy,
-                  volume, temperature, tau0, _3, _2, applied_field );
+                  volume, temperature, magnetisation, alpha, _3, _2, applied_field );
 
     /*
       To ease memory requirements - can specify the maximum number of

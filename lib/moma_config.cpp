@@ -176,6 +176,9 @@ void moma_config::validate_for_dom( const json input )
         double magnetisation = p.at("magnetisation");
         if( magnetisation < 0 )
             LOG( FATAL ) << "Magnetisation must be greater than 0";
+
+        if( p.count("damping") != 1 )
+            LOG( FATAL ) << "Missing damping parameter for particle";
     }
 }
 
@@ -406,11 +409,13 @@ void moma_config::launch_dom_simulation( const json in )
     std::vector<double> volumes;
     std::vector<double> anisotropies;
     std::vector<double> magnetisations;
+    std::vector<double> dampings;
     for( unsigned int i=0; i<n_particles; i++ )
     {
         volumes.push_back(particles[i].at("volume"));
         anisotropies.push_back(particles[i].at("anisotropy"));
         magnetisations.push_back(particles[i].at("magnetisation"));
+        dampings.push_back(particles[i].at("damping"));
     }
 
     // Get the initial conditions for each particle
@@ -455,9 +460,10 @@ void moma_config::launch_dom_simulation( const json in )
      * Transition state simulation does not require random number
      * generators. Only the initial state of the system.
      */
-    std::function<simulation::results(d3,double,double,double,std::function<double(double)>)> run_function=
-        [temperature, tau0, time_step, sim_time, max_samples]
-        (d3 initial_mag, double volume, double anisotropy, double ms, std::function<double(double)> happ)
+    std::function<simulation::results(d3,double,double,double,double,std::function<double(double)>)> run_function=
+        [temperature, time_step, sim_time, max_samples]
+        (d3 initial_mag, double volume, double anisotropy, double ms, double damping,
+         std::function<double(double)> happ)
         {
             // Convert initial magnetisation into states
             std::array<double,2> initial_probs = {
@@ -466,7 +472,7 @@ void moma_config::launch_dom_simulation( const json in )
             };
 
             return simulation::dom_ensemble_dynamics(
-                volume, anisotropy, temperature, tau0, ms, happ,
+                volume, anisotropy, temperature, ms, damping, happ,
                 initial_probs, time_step, sim_time, max_samples );
         };
 
@@ -482,6 +488,7 @@ void moma_config::launch_dom_simulation( const json in )
             volumes,
             anisotropies,
             magnetisations,
+            dampings,
             happs );
     }
     else
@@ -493,6 +500,7 @@ void moma_config::launch_dom_simulation( const json in )
             volumes,
             anisotropies,
             magnetisations,
+            dampings,
             happs );
     }
 
