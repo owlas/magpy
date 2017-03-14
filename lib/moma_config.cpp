@@ -61,8 +61,14 @@ void moma_config::validate_for_llg( const json input )
     if( temp < 0 )
         LOG( FATAL ) << "Temperature must be greater than 0";
     std::string shape = input.at("global").at("applied-field").at("shape");
-    if( ( shape.compare( "sine" ) != 0 ) && ( shape.compare("square") != 0 ) )
+    if( ( shape.compare( "sine" ) != 0 )
+        && ( shape.compare("square") != 0 )
+        && ( shape.compare("square-fourier") != 0 ) )
         LOG( FATAL ) << "Valid values for shape are 'sine' or 'square'";
+    if( shape.compare( "square-fourier" ) == 0 )
+        if( input.at("global").at("applied-field").count("components") != 1 )
+            LOG( FATAL ) << "If specifying Fourier series field, "
+                         << "must specify number of components";
     double freq = input.at("global").at("applied-field").at("frequency");
     if( freq < 0 )
         LOG( FATAL ) << "Frequency must be greater than 0";
@@ -133,8 +139,14 @@ void moma_config::validate_for_dom( const json input )
     if( temp < 0 )
         LOG( FATAL ) << "Temperature must be greater than 0";
     std::string shape = input.at("global").at("applied-field").at("shape");
-    if( ( shape.compare( "sine" ) != 0 ) && ( shape.compare("square") != 0 ) )
+    if( ( shape.compare( "sine" ) != 0 )
+        && ( shape.compare("square") != 0 )
+        && ( shape.compare("square-fourier") !=0 ) )
         LOG( FATAL ) << "Valid values for shape are 'sine' or 'square'";
+    if( shape.compare( "square-fourier" ) == 0 )
+        if( input.at("global").at("applied-field").count("components") != 1 )
+            LOG( FATAL ) << "If specifying Fourier series field, "
+                         << "must specify number of components";
     double freq = input.at("global").at("applied-field").at("frequency");
     if( freq < 0 )
         LOG( FATAL ) << "Frequency must be greater than 0";
@@ -374,6 +386,13 @@ void moma_config::launch_dom_simulation( const json in )
                 field_amp,
                 params["global"]["applied-field"]["frequency"],
                 std::placeholders::_1 );
+        else if( field_shape.compare("square-fourier") == 0 )
+            happ = std::bind(
+                field::square_fourier,
+                field_amp,
+                params["global"]["applied-field"]["frequency"],
+                params["global"]["applied-field"]["components"],
+                std::placeholders::_1 );
         else
             LOG(FATAL) << field_shape << " is not a valid field shape.";
 
@@ -522,12 +541,29 @@ void moma_config::launch_llg_simulation( const json in )
     moma_config::write( config_out_fname.str(), params );
 
     // Bind the applied field waveform
-    // assumes sinusoidal for now
-    std::function<double(double)> happ = std::bind(
-        field::sinusoidal,
-        params["global"]["applied-field"]["amplitude"],
-        params["global"]["applied-field"]["frequency"],
-        std::placeholders::_1 );
+    std::string field_shape = in["global"]["applied-field"]["shape"];
+    std::function<double(double)> happ;
+    if( field_shape.compare("sine") == 0 )
+        happ = std::bind(
+            field::sinusoidal,
+            params["global"]["applied-field"]["amplitude"],
+            params["global"]["applied-field"]["frequency"],
+            std::placeholders::_1 );
+    else if( field_shape.compare("square") == 0 )
+        happ = std::bind(
+            field::square,
+            params["global"]["applied-field"]["amplitude"],
+            params["global"]["applied-field"]["frequency"],
+            std::placeholders::_1 );
+    else if( field_shape.compare("square-fourier") == 0 )
+        happ = std::bind(
+            field::square_fourier,
+            params["global"]["applied-field"]["amplitude"],
+            params["global"]["applied-field"]["frequency"],
+            params["global"]["applied-field"]["components"],
+            std::placeholders::_1 );
+    else
+        LOG(FATAL) << field_shape << " is not a valid field shape.";
 
     // Get the uniaxial anisotropy axis
     std::array<double,3> aaxis{
