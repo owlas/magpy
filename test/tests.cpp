@@ -175,6 +175,7 @@ TEST( simulation, save_results )
     res.field[1] = 5;
     res.time[0] = 6;
     res.time[1] = 7;
+    res.energy_loss = 10;
 
 
     simulation::save_results( "output/test.out", res );
@@ -199,6 +200,11 @@ TEST( simulation, save_results )
     ASSERT_EQ( 2, nread );
     EXPECT_DOUBLE_EQ( 6, arr[0] );
     EXPECT_DOUBLE_EQ( 7, arr[1] );
+
+    in=fopen( "output/test.out.energy", "rb" );
+    nread = fread( arr, sizeof(double), 1, in );
+    ASSERT_EQ( 1, nread );
+    EXPECT_DOUBLE_EQ( 10, arr[0] );
 }
 
 TEST( heun_driver, ou )
@@ -312,12 +318,12 @@ json test_dom_config()
                     }},
                 {"tau0", 1e-10}
             }},
-        {"particle", {
+        {"particles", {{
                 {"radius", 7e-9},
                 {"anisotropy", 23e3},
                 {"magnetisation", 446e3},
                 {"initial-probs", {1, 0}}
-            }}
+            }}}
     };
     return j;
 }
@@ -387,13 +393,13 @@ TEST( moma_config, transform_dom )
     EXPECT_EQ( false,
                out.at("simulation").at("steady-cycle-activated").get<bool>() );
     EXPECT_DOUBLE_EQ( 1.436755040241732e-24,
-                      out.at("particle").at("volume").get<double>() );
+                      out.at("particles")[0].at("volume").get<double>() );
     EXPECT_DOUBLE_EQ( 7.97822314341568,
-                      out.at("particle").at("stability-ratio").get<double>() );
+                      out.at("particles")[0].at("stability-ratio").get<double>() );
     EXPECT_DOUBLE_EQ( 82075.419177049276,
-                      out.at("global").at("anisotropy-field").get<double>() );
+                      out.at("particles")[0].at("anisotropy-field").get<double>() );
     EXPECT_DOUBLE_EQ( 6.0919579213043464,
-                      out.at("global").at("applied-field").at("amplitude").get<double>() );
+                      out.at("particles")[0].at("reduced-field-amplitude").get<double>() );
 }
 
 TEST( newton_raphson, 1d_function )
@@ -639,7 +645,7 @@ TEST( implicit_integrator_midpoint, atest )
     EXPECT_NEAR( 2.00902904, x[1], 1e-7 );
 }
 
-TEST( simulation, power_loss )
+TEST( simulation, energy_loss )
 {
     struct simulation::results res( 5 );
     res.field[0] = 0;
@@ -656,9 +662,9 @@ TEST( simulation, power_loss )
     double area = trap::trapezoidal( res.field.get(), res.mz.get(), 5 );
     ASSERT_DOUBLE_EQ( 0.5, area );
 
-    double power = simulation::power_loss(
-        res, 5, 2, 100 );
-    EXPECT_DOUBLE_EQ( 5*2*100*constants::MU0*area, power );
+    double power = simulation::energy_loss(
+        res, 5, 2 );
+    EXPECT_DOUBLE_EQ( 5*2*constants::MU0*area, power );
 }
 
 TEST( rk4, time_dependent_step )
