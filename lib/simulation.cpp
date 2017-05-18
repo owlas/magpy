@@ -1,5 +1,6 @@
 #include "../include/simulation.hpp"
 #include "../include/constants.hpp"
+#include <cmath>
 
 double simulation::energy_loss(
     const struct results &res,
@@ -14,13 +15,22 @@ double simulation::energy_loss(
     const std::unique_ptr<double[]> &transition_energy,
     const std::unique_ptr<double[]> &probability_flow,
     const std::unique_ptr<double[]> &time,
+    const double volume,
     const size_t N )
 {
     double *mult = new double[N];
     for( unsigned int i; i<N; i++ )
         mult[i] = transition_energy[i] * probability_flow[i];
     delete[] mult;
-    return trap::trapezoidal( mult, time.get(), N );
+    return trap::trapezoidal( mult, time.get(), N ) / volume;
+}
+
+double simulation::one_step_energy_loss(
+    const double et1, const  double et2, const double pflow1, const double pflow2,
+    const double t1, const double t2, const double volume
+    )
+{
+    return trap::one_trapezoid( t1, t2, et1*pflow1, et2*pflow2 ) / volume;
 }
 
 void simulation::save_results( const std::string fname, const struct results &res )
@@ -298,14 +308,20 @@ struct simulation::results simulation::dom_ensemble_dynamics(
     simulation::results res( N_samples );
     simulation::zero_results( res );
     res.mz[0] = next_state[0] - next_state[1];
+    res.time[0] = 0;
+    res.field[0] = applied_field( 0 );
 
     // allocate memory needed for computing the power loss
-    auto transition_energy = std::unique_ptr<double []>( new double[N_samples] );
-    auto probability_flow = std::unique_ptr<double []>( new double[N_samples] );
     double prob_derivs[2];
+    double energy_sum = 0;
+    master_equation( prob_derivs, next_state, 0 );
+    double last_pflow=0, next_pflow=prob_derivs[0];
+    double last_et=0, next_et = dom::single_transition_energy(
+        anisotropy, volume, applied_field( 0 ) );
+
 
     // Variables needed in the loop
-    double t=0;
+    double last_t, t=0;
     double max_dt = end_time / 1000.0; // never step more than 1000th of the simulation time
     double dt = 0.01*time_step;
     unsigned int step=0;
@@ -318,6 +334,9 @@ struct simulation::results simulation::dom_ensemble_dynamics(
             // take a step
             last_state[0] = next_state[0];
             last_state[1] = next_state[1];
+            last_pflow = next_pflow;
+            last_et = next_et;
+            last_t = t;
             step++;
 
             // perform integration step
@@ -328,12 +347,19 @@ struct simulation::results simulation::dom_ensemble_dynamics(
             // dt should never be greater than 1/1000 of the simulation time
             dt = dt>max_dt? max_dt : dt;
 
+            // Compute the energy loss for this step and add to total energy of cycle
+            master_equation( prob_derivs, next_state, t );
+            next_pflow = prob_derivs[0];
+            next_et = dom::single_transition_energy(
+                anisotropy, volume, applied_field( t ) );
+            energy_sum += one_step_energy_loss(
+                last_et, next_et, last_pflow, next_pflow, last_t, t, volume);
+
+
         } // end integration stepping loop
         /*
           Once this point is reached, we are currently one step beyond
           the desired sampling point. Use a first-order-hold:
-          i.e. take the previous state before the sampling time as the
-          state at the sampling time.
         */
         /**
            The magnetisation is computed as the magnetisation of
@@ -347,25 +373,23 @@ struct simulation::results simulation::dom_ensemble_dynamics(
         double t_next = t;
         double t_this = sample*sampling_time;
 
-        // FOH
+        // First-order-hold
         double beta = (mz_next - res.mz[sample-1])/(t_next-res.time[sample-1]);
         res.mz[sample] = res.mz[sample-1] + beta*(t_this - res.time[sample-1]);
 
         res.time[sample] = t_this;
         res.field[sample] = applied_field(t_this);
-
-        // Calculate the probability flow and transition energy for this step
-        transition_energy[sample] = dom::single_transition_energy(
-            anisotropy, volume, applied_field( t_this ) );
-        master_equation( prob_derivs, next_state, t_this );
-        probability_flow[sample] = prob_derivs[0];
     }
 
-    // Compute the energy loss
-    //double hk = 2*anisotropy / constants::MU0 / magnetisation;
-    //res.energy_loss = simulation::energy_loss( res, magnetisation, hk );
-    res.energy_loss = simulation::energy_loss(
-        transition_energy, probability_flow, res.time, res.N );
+    // @deprecated
+    // Compute the energy loss from the hysteresis area
+    // double hk = 2*anisotropy / constants::MU0 / magnetisation;
+    // res.energy_loss = simulation::energy_loss( res, magnetisation, hk );
+
+    // Store the total energy dissipated
+    // Sign is not deterministic and depends on where the simulation begins
+    // the steady state cycle. So we take the absolute value.
+    res.energy_loss = std::abs(energy_sum);
 
     // free memory
     return res;

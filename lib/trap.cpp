@@ -13,3 +13,8 @@ double trap::trapezoidal( double *x, double *y, size_t N )
     sum /= 2.0;
     return sum;
 }
+
+double trap::one_trapezoid( double x1, double x2, double fx1, double fx2 )
+{
+    return 0.5 * ( x2 - x1 ) * ( fx2 + fx1 );
+}
