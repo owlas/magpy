@@ -306,6 +306,7 @@ struct simulation::results simulation::dom_ensemble_dynamics(
 
     // Variables needed in the loop
     double t=0;
+    double max_dt = end_time / 1000.0; // never step more than 1000th of the simulation time
     double dt = 0.01*time_step;
     unsigned int step=0;
     double eps=time_step; // tolerance of the rk45 integrator
@@ -323,6 +324,9 @@ struct simulation::results simulation::dom_ensemble_dynamics(
             integrator::rk45( next_state, tmpstate, k1, k2, k3, k4, k5, k6,
                               &dt, &t, last_state, master_equation, n_dims,
                               eps );
+
+            // dt should never be greater than 1/1000 of the simulation time
+            dt = dt>max_dt? max_dt : dt;
 
         } // end integration stepping loop
         /*
