@@ -3,6 +3,19 @@
 #include "../include/stochastic_processes.hpp"
 #include <cmath>
 
+/// Compute the energy dissipated during one transition of the particle
+/**
+ * @param[in] K anisotropy constant of the particle
+ * @param[in] V volume of the particle
+ * @param[in] h applied field on the particle, reduced by the anisotropy
+ *              field \f$H_k=\frac{2K}{\mu_0M_s}\f$
+ * @returns the energy dissipated in one transition
+ */
+double dom::single_transition_energy(double K, double V, double h)
+{
+    return 4*K*V*h;
+}
+
 /// Compute the 2x2 transition matrix for a single particle
 /**
  * Assumes uniaxial anisotropy and an applied field h<1
