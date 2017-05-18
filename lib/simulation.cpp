@@ -19,6 +19,7 @@ double simulation::energy_loss(
     double *mult = new double[N];
     for( unsigned int i; i<N; i++ )
         mult[i] = transition_energy[i] * probability_flow[i];
+    delete[] mult;
     return trap::trapezoidal( mult, time.get(), N );
 }
 
