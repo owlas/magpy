@@ -122,7 +122,15 @@ namespace simulation
         const std::unique_ptr<double[]> &transition_energy,
         const std::unique_ptr<double[]> &probability_flow,
         const std::unique_ptr<double[]> &time,
+        const double volume,
         const size_t N );
+
+    // Computes the energy loss over just one step of the integrator
+    // Used for summing energy loss step-by-step without storing intermediate results
+    double one_step_energy_loss(
+        const double te1, const  double te2, const double pflow1, const double pflow2,
+        const double t1, const double t2, const double volume
+        );
 
     // Sets all of the arrays in the results struct to zero
     void zero_results( struct results& );
