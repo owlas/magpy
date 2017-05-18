@@ -117,6 +117,13 @@ namespace simulation
     double energy_loss(
         const struct results&, const double ms, const double hk );
 
+    // Compute the energy loss for a particle from the probability flow
+    double energy_loss(
+        const std::unique_ptr<double[]> &transition_energy,
+        const std::unique_ptr<double[]> &probability_flow,
+        const std::unique_ptr<double[]> &time,
+        const size_t N );
+
     // Sets all of the arrays in the results struct to zero
     void zero_results( struct results& );
 

@@ -18,5 +18,7 @@ namespace dom
         const double k, const double v, const double T, const double ms,
         const double alpha, const double t, const double *state_probabilities,
         const std::function<double(double)> applied_field );
+
+    double single_transition_energy(double K, double V, double h);
 }
 #endif

@@ -10,6 +10,18 @@ double simulation::energy_loss(
     return -constants::MU0*ms*hk*area;
 }
 
+double simulation::energy_loss(
+    const std::unique_ptr<double[]> &transition_energy,
+    const std::unique_ptr<double[]> &probability_flow,
+    const std::unique_ptr<double[]> &time,
+    const size_t N )
+{
+    double *mult = new double[N];
+    for( unsigned int i; i<N; i++ )
+        mult[i] = transition_energy[i] * probability_flow[i];
+    return trap::trapezoidal( mult, time.get(), N );
+}
+
 void simulation::save_results( const std::string fname, const struct results &res )
 {
     std::stringstream magx_fname, magy_fname, magz_fname, field_fname, time_fname, energy_fname;
@@ -246,9 +258,6 @@ struct simulation::results simulation::dom_ensemble_dynamics(
     const double end_time,
     const int max_samples )
 {
-    // Compute the anisotropy field
-    double hk = 2*anisotropy / constants::MU0 / magnetisation;
-
     // Allocate array for work dims*dims
     const size_t n_dims = 2;
     double work[4];
@@ -262,6 +271,9 @@ struct simulation::results simulation::dom_ensemble_dynamics(
     double k1[2], k2[2], k3[2], k4[2], k5[2], k6[2], tmpstate[2];
 
     // Construct the time dependent master equation
+    // _1 output - probability derivatives
+    // _2 input - current probabilities
+    // _3 input - current time
     std::function<void(double*,const double*,const double)> master_equation =
         std::bind(dom::master_equation_with_update, _1, work, anisotropy,
                   volume, temperature, magnetisation, alpha, _3, _2, applied_field );
@@ -286,11 +298,16 @@ struct simulation::results simulation::dom_ensemble_dynamics(
     simulation::zero_results( res );
     res.mz[0] = next_state[0] - next_state[1];
 
+    // allocate memory needed for computing the power loss
+    auto transition_energy = std::unique_ptr<double []>( new double[N_samples] );
+    auto probability_flow = std::unique_ptr<double []>( new double[N_samples] );
+    double prob_derivs[2];
+
     // Variables needed in the loop
     double t=0;
-    double dt = time_step;
+    double dt = 0.01*time_step;
     unsigned int step=0;
-    double eps=1e-11; // tolerance of the rk45 integrator
+    double eps=time_step; // tolerance of the rk45 integrator
     for( unsigned int sample=1; sample<N_samples; sample++ )
     {
         // Perform a simulation step until we breach the next sampling point
@@ -309,7 +326,7 @@ struct simulation::results simulation::dom_ensemble_dynamics(
         } // end integration stepping loop
         /*
           Once this point is reached, we are currently one step beyond
-          the desired sampling point. Use a zero-order-hold:
+          the desired sampling point. Use a first-order-hold:
           i.e. take the previous state before the sampling time as the
           state at the sampling time.
         */
@@ -321,12 +338,30 @@ struct simulation::results simulation::dom_ensemble_dynamics(
            Thus the magnetisation is the difference between the two
            state probabilities.
         */
-        res.mz[sample] = next_state[0] - next_state[1];
-        res.time[sample] = t;
-        res.field[sample] = applied_field(t);
+        double mz_next = next_state[0] - next_state[1];
+        double t_next = t;
+        double t_this = sample*sampling_time;
+
+        // FOH
+        double beta = (mz_next - res.mz[sample-1])/(t_next-res.time[sample-1]);
+        res.mz[sample] = res.mz[sample-1] + beta*(t_this - res.time[sample-1]);
+
+        res.time[sample] = t_this;
+        res.field[sample] = applied_field(t_this);
+
+        // Calculate the probability flow and transition energy for this step
+        transition_energy[sample] = dom::single_transition_energy(
+            anisotropy, volume, applied_field( t_this ) );
+        master_equation( prob_derivs, next_state, t_this );
+        probability_flow[sample] = prob_derivs[0];
     }
 
     // Compute the energy loss
-    res.energy_loss = simulation::energy_loss( res, magnetisation, hk );
+    //double hk = 2*anisotropy / constants::MU0 / magnetisation;
+    //res.energy_loss = simulation::energy_loss( res, magnetisation, hk );
+    res.energy_loss = simulation::energy_loss(
+        transition_energy, probability_flow, res.time, res.N );
+
+    // free memory
     return res;
 }
