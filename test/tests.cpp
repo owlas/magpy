@@ -751,6 +751,103 @@ TEST( dom, uniaxial_transition_matrix )
     EXPECT_DOUBLE_EQ( -278104386.1896516, W[3] );
 }
 
+TEST( dipolar_field, dipolar )
+{
+    // needed
+}
+
+TEST( dipolar_field, prefactor )
+{
+    double ms = 1e5, double k_av = 1.7e4;
+    double result = field::dipolar_prefactor( ms, k_av );
+    EXPECT_DOUBLE_EQ( 0.029411763267966188, result );
+}
+
+TEST( dipolar_field, p2p_term )
+{
+    double out[3] = {1.0, 1.5, 2.0};
+    double vj = 2.3;
+    double rij3 = 1.2;
+    double mj[3] = {0.7, 0.2, 0.4};
+    double dist[3] = {1.2, 1.1, 1.3};
+    double prefactor = 3.7;
+
+    field::dipolar_add_p2p_term( out, vj, rij3, mj, dist, prefactor );
+    EXPECT_DOUBLE_EQ( 36.37323333, out[0] );
+    EXPECT_DOUBLE_EQ( 37.05761667, out[1] );
+    EXPECT_DOUBLE_EQ( 42.86218333, out[2] );
+}
+
+TEST( applied_field, multi_add )
+{
+    func = []( const double t) -> double { return 2.0*t; };
+    double h[6];
+    for( unsigned int i=0; i<6; i++ )
+        h[i] = 2.0;
+    field::multi_add_applied_Z_field_function( h, func, 3.0, 2 );
+
+    EXPECT_DOUBLE_EQ( 2.0, h[0] );
+    EXPECT_DOUBLE_EQ( 2.0, h[1] );
+    EXPECT_DOUBLE_EQ( 8.0, h[2] );
+    EXPECT_DOUBLE_EQ( 2.0, h[3] );
+    EXPECT_DOUBLE_EQ( 2.0, h[4] );
+    EXPECT_DOUBLE_EQ( 8.0, h[5] );
+}
+
+TEST( anisotropy_field, multi_uniaxial_jacobian )
+{
+    // Test the addition of the uniaxial jacobian
+    // for many particles.
+    double axes[9] = {1, 2, 3, 4, 5, 6, 4, 2, 3};
+    double k_red[3] = {3.2, 5.2, 1.2};
+    constexpr double jaclen = 9*9;
+    double jac[jaclen];
+
+    // Init the field as all 10.0
+    for( unsigned int i=0; i<jaclen; i++ )
+        jac[i] = 10.0;
+
+    // Add the jacobian on top of the field
+    field::multi_add_uniaxial_anisotropy_jacobian( jac, axes, k_red, 3 );
+
+    // Check that anything not on the block diag is still 10
+    for( unsigned int i=0; i<jaclen; i++ )
+        for( unsigned int j=0; j<jaclen; j++ )
+            if ( (i/3) != (j/3) )
+                EXPECT_DOUBLE_EQ( 10.0, jac[i][j] );
+
+    // Check the blocks
+    EXPECT_DOUBLE_EQ( 3.2, jac[0][0] );
+    EXPECT_DOUBLE_EQ( 6.4, jac[0][1] );
+    EXPECT_DOUBLE_EQ( 9.6, jac[0][2] );
+    EXPECT_DOUBLE_EQ( 6.4, jac[1][0] );
+    EXPECT_DOUBLE_EQ( 12.8, jac[1][1] );
+    EXPECT_DOUBLE_EQ( 19.2, jac[1][2] );
+    EXPECT_DOUBLE_EQ( 9.6, jac[2][0] );
+    EXPECT_DOUBLE_EQ( 19.2, jac[2][1] );
+    EXPECT_DOUBLE_EQ( 28.8, jac[2][2] );
+
+    EXPECT_DOUBLE_EQ( 83.2, jac[0+3][0+3] );
+    EXPECT_DOUBLE_EQ( 104, jac[0+3][1+3] );
+    EXPECT_DOUBLE_EQ( 124.8, jac[0+3][2+3] );
+    EXPECT_DOUBLE_EQ( 104, jac[1+3][0+3] );
+    EXPECT_DOUBLE_EQ( 130, jac[1+3][1+3] );
+    EXPECT_DOUBLE_EQ( 156, jac[1+3][2+3] );
+    EXPECT_DOUBLE_EQ( 124.8, jac[2+3][0+3] );
+    EXPECT_DOUBLE_EQ( 156, jac[2+3][1+3] );
+    EXPECT_DOUBLE_EQ( 187.2, jac[2+3][2+3] );
+
+    EXPECT_DOUBLE_EQ( 19.2, jac[0+6][0+6] );
+    EXPECT_DOUBLE_EQ( 14.4, jac[0+6][1+6] );
+    EXPECT_DOUBLE_EQ( 9.6, jac[0+6][2+6] );
+    EXPECT_DOUBLE_EQ( 14.4, jac[1+6][0+6] );
+    EXPECT_DOUBLE_EQ( 10.8, jac[1+6][1+6] );
+    EXPECT_DOUBLE_EQ( 7.2, jac[1+6][2+6] );
+    EXPECT_DOUBLE_EQ( 9.6, jac[2+6][0+6] );
+    EXPECT_DOUBLE_EQ( 7.2, jac[2+6][1+6] );
+    EXPECT_DOUBLE_EQ( 4.8, jac[2+6][2+6] );
+}
+
 TEST( distances, pair_wise_distances )
 {
     std::array<double,3> p1 = {0, 0, 1};
