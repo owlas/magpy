@@ -13,6 +13,7 @@
 #include "../include/field.hpp"
 #include "../include/dom.hpp"
 #include "../include/constants.hpp"
+#include "../include/distances.hpp"
 #include <cmath>
 #include <random>
 #ifdef USEMKL
@@ -748,4 +749,83 @@ TEST( dom, uniaxial_transition_matrix )
     EXPECT_DOUBLE_EQ( 278104386.1896516, W[1]);
     EXPECT_DOUBLE_EQ( 0.00021827108536028533, W[2] );
     EXPECT_DOUBLE_EQ( -278104386.1896516, W[3] );
+}
+
+TEST( distances, pair_wise_distances )
+{
+    std::array<double,3> p1 = {0, 0, 1};
+    std::array<double,3> p2 = {3, 1, 0};
+    std::array<double,3> p3 = {0.5, 0.5, 0.5};
+
+    std::vector<std::array<double,3> > points = {p1, p2, p3};
+    auto dists = distances::pair_wise_distance_vectors( points );
+
+    EXPECT_DOUBLE_EQ( 0, dists[0][0][0] );
+    EXPECT_DOUBLE_EQ( 0, dists[0][0][1] );
+    EXPECT_DOUBLE_EQ( 0, dists[0][0][2] );
+    EXPECT_DOUBLE_EQ( 0, dists[1][1][0] );
+    EXPECT_DOUBLE_EQ( 0, dists[1][1][1] );
+    EXPECT_DOUBLE_EQ( 0, dists[1][1][2] );
+    EXPECT_DOUBLE_EQ( 0, dists[2][2][0] );
+    EXPECT_DOUBLE_EQ( 0, dists[2][2][1] );
+    EXPECT_DOUBLE_EQ( 0, dists[2][2][2] );
+
+
+    EXPECT_DOUBLE_EQ( 3, dists[0][1][0] );
+    EXPECT_DOUBLE_EQ( 1, dists[0][1][1] );
+    EXPECT_DOUBLE_EQ( 1, dists[0][1][2] );
+    EXPECT_DOUBLE_EQ( 3, dists[1][0][0] );
+    EXPECT_DOUBLE_EQ( 1, dists[1][0][1] );
+    EXPECT_DOUBLE_EQ( 1, dists[1][0][2] );
+
+    EXPECT_DOUBLE_EQ( 0.5, dists[0][2][0] );
+    EXPECT_DOUBLE_EQ( 0.5, dists[0][2][1] );
+    EXPECT_DOUBLE_EQ( 0.5, dists[0][2][2] );
+    EXPECT_DOUBLE_EQ( 0.5, dists[2][0][0] );
+    EXPECT_DOUBLE_EQ( 0.5, dists[2][0][1] );
+    EXPECT_DOUBLE_EQ( 0.5, dists[2][0][2] );
+
+    EXPECT_DOUBLE_EQ( 2.5, dists[1][2][0] );
+    EXPECT_DOUBLE_EQ( 0.5, dists[1][2][1] );
+    EXPECT_DOUBLE_EQ( 0.5, dists[1][2][2] );
+    EXPECT_DOUBLE_EQ( 2.5, dists[2][1][0] );
+    EXPECT_DOUBLE_EQ( 0.5, dists[2][1][1] );
+    EXPECT_DOUBLE_EQ( 0.5, dists[2][1][2] );
+}
+
+TEST( distances, pair_wise_magnitudes )
+{
+    std::array<double,3> d00 = {0, 0, 0}
+    std::array<double,3> d01 = {0, 0, 1};
+    std::array<double,3> d02 = {3, 1, 0};
+    std::array<double,3> d12 = {0.5, 0.5, 0.5};
+
+    std::vector<std::vector<std::array<double> > > dists;
+    dists.reserve( 3 );
+    for( auto &vec : dists )
+        vec.reserve( 3 );
+    dists[0][0] = d00;
+    dists[0][1] = d01;
+    dists[0][2] = d02;
+    dists[1][0] = d01;
+    dists[1][1] = d00;
+    dists[1][2] = d12;
+    dists[2][0] = d02;
+    dists[2][1] = d12;
+    dists[2][2] = d00;
+
+    auto mags = distances::pair_wise_distance_magnitudes( dists );
+
+    EXPECT_DOUBLE_EQ( 0, mags[0][0] );
+    EXPECT_DOUBLE_EQ( 0, mags[1][1] );
+    EXPECT_DOUBLE_EQ( 0, mags[2][2] );
+
+    EXPECT_DOUBLE_EQ( 1, mags[0][1] );
+    EXPECT_DOUBLE_EQ( 1, mags[1][0] );
+
+    EXPECT_DOUBLE_EQ( 3.1622776601683795, mags[0][2] );
+    EXPECT_DOUBLE_EQ( 3.1622776601683795, mags[2][0] );
+
+    EXPECT_DOUBLE_EQ( 0.8660254037844386, mags[1][2] );
+    EXPECT_DOUBLE_EQ( 0.8660254037844386, mags[2][1] );
 }
