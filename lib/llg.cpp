@@ -228,3 +228,189 @@ void llg::jacobians_with_update( double *drift,
     llg::drift_jacobian( drift_jac, state, a_t, alpha, heff, heff_jac );
     llg::diffusion_jacobian( diffusion_jac, state, b_t, s, alpha );
 }
+
+/// Deterministic drift component of the stochastic LLG for many particles
+/**
+ * @param[out] deriv  drift derivative of the deterministic part
+ * of the stochastic llg for each particle [length 3xN]
+ * @param[in] state current state of the magnetisation vectors [length
+ * 3xN]
+ * @param[in] t time (has no effect)
+ * @param[in] alpha damping ratio
+ * @param[in] heff the effective field on each particle [length 3xN]
+ * @param[in] N_particles the number of particles
+ */
+void llg::multi_drift( double *deriv, const double *state,
+                       const double *alphas, const double *heff,
+                       const size_t N_particles )
+{
+    for( unsigned int n=0; n<N_particles; n++ )
+    {
+        unsigned int n3 = 3*n;
+        llg::drift(deriv+n3, state+n3, 0, alphas[n], heff+n3 );
+    }
+}
+
+
+/// Compute 3x3 block diagonal multi diffusion
+/**
+ * Note zero terms are not written.
+ */
+void llg::multi_diffusion( double *deriv, const double *state,
+                           const double *field_strengths, const double *alphas,
+                           const size_t N_particles )
+{
+    double diffusionwork[9];
+    for( unsigned int n=0; n<N_particles; n++ )
+    {
+        unsigned int n3 = 3*n;
+        unsigned int N3 = 3*N_particles;
+        llg::diffusion(diffusionwork, state+n3, 0.0,
+                       field_strengths[n], alphas[n] );
+        // Place on block diagonal
+        deriv[n3+0 + (n3+0)*N3] = diffusionwork[0];
+        deriv[n3+1 + (n3+0)*N3] = diffusionwork[1];
+        deriv[n3+2 + (n3+0)*N3] = diffusionwork[2];
+
+        deriv[n3+0 + (n3+1)*N3] = diffusionwork[3];
+        deriv[n3+1 + (n3+1)*N3] = diffusionwork[4];
+        deriv[n3+2 + (n3+1)*N3] = diffusionwork[5];
+
+        deriv[n3+0 + (n3+2)*N3] = diffusionwork[6];
+        deriv[n3+1 + (n3+2)*N3] = diffusionwork[7];
+        deriv[n3+2 + (n3+2)*N3] = diffusionwork[8];
+    }
+}
+
+/// Updates field and computes LLG for N interacting particles
+/**
+ * heff_fuc is a function that returns the effective field given
+ * the current state and the current time. This can be whatever you
+ * want e.g. cubic anisotropy terms and interactions. EZEEE.
+ */
+void llg::multi_stochastic_llg_field_update(
+    double *drift,
+    double *diffusion,
+    double *heff,
+    const std::function<void(double*,const double*,const double)> heff_func,
+    const double *state,
+    const double t,
+    const double *alphas,
+    const double *field_strengths,
+    const size_t N_particles )
+{
+    heff_func( heff, state, t );
+    llg::multi_drift(
+        drift, state, alphas, heff, N_particles );
+    llg::multi_diffusion(
+        diffusion, state, field_strengths, alphas, N_particles );
+}
+
+/// Computes the Jacobian of the drift for N interacting particles
+/**
+ * Assumes that jac is zero'd (i.e. function will not fill in 0 entries)
+ */
+void llg::multi_drift_quasijacobian(double *jac, const double *m,
+                                    const double *alphas, const double *h,
+                                    const double *hj, size_t N_particles )
+{
+    double jacwork[9];
+    // jac is 3xNx3xN = 9*N2
+    for( unsigned int n=0; n<N_particles; n++ )
+    {
+        // Compute the Jacobian for the particle
+        llg::drift_jacobian(jacwork, m+(3*n), 0.0, alphas[n], h+(3*n), hj+(3*n) );
+
+        // Place on block diagonal
+        jac[3*n+0 + (3*n+0)*3*N_particles] = jacwork[0 + 0*3];
+        jac[3*n+1 + (3*n+0)*3*N_particles] = jacwork[1 + 0*3];
+        jac[3*n+2 + (3*n+0)*3*N_particles] = jacwork[2 + 0*3];
+
+        jac[3*n+0 + (3*n+1)*3*N_particles] = jacwork[0 + 1*3];
+        jac[3*n+1 + (3*n+1)*3*N_particles] = jacwork[1 + 1*3];
+        jac[3*n+2 + (3*n+1)*3*N_particles] = jacwork[2 + 1*3];
+
+        jac[3*n+0 + (3*n+2)*3*N_particles] = jacwork[0 + 2*3];
+        jac[3*n+1 + (3*n+2)*3*N_particles] = jacwork[1 + 2*3];
+        jac[3*n+2 + (3*n+2)*3*N_particles] = jacwork[2 + 2*3];
+    }
+}
+
+/// Computes the Jacobian of the diffusion for N interacting particles
+/**
+ * Only computes non-zero values. jacobian must be 0 initialised
+ * before function call.
+ */
+void llg::multi_diffusion_jacobian(
+    double *jac, const double *state,
+    const double *therm_field_strengths, const double *alphas,
+    const size_t N_particles )
+{
+    double jacwork[27];
+    for( unsigned int n=0; n<N_particles; n++ )
+    {
+        llg::diffusion_jacobian(
+            jacwork, state+(3*n), 0.0, therm_field_strengths[n], alphas[n] );
+
+        /// Place on 3dimensional block diagonal
+        for( unsigned int x=0; x<3; x++ )
+            for( unsigned int y=0; y<3; y++ )
+                for( unsigned int z=0; z<3; z++ )
+                    jac[3*n+z + (3*n+y)*3*N_particles + (3*n+x)*9*N_particles*N_particles]
+                        = jacwork[z + 3*y + 9*x];
+    }
+}
+
+/// Computes all fields, drift/diffusion, jacobians for N particles
+/**
+ * The effective field is first computed based on the applied field
+ * and current state of the magnetisation. This is then used to
+ * compute the drift, diffusion, and their respective Jacobians.
+ * Assumes uniaxial anisotropy.
+ * @param[out] drift deterministic component of the LLG [length 3]
+ * @param[out] diffusion stochastic component of the LLG [length 3x3]
+ * @param[out] drift_jac Jacobian of the deterministic component
+ * [length 3x3]
+ * @param[out] diffusion_jac Jacobian of the diffusion component
+ * [length 3x3x3]
+ * @param[out] heff effective field including the applied field
+ * contribution [length 3]
+ * @param[out] heff_jac Jacobian of the effective field [length 3x3]
+ * @param[in] state current state of the magnetisation [length 3]
+ * @param[in] a_t time at which to evaluate the drift
+ * @param[in] b_t time at which to evaluate the diffusion
+ * @param[in] happ the applied field at time `a_t` [length 3]
+ * @param[in] aaxis the anisotropy axis of the particle [length 3]
+ * @param[in] alpha damping ratio
+ * @param[in] s normalised noise power of the thermal field (see notes
+ * on LLG normalisation for details)
+ */
+void llg::multi_stochastic_llg_jacobians_field_update(
+    double *drift,
+    double *diffusion,
+    double *drift_jac,
+    double *diffusion_jac,
+    double *heff,
+    double *heff_jac,
+    const double *state,
+    const double t,
+    const double *alphas,
+    const double *field_strengths,
+    const size_t N_particles,
+    const std::function<void(double*,const double*,const double)> heff_func,
+    const std::function<void(double*,const double*,const double)> heff_jac_func )
+{
+    // Update field and compute stochastic llg
+    llg::multi_stochastic_llg_field_update(
+        drift, diffusion, heff, heff_func, state, t,
+        alphas, field_strengths , N_particles);
+
+    // Compute field jacobian for all particles
+    heff_jac_func( heff_jac, state, t );
+
+    // Compute the stochastic llg jacobians
+    llg::multi_drift_quasijacobian(
+        drift_jac, state, alphas, heff, heff_jac, N_particles );
+    llg::multi_diffusion_jacobian(
+        diffusion_jac, state, field_strengths, alphas, N_particles );
+}
