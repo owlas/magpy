@@ -135,6 +135,9 @@ namespace simulation
     // Sets all of the arrays in the results struct to zero
     void zero_results( struct results& );
 
+    void reduce_to_system_magnetisation(
+        double *mag, const double *particle_mags, const size_t N_particles );
+
 
 }
 #include "simulation.tpp"

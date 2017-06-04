@@ -16,6 +16,7 @@
 #include "../include/field.hpp"
 #include "../include/simulation.hpp"
 #include "../include/rng.hpp"
+#include "../include/distances.hpp"
 
 using d3=std::array<double,3>;
 using rng_vec=std::vector<std::shared_ptr<Rng>>;
@@ -74,35 +75,48 @@ void moma_config::validate_for_llg( const json input )
         LOG( FATAL ) << "Frequency must be greater than 0";
     double amp = input.at("global").at("applied-field").at("amplitude");
 
-    // Check particle
-    double damping = input.at("particle").at("damping");
-    if( damping < 0 )
-        LOG( FATAL ) << "Damping must be greater than 0";
-    double radius = input.at("particle").at("radius");
-    if( radius < 0 )
-        LOG( FATAL ) << "Radius must be greater than 0";
-    double anisotropy = input.at("particle").at("anisotropy");
-    if( anisotropy < 0 )
-        LOG( FATAL ) << "Anisotropy must be greater than 0";
-    std::array<double,3> aaxis = {
-        input.at("particle").at("anisotropy-axis")[0],
-        input.at("particle").at("anisotropy-axis")[1],
-        input.at("particle").at("anisotropy-axis")[2]
-    };
-    double aaxis_mag = aaxis[0]*aaxis[0] + aaxis[1]*aaxis[1] + aaxis[2]*aaxis[2];
-    if( std::abs( aaxis_mag - 1 ) > 0.00001 )
-        LOG( FATAL ) << "Anisotropy axis must be unit vector but has magnitude " << aaxis_mag;
-    double magnetisation = input.at("particle").at("magnetisation");
-    if( magnetisation < 0 )
-        LOG( FATAL ) << "Magnetisation must be greater than 0";
-    std::array<double,3> magaxis = {
-        input.at("particle").at("magnetisation-direction")[0],
-        input.at("particle").at("magnetisation-direction")[1],
-        input.at("particle").at("magnetisation-direction")[2]
-    };
-    double magaxis_mag = magaxis[0]*magaxis[0] + magaxis[1]*magaxis[1] + magaxis[2]*magaxis[2];
-    if( std::abs( magaxis_mag - 1 ) > 0.00001 )
-        LOG( FATAL ) << "Magnetisation direction axis must be unit vector but has magnitude" << magaxis_mag;
+    // Check particles
+    if( !input.at("particles").is_array() )
+        LOG( FATAL ) << "particles should be an array of particles!";
+    std::vector<json> particles = input.at("particles");
+
+    double ms_ref = input.at("particles")[0].at("magnetisation");
+    double alpha_ref = input.at("particles")[0].at("damping");
+    for( auto &p : particles )
+    {
+        double damping = p.at("damping");
+        if( damping < 0 )
+            LOG( FATAL ) << "Damping must be greater than 0";
+        if( damping != alpha_ref )
+            LOG( FATAL ) << "All particles must have the same damping value";
+        double radius = p.at("radius");
+        if( radius < 0 )
+            LOG( FATAL ) << "Radius must be greater than 0";
+        double anisotropy = p.at("anisotropy");
+        if( anisotropy < 0 )
+            LOG( FATAL ) << "Anisotropy must be greater than 0";
+        std::array<double,3> aaxis = {
+            p.at("anisotropy-axis")[0],
+            p.at("anisotropy-axis")[1],
+            p.at("anisotropy-axis")[2]
+        };
+        double aaxis_mag = aaxis[0]*aaxis[0] + aaxis[1]*aaxis[1] + aaxis[2]*aaxis[2];
+        if( std::abs( aaxis_mag - 1 ) > 0.00001 )
+            LOG( FATAL ) << "Anisotropy axis must be unit vector but has magnitude " << aaxis_mag;
+        double magnetisation = p.at("magnetisation");
+        if( magnetisation < 0 )
+            LOG( FATAL ) << "Magnetisation must be greater than 0";
+        if( magnetisation != ms_ref )
+            LOG( FATAL ) << "All particles must have the same saturation magnetisation";
+        std::array<double,3> magaxis = {
+            p.at("magnetisation-direction")[0],
+            p.at("magnetisation-direction")[1],
+            p.at("magnetisation-direction")[2]
+        };
+        double magaxis_mag = magaxis[0]*magaxis[0] + magaxis[1]*magaxis[1] + magaxis[2]*magaxis[2];
+        if( std::abs( magaxis_mag - 1 ) > 0.00001 )
+            LOG( FATAL ) << "Magnetisation direction axis must be unit vector but has magnitude" << magaxis_mag;
+    }
 }
 
 /// Validate that fields for discerete-orientation-model simulation are in json
@@ -153,10 +167,6 @@ void moma_config::validate_for_dom( const json input )
     double amp = input.at("global").at("applied-field").at("amplitude");
     double tau0 = input.at("global").at("tau0");
 
-    // Check particles
-    if( !input.at("particles").is_array() )
-        LOG( FATAL ) << "particles should be an array of particles!";
-
     std::vector<json> particles = input.at("particles");
     for( auto &p : particles )
     {
@@ -193,7 +203,7 @@ json moma_config::transform_input_parameters_for_dom( const json in )
     /**
      * Convert the sim_time input
      */
-    bool steady_cycle; double sim_time;
+    bool steady_cycle;
     if( in.at("simulation").at("simulation-time").is_string() )
         steady_cycle = true;
     else {
@@ -259,28 +269,46 @@ json moma_config::transform_input_parameters_for_llg( const json in )
     out["simulation"]["steady-cycle-activated"] = steady_cycle;
 
 
-    // Compute particle volume
-    double rad = in["particle"]["radius"];
-    double volume = 4.0 / 3.0 * M_PI * rad * rad * rad;
-    out["particle"]["volume"] = volume;
+    // Get the particles
+    std::vector<json> particles = in.at("particles");
+    const size_t N_particles = particles.size();
 
-    // Compute particle stability ratio
-    double k = in["particle"]["anisotropy"];
-    double T = in["global"]["temperature"];
-    double stability = k*volume/constants::KB/T;
-    out["particle"]["stability-ratio"] = stability;
+    // Compute particle volumes
+    double average_volume = 0.0;
+    for( auto &p : particles )
+    {
+        p["volume"] = 4.0 / 3.0 * M_PI * std::pow( p["radius"].get<double>(), 3 );
+        average_volume += p["volume"].get<double>();
+    }
+    average_volume /= N_particles;
 
-    // anisotropy field and reduced field
-    double ms = in["particle"]["magnetisation"];
-    double H = in["global"]["applied-field"]["amplitude"];
-    double Hk = 2*k/constants::MU0/ms;
-    double h = H/Hk;
-    out["global"]["anisotropy-field"] = Hk;
-    out["global"]["applied-field"]["amplitude"] = h;
+    // Compute particle reduced volumes
+    for( auto &p : particles )
+        p["reduced-volume"] = p["volume"].get<double>() / average_volume;
+
+    // Compute particle stability ratios
+    for( auto &p : particles )
+        p["stability-ratio"] = p.at("anisotropy").get<double>() * p.at("volume").get<double>()
+            / constants::KB / in.at("global").at("temperature").get<double>();
+
+    // Compute particle reduced anisotropy constants
+    double average_anisotropy = 0.0;
+    for( auto &p : particles )
+        average_anisotropy += p.at("anisotropy").get<double>();
+    average_anisotropy /= N_particles;
+    for( auto &p : particles )
+        p.at("reduced-anisotropy") = p.at("anisotropy").get<double>() / average_anisotropy;
+
+    // Compute the anisotropy field and reduced field
+    double hk= 2.0 * average_anisotropy / constants::MU0
+        / particles[0].at("magnetisation").get<double>();
+    out.at("global").at("anisotropy-field") = hk;
+    out.at("global").at("applied-field").at("reduced-amplitude") =
+        out.at("global").at("applied-field").at("amplitude").get<double>() / hk;
 
     // Compute the time rescaling
-    double damping = in["particle"]["damping"];
-    double time_factor = constants::GYROMAG * constants::MU0 * Hk
+    double damping = particles[0].at("damping");
+    double time_factor = constants::GYROMAG * constants::MU0 * hk
         / ( 1+damping*damping );
     out["simulation"]["time-factor"] = time_factor;
 
@@ -290,18 +318,22 @@ json moma_config::transform_input_parameters_for_llg( const json in )
     out["simulation"]["time-step"] = tau_step;
     double f = in["global"]["applied-field"]["frequency"];
     double f_in_tau = f / time_factor;
-    out["global"]["applied-field"]["frequency"] = f_in_tau;
+    out["global"]["applied-field"]["reduced-frequency"] = f_in_tau;
     if( !steady_cycle )
     {
         double sim_tau = sim_time * time_factor;
         out["simulation"]["simulation-time"] = sim_tau;
     }
 
-    // Compute the thermal field strength
-    double therm_strength = std::sqrt(
-        damping * constants::KB * T
-        / ( k * volume * ( 1 + damping * damping ) ) );
-    out["particle"]["thermal-field-strength"] = therm_strength;
+    /// Compute the thermal field strength for each particle
+    /**
+     * Computed as \f$D=\frac{\alpha k_BT}{2V_i\bar{K}(1+\alpha^2)}\f$
+     */
+    for( auto &p : particles )
+        p.at("thermal-field-strength") = std::sqrt(
+            damping * constants::KB * in.at("global").at("temperature").get<double>()
+            / ( average_anisotropy * p.at("volume").get<double>()
+                * ( 1 + damping * damping ) ) );
 
     return out;
 }
@@ -479,7 +511,7 @@ void moma_config::launch_dom_simulation( const json in )
     // Run the simulation
     if( steady_cycle )
     {
-        double steady_state_condition = 1e-4;
+        double steady_state_condition = 1e-3;
         results = simulation::steady_state_cycle_dynamics(
             run_function,
             max_samples,
@@ -554,38 +586,91 @@ void moma_config::launch_llg_simulation( const json in )
     if( field_shape.compare("sine") == 0 )
         happ = std::bind(
             field::sinusoidal,
-            params["global"]["applied-field"]["amplitude"],
-            params["global"]["applied-field"]["frequency"],
+            params["global"]["applied-field"]["reduced-amplitude"],
+            params["global"]["applied-field"]["reduced-frequency"],
             std::placeholders::_1 );
     else if( field_shape.compare("square") == 0 )
         happ = std::bind(
             field::square,
-            params["global"]["applied-field"]["amplitude"],
-            params["global"]["applied-field"]["frequency"],
+            params["global"]["applied-field"]["reduced-amplitude"],
+            params["global"]["applied-field"]["reduced-frequency"],
             std::placeholders::_1 );
     else if( field_shape.compare("square-fourier") == 0 )
         happ = std::bind(
             field::square_fourier,
-            params["global"]["applied-field"]["amplitude"],
-            params["global"]["applied-field"]["frequency"],
+            params["global"]["applied-field"]["reduced-amplitude"],
+            params["global"]["applied-field"]["reduced-frequency"],
             params["global"]["applied-field"]["components"],
             std::placeholders::_1 );
     else
         LOG(FATAL) << field_shape << " is not a valid field shape.";
 
-    // Get the uniaxial anisotropy axis
-    std::array<double,3> aaxis{
-        params["particle"]["anisotropy-axis"][0],
-            params["particle"]["anisotropy-axis"][1],
-            params["particle"]["anisotropy-axis"][2]
-            };
+    // Get the uniaxial anisotropy axes
+    std::vector<json> particles = params.at("particles");
+    std::vector<std::array<double,3> > axes;
+    for( auto &p : particles )
+    {
+        std::array<double,3> aaxis{
+            p.at("anisotropy-axis")[0],
+            p.at("anisotropy-axis")[1],
+            p.at("anisotropy-axis")[2] };
+        axes.push_back( aaxis );
+    }
 
     // Run the simulation N times for a full ensemble
     size_t n_runs = params["simulation"]["ensemble-size"];
 
     // Get the particle properties
-    double damping = params.at("particle").at("damping");
-    double thermal_field = params.at("particle").at("thermal-field-strength");
+    double damping = particles[0].at("damping");
+    double saturation_magnetisation = particles[0].at("magnetisation");
+    double average_volume = params.at("global").at("average-volume");
+    double average_anisotropy = params.at("global").at("average-anisotropy");
+    std::vector<double> thermal_field_strengths;
+    std::vector<double> reduced_anisotropy_constants;
+    std::vector<double> reduced_particle_volumes;
+    for( auto &p : particles )
+    {
+        thermal_field_strengths.push_back(
+            p.at("thermal-field-strength").get<double>() );
+        reduced_anisotropy_constants.push_back(
+            p.at("reduced-anisotropy").get<double>() );
+        reduced_particle_volumes.push_back(
+            p.at("reduced-volume").get<double>() );
+    }
+
+    // compute the distances
+    std::vector<std::array<double, 3> > locations;
+    for( auto &p : particles )
+    {
+        std::array<double, 3> loc{
+            p.at("location")[0],
+            p.at("location")[1],
+            p.at("location")[2]
+        };
+        locations.push_back( loc );
+    }
+    auto interparticle_distances = distances::pair_wise_distance_vectors( locations );
+    auto interparticle_distance_magnitudes = distances::distance_vectors_to_magnitude(
+        interparticle_reduced_distances
+        );
+
+    std::vector<std:vector<std::array<double,3> > > interparticle_unit_distances;
+    interparticle_unit_distances.resize( particles.size() );
+    for( auto &vec : interparticle_unit_distances )
+        vec.resize( particles.size() );
+    for( unsigned int i=0; i<particles.size(); i++ )
+        for( unsigned int j=0; j<particles.size(); j++ )
+            for( unsigned int k=0; k<3; k++ )
+                interparticle_unit_distances[i][j][k] = interparticle_distances[i][j][k] / interparticle_distance_magnitudes[i][j];
+
+    // @TODO - check reduction
+    std::vector<std::vector<double> > interparticle_distance_reduced_magnitude;
+    interparticle_distance_reduced_magnitude.resize( particles.size() );
+    for( auto &vec : interparticle_distance_reduced_magnitude )
+        vec.resize( particles.size() );
+    for( unsigned int i=0; i<particles.size(); i++ )
+        for( unsigned int j=0; j<particles.size(); j++ )
+            interparticle_distance_reduced_magnitude[i][j] = interparticle_distance_magnitudes[i][j] / std::pow( average_volume, 1./3 );
 
     // Get simulation properties
     double time_step = params.at("simulation").at("time-step");
@@ -596,16 +681,21 @@ void moma_config::launch_llg_simulation( const json in )
 
     /**
      * LANGEVIN DYNAMICS
-     * The initial state of the system is assumed to be the same for
-     * all particles.
+     * The initial state of each system is assumed to be the same
      */
-    std::array<double,3> init{
-        params["particle"]["magnetisation-direction"][0],
-            params["particle"]["magnetisation-direction"][1],
-            params["particle"]["magnetisation-direction"][2] };
-    std::vector<d3> init_mags;
+    std::vector<std::array<double,3> > system_state;
+    for( auto &p: particles )
+    {
+        std::array<double,3> init{
+            p.at("magnetisation-direction")[0],
+            p.at("magnetisation-direction")[1],
+            p.at("magnetisation-direction")[2] };
+        system_state.push_back( init );
+    }
+
+    std::vector<std::vector<std::array<double,3> > > initial_system_state;
     for( unsigned int i=0; i<ensemble_size; i++ )
-        init_mags.push_back( init );
+        initial_system_state.push_back( system_state );
 
     /**
      * LANGEVIN DYNAMICS
@@ -628,21 +718,40 @@ void moma_config::launch_llg_simulation( const json in )
      * \f$1/f\f$
      */
     double simulation_time = steady_cycle
-        ? 1 / params.at("global").at("applied-field").at("frequency").get<double>()
+        ? 1 / params.at("global").at("applied-field").at("reduced-frequency").get<double>()
         : params.at("simulation").at("simulation-time").get<double>();
 
     /**
      * Langevin dynamics run function accepts two arguments. The
      * initial state of the system for each run and a random number
      * generator
+     * The run function must always return the system state
      */
-    std::function<simulation::results(d3, std::shared_ptr<Rng>)> run_function =
-        [damping,thermal_field,aaxis,happ,time_step,simulation_time,renorm,max_samples,ensemble_size]
-        (d3 initial_mag, std::shared_ptr<Rng> rng)
+    std::function<simulation::results(std::vector<d3>, std::shared_ptr<Rng>)> run_function =
+        [thermal_field_strengths, reduced_anisotropy_constants, reduced_particle_volumes,
+         axes, interparticle_unit_distances, interparticle_reduced_distance_magnitudes,
+         happ, average_anisotropy, average_volume, damping, saturation_magnetisation,
+         time_step, simulation_time, renorm, max_samples]
+        (std::vector<d3> initial_system_state, std::shared_ptr<Rng> rng)
         {
             return simulation::full_dynamics(
-                damping, thermal_field, aaxis, happ, initial_mag, time_step,
-                simulation_time, *(rng.get()), renorm, max_samples );
+                thermal_field_strengths,
+                reduced_anisotropy_constants,
+                reduced_particle_volumes,
+                axes,
+                initial_system_state,
+                interparticle_unit_distances,
+                interparticle_reduced_distance_magnitudes,
+                happ,
+                average_anisotropy,
+                average_volume,
+                damping,
+                saturation_magnetisation,
+                time_step,
+                simulation_time,
+                *(rng.get()),
+                renorm,
+                max_samples );
         };
 
     simulation::results results( max_samples );
