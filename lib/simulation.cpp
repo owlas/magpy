@@ -1,6 +1,7 @@
 #include "../include/simulation.hpp"
 #include "../include/constants.hpp"
 #include <cmath>
+#include "../include/field.hpp"
 
 double simulation::energy_loss(
     const struct results &res,
@@ -31,6 +32,18 @@ double simulation::one_step_energy_loss(
     )
 {
     return trap::one_trapezoid( t1, t2, et1*pflow1, et2*pflow2 ) / volume;
+}
+
+void simulation::reduce_to_system_magnetisation(
+    double *mag, const double *particle_mags, const size_t N_particles )
+{
+    mag[0] = mag[1] = mag[2] = 0;
+    for( unsigned int n=0; n<N_particles; n++ )
+    {
+        mag[0] += particle_mags[3*n];
+        mag[1] += particle_mags[3*n + 1];
+        mag[2] += particle_mags[3*n + 2];
+    }
 }
 
 void simulation::save_results( const std::string fname, const struct results &res )
@@ -69,19 +82,32 @@ void simulation::zero_results( struct simulation::results &res )
     res.energy_loss = 0;
 }
 
+// Run a simulation of the full dynamics of an ensemble of particles
 struct simulation::results simulation::full_dynamics(
+    const std::vector<double> thermal_field_strengths,
+    const std::vector<double> reduced_anisotropy_constants,
+    const std::vector<double> reduced_particle_volumes,
+    const std::vector<d3> anisotropy_unit_axes,
+    const std::vector<d3> initial_magnetisations,
+    const std::vector<std::vector<d3> > interparticle_unit_distances,
+    const std::vector<std::vector<double> > interparticle_reduced_distance_magnitudes,
+    const std::function<double(const double)> applied_field,
+    const double average_anisotropy,
+    const double average_volume,
     const double damping,
-    const double thermal_field_strength,
-    const d3 anis_axis,
-    const std::function<double(double)> applied_field,
-    const d3 initial_magnetisation,
+    const double saturation_magnetisation,
     const double time_step,
     const double end_time,
     Rng &rng,
     const bool renorm,
     const int max_samples )
 {
-    size_t dims = 3;
+    // Dimensions
+    constexpr size_t dims = 3;
+    const size_t n_particles = initial_magnetisations.size();
+    const size_t state_size = dims*n_particles;
+    const size_t state_square_size = state_size * state_size;
+    const size_t state_cube_size = state_square_size * state_size;
 
     /*
       To ease memory requirements - can specify the maximum number of
@@ -103,18 +129,19 @@ struct simulation::results simulation::full_dynamics(
 
 
     // Allocate matrices needed for the midpoint method
-    double *state = new double[dims*2]; // stores old and new state
-                                        // i.e 2 *dims
-    double *dwm = new double[dims];
-    double *a_work = new double[dims];
-    double *b_work = new double[dims*dims];
-    double *adash_work = new double[dims*dims];
-    double *bdash_work = new double[dims*dims*dims];
-    double *x_guess = new double[dims];
-    double *x_opt_tmp = new double[dims];
-    double *x_opt_jac = new double[dims*dims];
-    lapack_int *x_opt_ipiv = new lapack_int[dims];
+    double *state = new double[state_size];
 
+    double *dwm = new double[state_size];
+    double *a_work = new double[state_size];
+    double *b_work = new double[state_square_size];
+    double *adash_work = new double[state_square_size];
+    double *bdash_work = new double[state_cube_size];
+    double *x_guess = new double[state_size];
+    double *x_opt_tmp = new double[state_size];
+    double *x_opt_jac = new double[state_square_size];
+    lapack_int *x_opt_ipiv = new lapack_int[state_size];
+
+    /// @TODO optimise the implicit solver tolerance
     // Limits for the implicit solver
     const double eps=1e-9;
     const size_t max_iter=1000;
@@ -122,25 +149,106 @@ struct simulation::results simulation::full_dynamics(
     // Copy in the initial state
     res.time[0] = 0;
     res.field[0] = applied_field( 0 );
-    res.mx[0] = initial_magnetisation[0];
-    res.my[0] = initial_magnetisation[1];
-    res.mz[0] = initial_magnetisation[2];
 
     // The wiener paths
-    double wiener[3];
+    double *wiener = new double[state_size];
 
     // The effective field and its Jacobian is updated at each time step
-    double heff[3];
-    double heffjac[9];
-    double happ[3];
+    double *heff = new double[state_size];
+    double *heffjac = new double[state_square_size];
+
+    // The anisotropy axes
+    double *anis = new double [state_size];
+    for( unsigned int n=0; n<n_particles; n++ )
+        for( unsigned int i=0; i<dims; i++ )
+            anis[i+n*dims] = anis_axes[n][i];
 
     // Vars for loops
-    unsigned int step = 0;
+    unsigned int step = 0;n
     double t = 0;
-    double pstate[3], nstate[3];
-    nstate[0] = initial_magnetisation[0];
-    nstate[1] = initial_magnetisation[1];
-    nstate[2] = initial_magnetisation[2];
+    double *pstate = new double[state_size];
+    double *nstate = new double[state_size];
+
+    /// Initialise the system state from the initial mags vector
+    for( unsigned int n=0; n<n_particles; n++ )
+        for( unsigned int i=0; i<dims; i++ )
+            nstate[i+dims*n] = initial_mags[n][i];
+
+
+    // Get the unit distances
+    double *distances = new double[n_particles*n_particles*3];
+    for( unsigned int i=0; i<n_particles; i++ )
+        for( unsigned int j=0; j<n_particles; j++ )
+            for( unsigned int k=0; k<3; k++ )
+                distances[i*n_particles*3 + j*3 + k] = interparticle_unit_distances[i][j][k];
+
+    // Get the cubed distance magnitudes
+    double *cubed_distance_magnitudes = new double[n_particles*n_particles];
+    for( unsigned int i=0; i<n_particles; i++ )
+        for( unsigned int j=0; j<n_particles; j++ )
+            cubed_distance_magnitudes[i*n_particles + j] = std::pow(
+                interparticle_reduced_distance_magnitudes[i][j], 3 );
+
+    /// Craft the effective field function
+    /**
+     * Use uniaxial anisotropy for each particle
+     * The zeeman term (i.e applied field function)
+     * And finally dipole-dipole interactions
+     */
+    std::function<void(double*,const double*,const double)> heff_func =
+        [state_size, anis, reduced_anisotropy_constants, n_particles,
+         applied_field, saturating_magnetisation, average_anisotropy, average_volume,
+         distances, cubed_distance_magnitudes]
+        ( double *heff, const double *state, const double t )
+        {
+            field::zero_all_field_terms( heff, state_size );
+
+            field::multi_add_uniaxial_anisotropy(
+                heff, state, anis, reduced_anisotropy_constants.data(), n_particles );
+
+            field::multi_add_applied_Z_field_function( heff, applied_field,  t, n_particles );
+
+            field::multi_add_dipolar(
+                heff, saturating_magnetisation, average_anisotropy,
+                reduced_particle_volumes.data(), state,
+                distances, n_particles, cubed_distance_magnitudes );
+
+        };
+
+    /// Craft the jacobian of the field function
+    /**
+     * Here we ignore interactions
+     */
+    std::function<void(double*,const double*,const double)> heff_jac_func =
+        [state_size, anis, n_particles, reduced_anisotropy_constants]
+        ( double *heff_jac, const double *state, const double )
+        {
+            field::zero_all_field_terms( heff_jac, state_size );
+            field::multi_add_uniaxial_anisotropy_jacobian(
+                heff_jac, anis, reduced_anisotropy_constants.data(), n_particles );
+        };
+
+    /// Craft the stochastic differential equation interface for the integrator
+    sde_jac sde = [heff, heffjac, damping_ratios, thermal_field_strengths,
+                   n_particles, heff_func, heff_jac_func]
+        ( double *drift, double *diffusion, double *jdrift,
+          double *jdiffusion, const double *state,
+          const double a_t,
+          const double // b_t unused
+            )
+        {
+            llg::multi_stochastic_llg_jacobians_field_update(
+                drift, diffusion,
+                jdrift, jdiffusion,
+                heff, heffjac,
+                state,
+                a_t,
+                damping_ratios.data(),
+                thermal_field_strengths.data(),
+                n_particles,
+                heff_func,
+                heff_jac_func );
+        };
 
     /*
       The time for each point in the regularly spaced grid is
@@ -151,45 +259,37 @@ struct simulation::results simulation::full_dynamics(
         // Perform a simulation step until we breach the next sampling point
         while ( t <= sample*sampling_time )
         {
-            // take a step
-            pstate[0] = nstate[0];
-            pstate[1] = nstate[1];
-            pstate[2] = nstate[2];
-            step++;
+            // Copy in the previous state
+            for( unsigned int i=0; i<state_size; i++ )
+                pstate[i] = nstate[i];
+            step++; // Take a step
 
             // Compute current time
             // When max_samples=-1 uses sampling_time directly to avoid rounding
             // errors
             t = max_samples==-1 ? sample*sampling_time : step*time_step;
 
-            // Compute the applied field - always in the z-direction
-            happ[2] = applied_field( t );
-
-            // Assumes that applied field is constant over the period
-            // Bind the parameters to create the required SDE function
-            sde_jac sde = std::bind(
-                llg::jacobians_with_update, _1, _2, _3, _4, heff, heffjac,
-                _5, _6, _7, happ, anis_axis.data(), damping,
-                thermal_field_strength );
-
             // Generate the wiener increments
-            for( unsigned int i=0; i<3; i++ )
+            for( unsigned int i=0; i<state_size; i++ )
                 wiener[i] = rng.get();
 
             // perform integration step
             int errcode = integrator::implicit_midpoint(
                 nstate, dwm, a_work, b_work, adash_work, bdash_work, x_guess,
                 x_opt_tmp, x_opt_jac, x_opt_ipiv, pstate, wiener, sde,
-                dims, dims, t, time_step, eps, max_iter );
+                state_size, state_size, t, time_step, eps, max_iter );
             if( errcode != optimisation::SUCCESS )
                 LOG(FATAL) << "integration error code: " << errcode;
 
-            // Renormalise the length of the magnetisation
+            // Renormalise the length of the magnetisation for each particle
             if( renorm  )
             {
-                double norm = cblas_dnrm2( 3, nstate, 1 );
-                for( unsigned int i=0; i<dims; i++ )
-                    nstate[i] = nstate[i]/norm;
+                for( unsigned int offset=0; offset<state_size; offset+=dims )
+                {
+                    double norm = cblas_dnrm2( dims, nstate+offset, 1 );
+                    for( unsigned int i=0; i<dims; i++ )
+                        nstate[offset+i] = nstate[offset+i]/norm;
+                }
             } // end renormalisation
 
         } // end integration stepping loop
@@ -200,26 +300,39 @@ struct simulation::results simulation::full_dynamics(
           i.e. take the previous state before the sampling time as the
           state at the sampling time.
          */
+        /// @TODO implement first-order hold for sampling
         res.time[sample] = sample*sampling_time; // sampling time
-        res.mx[sample] = pstate[0];
-        res.my[sample] = pstate[1];
-        res.mz[sample] = pstate[2];
+        double system_mag[dims];
+        simulation::reduce_to_system_magnetisation(
+            system_mag, pstate, n_particles );
+        res.mx[sample] = system_mag[0];
+        res.my[sample] = system_mag[1];
+        res.mz[sample] = system_mag[2];
         res.field[sample] = applied_field( sample*sampling_time );
     } // end sampling loop
 
     /// @TODO compute energy loss for llg
     res.energy_loss = 0;
 
+    /// Free memory
     delete[] state;
+    delete[] dwm;
     delete[] a_work;
     delete[] b_work;
-    delete[] dwm;
     delete[] adash_work;
     delete[] bdash_work;
     delete[] x_guess;
     delete[] x_opt_tmp;
     delete[] x_opt_jac;
     delete[] x_opt_ipiv;
+    delete[] wiener;
+    delete[] heff;
+    delete[] heffjac;
+    delete[] anis;
+    delete[] pstate;
+    delete[] nstate;
+    delete[] distances;
+    delete[] cubed_distance_magnitudes;
 
     return res; // Ensure elison else copy is made and dtor is called!
 }
