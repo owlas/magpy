@@ -5,6 +5,7 @@
 #include "../include/integrators.hpp"
 #include "../include/optimisation.hpp"
 #include <cmath>
+#include <algorithm>
 
 using sde_function = std::function<void(double*,const double*,const double)>;
 using sde_jac = std::function<void(double*,double*,double*,double*,const double*,const double,const double)>;
@@ -143,32 +144,33 @@ void integrator::rk45(
 
         // Compute the error and scale according to (eps+eps*|state|)
         err=0;
-        double mag=0;
+        double mag, scale;
         for( unsigned int i=0; i<n_dims; i++ )
-            mag += current_state[i] * current_state[i];
-        mag = std::pow( mag, 0.5 );
-        for( unsigned int i=0; i<n_dims; i++ )
-            err += std::pow( std::abs( temp_state[i] - next_state[i] ), 2 );
-        err = pow( err, 0.5 );
-        err /= ( n_dims*eps*( 1 + mag ) );
+        {
+            mag = std::max( std::abs( current_state[i] ),
+                            std::abs( temp_state[i] ) );
+            scale = eps*( 1 + mag );
+            err += std::pow( ( current_state[i] - temp_state[i] )/ scale, 2 );
+        }
+        err = std::pow( err/n_dims, 0.5 );
 
         // If relative error is below 1 then step was successful
-        // otherwise reduce the step size (max 10x reduction)
+        // otherwise reduce the step size (max 5x reduction)
         if( err < 1.0 )
             step_success = true;
         else
         {
             double hfactor = 0.84*pow( err, -0.2 );
-            hfactor = std::abs( hfactor ) < 0.1 ? 0.1 : hfactor;
+            hfactor = std::max( hfactor, 0.2 );
             h *= hfactor;
         }
     }
     // Set the new time
     *t_ptr = t+h;
 
-    // Set the next step size
-    double hfactor = err==0.0 ? 5.0 : 0.84*std::pow( err, -0.2 );
-    hfactor = hfactor > 5 ? 5.0 : hfactor;
+    // Set the next step size. (Max 10x increase)
+    double hfactor = err==0.0 ? 10.0 : 0.84*std::pow( err, -0.2 );
+    hfactor = std::min( hfactor, 10.0 );
     *h_ptr = hfactor*h;
 }
 
