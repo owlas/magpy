@@ -83,7 +83,7 @@ struct simulation::results simulation::full_dynamics(
     const std::function<double(const double)> applied_field,
     const double average_anisotropy,
     const double average_volume,
-    const double damping,
+    const double damping_constant,
     const double saturation_magnetisation,
     const double time_step,
     const double end_time,
@@ -150,10 +150,15 @@ struct simulation::results simulation::full_dynamics(
     double *anis = new double [state_size];
     for( unsigned int n=0; n<n_particles; n++ )
         for( unsigned int i=0; i<dims; i++ )
-            anis[i+n*dims] = anis_axes[n][i];
+            anis[i+n*dims] = anisotropy_unit_axes[n][i];
+
+    // The damping ratios
+    std::vector<double> damping_ratios( n_particles );
+    for( auto &a : damping_ratios )
+        a = damping_constant;
 
     // Vars for loops
-    unsigned int step = 0;n
+    unsigned int step = 0;
     double t = 0;
     double *pstate = new double[state_size];
     double *nstate = new double[state_size];
@@ -161,7 +166,7 @@ struct simulation::results simulation::full_dynamics(
     /// Initialise the system state from the initial mags vector
     for( unsigned int n=0; n<n_particles; n++ )
         for( unsigned int i=0; i<dims; i++ )
-            nstate[i+dims*n] = initial_mags[n][i];
+            nstate[i+dims*n] = initial_magnetisations[n][i];
 
 
     // Get the unit distances
@@ -186,8 +191,8 @@ struct simulation::results simulation::full_dynamics(
      */
     std::function<void(double*,const double*,const double)> heff_func =
         [state_size, anis, reduced_anisotropy_constants, n_particles,
-         applied_field, saturating_magnetisation, average_anisotropy, average_volume,
-         distances, cubed_distance_magnitudes]
+         applied_field, saturation_magnetisation, average_anisotropy, average_volume,
+         distances, reduced_particle_volumes, cubed_distance_magnitudes]
         ( double *heff, const double *state, const double t )
         {
             field::zero_all_field_terms( heff, state_size );
@@ -198,9 +203,9 @@ struct simulation::results simulation::full_dynamics(
             field::multi_add_applied_Z_field_function( heff, applied_field,  t, n_particles );
 
             field::multi_add_dipolar(
-                heff, saturating_magnetisation, average_anisotropy,
+                heff, saturation_magnetisation, average_anisotropy,
                 reduced_particle_volumes.data(), state,
-                distances, n_particles, cubed_distance_magnitudes );
+                distances, cubed_distance_magnitudes, n_particles );
 
         };
 
@@ -210,7 +215,7 @@ struct simulation::results simulation::full_dynamics(
      */
     std::function<void(double*,const double*,const double)> heff_jac_func =
         [state_size, anis, n_particles, reduced_anisotropy_constants]
-        ( double *heff_jac, const double *state, const double )
+        ( double *heff_jac, const double *, const double )
         {
             field::zero_all_field_terms( heff_jac, state_size );
             field::multi_add_uniaxial_anisotropy_jacobian(

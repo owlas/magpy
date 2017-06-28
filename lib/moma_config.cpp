@@ -208,7 +208,6 @@ json moma_config::transform_input_parameters_for_dom( const json in )
         steady_cycle = true;
     else {
         steady_cycle = false;
-        sim_time = in.at("simulation").at("simulation-time").get<double>();
     }
     out["simulation"]["steady-cycle-activated"] = steady_cycle;
 
@@ -650,27 +649,14 @@ void moma_config::launch_llg_simulation( const json in )
         locations.push_back( loc );
     }
     auto interparticle_distances = distances::pair_wise_distance_vectors( locations );
-    auto interparticle_distance_magnitudes = distances::distance_vectors_to_magnitude(
-        interparticle_reduced_distances
+    auto interparticle_distance_magnitudes = distances::pair_wise_distance_magnitude(
+        interparticle_distances
         );
-
-    std::vector<std:vector<std::array<double,3> > > interparticle_unit_distances;
-    interparticle_unit_distances.resize( particles.size() );
-    for( auto &vec : interparticle_unit_distances )
-        vec.resize( particles.size() );
-    for( unsigned int i=0; i<particles.size(); i++ )
-        for( unsigned int j=0; j<particles.size(); j++ )
-            for( unsigned int k=0; k<3; k++ )
-                interparticle_unit_distances[i][j][k] = interparticle_distances[i][j][k] / interparticle_distance_magnitudes[i][j];
-
-    // @TODO - check reduction
-    std::vector<std::vector<double> > interparticle_distance_reduced_magnitude;
-    interparticle_distance_reduced_magnitude.resize( particles.size() );
-    for( auto &vec : interparticle_distance_reduced_magnitude )
-        vec.resize( particles.size() );
-    for( unsigned int i=0; i<particles.size(); i++ )
-        for( unsigned int j=0; j<particles.size(); j++ )
-            interparticle_distance_reduced_magnitude[i][j] = interparticle_distance_magnitudes[i][j] / std::pow( average_volume, 1./3 );
+    auto interparticle_unit_distances = distances::pair_wise_distance_unit_vectors( locations );
+    auto interparticle_reduced_distance_magnitudes = interparticle_distance_magnitudes;
+    for( auto &i : interparticle_reduced_distance_magnitudes )
+        for( auto &j : i )
+            j /= std::pow( average_volume, 1./3 );
 
     // Get simulation properties
     double time_step = params.at("simulation").at("time-step");
@@ -754,23 +740,24 @@ void moma_config::launch_llg_simulation( const json in )
                 max_samples );
         };
 
-    simulation::results results( max_samples );
-    if( steady_cycle )
-    {
-        double steady_state_condition = 1e-3;
-        results = simulation::steady_state_cycle_dynamics(
-            run_function,
-            max_samples,
-            steady_state_condition,
-            init_mags,
-            rngs );
-    }
-    else
-        results = simulation::ensemble_run(
-            max_samples,
-            run_function,
-            init_mags,
-            rngs );
+    // No cycle mode for now
+    // simulation::results results( max_samples );
+    // if( steady_cycle )
+    // {
+    //     double steady_state_condition = 1e-3;
+    //     results = simulation::steady_state_cycle_dynamics(
+    //         run_function,
+    //         max_samples,
+    //         steady_state_condition,
+    //         initial_system_state,
+    //         rngs );
+    // }
+    // else
+    auto results = simulation::ensemble_run(
+        max_samples,
+        run_function,
+        initial_system_state,
+        rngs );
 
     // save the results
     std::stringstream fname;

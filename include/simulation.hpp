@@ -49,11 +49,18 @@ namespace simulation
 
     // Run the full dynamics and return the results
     struct results full_dynamics(
-        const double damping,
-        const double thermal_field_strength,
-        const d3 anis_axis,
-        const std::function<double(double)> applied_field,
-        const d3 initial_magnetisation,
+        const std::vector<double> thermal_field_strengths,
+        const std::vector<double> reduced_anisotropy_constants,
+        const std::vector<double> reduced_particle_volumes,
+        const std::vector<d3> anisotropy_unit_axes,
+        const std::vector<d3> initial_magnetisations,
+        const std::vector<std::vector<d3> > interparticle_unit_distances,
+        const std::vector<std::vector<double> > interparticle_reduced_distance_magnitudes,
+        const std::function<double(const double)> applied_field,
+        const double average_anisotropy,
+        const double average_volume,
+        const double damping_constant,
+        const double saturation_magnetisation,
         const double time_step,
         const double end_time,
         Rng &rng,
