@@ -154,8 +154,8 @@ void field::uniaxial_anisotropy_jacobian(
  * @param[in]  axis the anisotropy axis of the particle [length 3N]
  * @param[in] N number of particles
  */
-void multi_add_uniaxial_anisotropy_jacobian( double *jac, const double *axes,
-                                             double *k_reduced, size_t N )
+void field::multi_add_uniaxial_anisotropy_jacobian( double *jac, const double *axes,
+                                                    const double *k_reduced, const size_t N )
 {
     for( unsigned int i=0; i<N; i++ )
     {
@@ -177,10 +177,10 @@ void multi_add_uniaxial_anisotropy_jacobian( double *jac, const double *axes,
  * N is the number of particles
  * dist_cubes is NxN and is the reduced cubed distance between each pair
  */
-void field::dipolar(double *field, const double ms, const double k_av,
-                    const double *v_reduced, const double *mag,
-                    const double *dists, const double *dist_cubes,
-                    const size_t N  )
+void field::multi_add_dipolar(double *field, const double ms, const double k_av,
+                              const double *v_reduced, const double *mag,
+                              const double *dists, const double *dist_cubes,
+                              const size_t N  )
 {
     double prefactor = field::dipolar_prefactor( ms, k_av );
     // Now compute the ting

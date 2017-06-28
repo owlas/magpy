@@ -43,14 +43,14 @@ namespace field
         double *jac,
         const double *axis );
 
-    void multi_uniaxial_anisotropy_jacobian(
+    void multi_add_uniaxial_anisotropy_jacobian(
         double *jac,
         const double *axes,
         const double *anis,
         const size_t N );
 
 
-    void dipolar(
+    void multi_add_dipolar(
         double *field,
         const double ms,
         const double k_av,
