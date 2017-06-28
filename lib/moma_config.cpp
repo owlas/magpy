@@ -280,6 +280,7 @@ json moma_config::transform_input_parameters_for_llg( const json in )
         average_volume += p["volume"].get<double>();
     }
     average_volume /= N_particles;
+    out["global"]["average-volume"] = average_volume;
 
     // Compute particle reduced volumes
     for( auto &p : particles )
@@ -295,14 +296,15 @@ json moma_config::transform_input_parameters_for_llg( const json in )
     for( auto &p : particles )
         average_anisotropy += p.at("anisotropy").get<double>();
     average_anisotropy /= N_particles;
+    out["global"]["average-anisotropy"] = average_anisotropy;
     for( auto &p : particles )
-        p.at("reduced-anisotropy") = p.at("anisotropy").get<double>() / average_anisotropy;
+        p["reduced-anisotropy"] = p.at("anisotropy").get<double>() / average_anisotropy;
 
     // Compute the anisotropy field and reduced field
     double hk= 2.0 * average_anisotropy / constants::MU0
         / particles[0].at("magnetisation").get<double>();
-    out.at("global").at("anisotropy-field") = hk;
-    out.at("global").at("applied-field").at("reduced-amplitude") =
+    out.at("global")["anisotropy-field"] = hk;
+    out.at("global").at("applied-field")["reduced-amplitude"] =
         out.at("global").at("applied-field").at("amplitude").get<double>() / hk;
 
     // Compute the time rescaling
@@ -329,11 +331,11 @@ json moma_config::transform_input_parameters_for_llg( const json in )
      * Computed as \f$D=\frac{\alpha k_BT}{2V_i\bar{K}(1+\alpha^2)}\f$
      */
     for( auto &p : particles )
-        p.at("thermal-field-strength") = std::sqrt(
+        p["thermal-field-strength"] = std::sqrt(
             damping * constants::KB * in.at("global").at("temperature").get<double>()
             / ( average_anisotropy * p.at("volume").get<double>()
                 * ( 1 + damping * damping ) ) );
-
+    out["particles"] = particles;
     return out;
 }
 
@@ -767,18 +769,19 @@ void moma_config::launch_llg_simulation( const json in )
 
 
     // Compute the power emitted by the particle ensemble
-    double f = params["global"]["applied-field"]["frequency"];
-    double Ms = params["particle"]["magnetisation"];
-    double Hk = params["global"]["anisotropy-field"];
-    double power = results.energy_loss * f * Ms * Hk;
+    // double f = params["global"]["applied-field"]["frequency"];
+    // double Ms = params["particle"]["magnetisation"];
+    // double Hk = params["global"]["anisotropy-field"];
+    // double power = results.energy_loss * f * Ms * Hk;
 
-    json output;
-    output["power"] = power;
+    // json output;
+    // output["power"] = power;
 
     /**
      * The current git commit version is written to the file. Made
      * available through a compiler flag (see makefile)
      */
+    json output;
     output["git-version"] = VERSION;
 
     // Write the normalised parameters to file
