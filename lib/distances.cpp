@@ -16,7 +16,7 @@ std::vector<std::vector<std::array<double,3> > > distances::pair_wise_distance_v
     for( unsigned int i=0; i<n_points; i++ )
         for( unsigned int j=0; j<n_points; j++ )
             for( unsigned int k=0; k<3; k++ )
-                distances[i][j][k] = distances[j][i][k] = points[i][k] - points[j][k];
+                distances[i][j][k] = points[j][k] - points[i][k] ;
     return distances;
 }
 

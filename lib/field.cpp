@@ -157,13 +157,18 @@ void field::uniaxial_anisotropy_jacobian(
 void field::multi_add_uniaxial_anisotropy_jacobian( double *jac, const double *axes,
                                                     const double *k_reduced, const size_t N )
 {
-    for( unsigned int i=0; i<N; i++ )
-    {
-        // place on diagonal
-        for( unsigned int x=0; x<3; x++ )
-            for( unsigned int y=0; y<3; y++ )
-                jac[(3*i+x)*3*N + 3*i+y] += k_reduced[i] * axes[3*i+x] * axes[3*i+y];
-    }
+    for( unsigned int i=0; i<3*N; i++ )
+        for( unsigned int j=0; j<3*N; j++ )
+            if( (i/3) == (j/3) )
+                jac[i*3*N + j] = k_reduced[i/3] * axes[i] * axes[j];
+
+    // for( unsigned int i=0; i<N; i++ )
+    // {
+    //     // place on diagonal
+    //     for( unsigned int x=0; x<3; x++ )
+    //         for( unsigned int y=0; y<3; y++ )
+    //             jac[(3*i+x)*3*N + 3*i+y] += k_reduced[i] * axes[3*i+x] * axes[3*i+y];
+    // }
 }
 
 /**
@@ -183,14 +188,13 @@ void field::multi_add_dipolar(double *field, const double ms, const double k_av,
                               const size_t N  )
 {
     double prefactor = field::dipolar_prefactor( ms, k_av );
-    // Now compute the ting
     for( unsigned int i=0; i<N; i++ )
     {
-        double *particle_field = field + (3*i);
-        particle_field[0] = particle_field[1] = particle_field[2] = 0;
-
         for( unsigned int j=0; j<i; j++ )
-             field::dipolar_add_p2p_term( particle_field, v_reduced[j], dist_cubes[i*N + j],
+            field::dipolar_add_p2p_term( field + i*3, v_reduced[j], dist_cubes[i*N + j],
+                                         mag + j*3, dists + i*N*3 + j*3, prefactor );
+        for( unsigned int j=i+1; j<N; j++ )
+            field::dipolar_add_p2p_term( field + i*3, v_reduced[j], dist_cubes[i*N + j],
                                          mag + j*3, dists + i*N*3 + j*3, prefactor );
     }
 
