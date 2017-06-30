@@ -744,6 +744,7 @@ TEST( dom, uniaxial_transition_matrix )
     const double k=1, v=2e-21, h=0.5, T=10, ms=2.7, alpha=0.1;
     double W[4];
 
+
     dom::transition_matrix( W, k, v, T, h, ms, alpha );
     EXPECT_DOUBLE_EQ( -0.00021827108536028533, W[0] );
     EXPECT_DOUBLE_EQ( 278104386.1896516, W[1]);
@@ -751,16 +752,34 @@ TEST( dom, uniaxial_transition_matrix )
     EXPECT_DOUBLE_EQ( -278104386.1896516, W[3] );
 }
 
-TEST( dipolar_field, dipolar )
+TEST( dipolar_field, two_particles )
 {
-    // needed
+    // Two particles
+    double field[6] = {0, 0, 0, 0, 0, 0};
+
+    double k_av = 0.5;
+    double ms = 1./std::sqrt( constants::MU0 );
+    double v_red[2] = {15./16, 17./16};
+    double mag[6] = {1, 0, 0, 0, 0, 1};
+    double dists[12] = {0, 0, 0, -0.5, 0, std::sqrt(3.)/2., 0.5, 0, -std::sqrt(3.)/2., 0, 0, 0};
+    double dist_cubes[4] = {0, 1, 1, 0};
+    size_t N = 2;
+
+    field::multi_add_dipolar( field, ms, k_av, v_red, mag, dists, dist_cubes, N );
+
+    EXPECT_DOUBLE_EQ( -0.10983505338481014402, field[0] );
+    EXPECT_DOUBLE_EQ( 0, field[1] );
+    EXPECT_DOUBLE_EQ( 0.10568882939696175316, field[2] );
+    EXPECT_DOUBLE_EQ( -0.01865096989358148646, field[3] );
+    EXPECT_DOUBLE_EQ( 0, field[4] );
+    EXPECT_DOUBLE_EQ( -0.09691328239836190239, field[5] );
 }
 
 TEST( dipolar_field, prefactor )
 {
-    double ms = 1e5, double k_av = 1.7e4;
+    double ms = 1 / std::sqrt(constants::MU0), k_av = 0.5;
     double result = field::dipolar_prefactor( ms, k_av );
-    EXPECT_DOUBLE_EQ( 0.029411763267966188, result );
+    EXPECT_DOUBLE_EQ( 0.07957747154594767280, result );
 }
 
 TEST( dipolar_field, p2p_term )
@@ -773,14 +792,14 @@ TEST( dipolar_field, p2p_term )
     double prefactor = 3.7;
 
     field::dipolar_add_p2p_term( out, vj, rij3, mj, dist, prefactor );
-    EXPECT_DOUBLE_EQ( 36.37323333, out[0] );
-    EXPECT_DOUBLE_EQ( 37.05761667, out[1] );
-    EXPECT_DOUBLE_EQ( 42.86218333, out[2] );
+    EXPECT_DOUBLE_EQ( 36.37323333333333333333, out[0] );
+    EXPECT_DOUBLE_EQ( 37.05761666666666666667, out[1] );
+    EXPECT_DOUBLE_EQ( 42.86218333333333333333, out[2] );
 }
 
 TEST( applied_field, multi_add )
 {
-    func = []( const double t) -> double { return 2.0*t; };
+    std::function<double(double)> func = []( const double t) -> double { return 2.0*t; };
     double h[6];
     for( unsigned int i=0; i<6; i++ )
         h[i] = 2.0;
@@ -800,52 +819,60 @@ TEST( anisotropy_field, multi_uniaxial_jacobian )
     // for many particles.
     double axes[9] = {1, 2, 3, 4, 5, 6, 4, 2, 3};
     double k_red[3] = {3.2, 5.2, 1.2};
-    constexpr double jaclen = 9*9;
-    double jac[jaclen];
+    constexpr int jaclen = 9;
+    constexpr int jaclen2 = jaclen * jaclen;
+    double jac[jaclen2];
 
-    // Init the field as all 10.0
-    for( unsigned int i=0; i<jaclen; i++ )
-        jac[i] = 10.0;
+    // Init the field as all 0.0
+    for( unsigned int i=0; i<jaclen2; i++ )
+        jac[i] = 0.0;
 
     // Add the jacobian on top of the field
     field::multi_add_uniaxial_anisotropy_jacobian( jac, axes, k_red, 3 );
+
+    // Make results more readable
+    double res[jaclen][jaclen];
+    for( unsigned int i=0; i<jaclen; i++ )
+        for( unsigned int j=0; j<jaclen; j++ )
+            res[i][j] = jac[i*jaclen+j];
 
     // Check that anything not on the block diag is still 10
     for( unsigned int i=0; i<jaclen; i++ )
         for( unsigned int j=0; j<jaclen; j++ )
             if ( (i/3) != (j/3) )
-                EXPECT_DOUBLE_EQ( 10.0, jac[i][j] );
+                EXPECT_DOUBLE_EQ( 0.0, res[i][j] );
 
     // Check the blocks
-    EXPECT_DOUBLE_EQ( 3.2, jac[0][0] );
-    EXPECT_DOUBLE_EQ( 6.4, jac[0][1] );
-    EXPECT_DOUBLE_EQ( 9.6, jac[0][2] );
-    EXPECT_DOUBLE_EQ( 6.4, jac[1][0] );
-    EXPECT_DOUBLE_EQ( 12.8, jac[1][1] );
-    EXPECT_DOUBLE_EQ( 19.2, jac[1][2] );
-    EXPECT_DOUBLE_EQ( 9.6, jac[2][0] );
-    EXPECT_DOUBLE_EQ( 19.2, jac[2][1] );
-    EXPECT_DOUBLE_EQ( 28.8, jac[2][2] );
+    EXPECT_DOUBLE_EQ( 3.2, res[0][0] );
+    EXPECT_DOUBLE_EQ( 6.4, res[0][1] );
+    EXPECT_DOUBLE_EQ( 9.6, res[0][2] );
+    EXPECT_DOUBLE_EQ( 6.4, res[1][0] );
+    EXPECT_DOUBLE_EQ( 12.8, res[1][1] );
+    EXPECT_DOUBLE_EQ( 19.2, res[1][2] );
+    EXPECT_DOUBLE_EQ( 9.6, res[2][0] );
+    EXPECT_DOUBLE_EQ( 19.2, res[2][1] );
+    EXPECT_DOUBLE_EQ( 28.8, res[2][2] );
 
-    EXPECT_DOUBLE_EQ( 83.2, jac[0+3][0+3] );
-    EXPECT_DOUBLE_EQ( 104, jac[0+3][1+3] );
-    EXPECT_DOUBLE_EQ( 124.8, jac[0+3][2+3] );
-    EXPECT_DOUBLE_EQ( 104, jac[1+3][0+3] );
-    EXPECT_DOUBLE_EQ( 130, jac[1+3][1+3] );
-    EXPECT_DOUBLE_EQ( 156, jac[1+3][2+3] );
-    EXPECT_DOUBLE_EQ( 124.8, jac[2+3][0+3] );
-    EXPECT_DOUBLE_EQ( 156, jac[2+3][1+3] );
-    EXPECT_DOUBLE_EQ( 187.2, jac[2+3][2+3] );
+    EXPECT_DOUBLE_EQ( 83.2, res[0+3][0+3] );
+    EXPECT_DOUBLE_EQ( 104, res[0+3][1+3] );
+    EXPECT_DOUBLE_EQ( 124.8, res[0+3][2+3] );
+    EXPECT_DOUBLE_EQ( 104, res[1+3][0+3] );
+    EXPECT_DOUBLE_EQ( 130, res[1+3][1+3] );
+    EXPECT_DOUBLE_EQ( 156, res[1+3][2+3] );
+    EXPECT_DOUBLE_EQ( 124.8, res[2+3][0+3] );
+    EXPECT_DOUBLE_EQ( 156, res[2+3][1+3] );
+    EXPECT_DOUBLE_EQ( 187.2, res[2+3][2+3] );
 
-    EXPECT_DOUBLE_EQ( 19.2, jac[0+6][0+6] );
-    EXPECT_DOUBLE_EQ( 14.4, jac[0+6][1+6] );
-    EXPECT_DOUBLE_EQ( 9.6, jac[0+6][2+6] );
-    EXPECT_DOUBLE_EQ( 14.4, jac[1+6][0+6] );
-    EXPECT_DOUBLE_EQ( 10.8, jac[1+6][1+6] );
-    EXPECT_DOUBLE_EQ( 7.2, jac[1+6][2+6] );
-    EXPECT_DOUBLE_EQ( 9.6, jac[2+6][0+6] );
-    EXPECT_DOUBLE_EQ( 7.2, jac[2+6][1+6] );
-    EXPECT_DOUBLE_EQ( 4.8, jac[2+6][2+6] );
+    EXPECT_DOUBLE_EQ( 19.2, res[0+6][0+6] );
+    EXPECT_DOUBLE_EQ( 9.6, res[0+6][1+6] );
+    EXPECT_DOUBLE_EQ( 14.4, res[0+6][2+6] );
+    EXPECT_DOUBLE_EQ( 9.6, res[1+6][0+6] );
+    EXPECT_DOUBLE_EQ( 4.8, res[1+6][1+6] );
+    EXPECT_DOUBLE_EQ( 7.2, res[1+6][2+6] );
+    EXPECT_DOUBLE_EQ( 14.4, res[2+6][0+6] );
+    EXPECT_DOUBLE_EQ( 7.2, res[2+6][1+6] );
+    EXPECT_DOUBLE_EQ( 10.8, res[2+6][2+6] );
+
 }
 
 TEST( distances, pair_wise_distances )
@@ -870,37 +897,34 @@ TEST( distances, pair_wise_distances )
 
     EXPECT_DOUBLE_EQ( 3, dists[0][1][0] );
     EXPECT_DOUBLE_EQ( 1, dists[0][1][1] );
-    EXPECT_DOUBLE_EQ( 1, dists[0][1][2] );
-    EXPECT_DOUBLE_EQ( 3, dists[1][0][0] );
-    EXPECT_DOUBLE_EQ( 1, dists[1][0][1] );
+    EXPECT_DOUBLE_EQ( -1, dists[0][1][2] );
+    EXPECT_DOUBLE_EQ( -3, dists[1][0][0] );
+    EXPECT_DOUBLE_EQ( -1, dists[1][0][1] );
     EXPECT_DOUBLE_EQ( 1, dists[1][0][2] );
 
     EXPECT_DOUBLE_EQ( 0.5, dists[0][2][0] );
     EXPECT_DOUBLE_EQ( 0.5, dists[0][2][1] );
-    EXPECT_DOUBLE_EQ( 0.5, dists[0][2][2] );
-    EXPECT_DOUBLE_EQ( 0.5, dists[2][0][0] );
-    EXPECT_DOUBLE_EQ( 0.5, dists[2][0][1] );
+    EXPECT_DOUBLE_EQ( -0.5, dists[0][2][2] );
+    EXPECT_DOUBLE_EQ( -0.5, dists[2][0][0] );
+    EXPECT_DOUBLE_EQ( -0.5, dists[2][0][1] );
     EXPECT_DOUBLE_EQ( 0.5, dists[2][0][2] );
 
-    EXPECT_DOUBLE_EQ( 2.5, dists[1][2][0] );
-    EXPECT_DOUBLE_EQ( 0.5, dists[1][2][1] );
+    EXPECT_DOUBLE_EQ( -2.5, dists[1][2][0] );
+    EXPECT_DOUBLE_EQ( -0.5, dists[1][2][1] );
     EXPECT_DOUBLE_EQ( 0.5, dists[1][2][2] );
     EXPECT_DOUBLE_EQ( 2.5, dists[2][1][0] );
     EXPECT_DOUBLE_EQ( 0.5, dists[2][1][1] );
-    EXPECT_DOUBLE_EQ( 0.5, dists[2][1][2] );
+    EXPECT_DOUBLE_EQ( -0.5, dists[2][1][2] );
 }
 
 TEST( distances, pair_wise_magnitudes )
 {
-    std::array<double,3> d00 = {0, 0, 0}
+    std::array<double,3> d00 = {0, 0, 0};
     std::array<double,3> d01 = {0, 0, 1};
     std::array<double,3> d02 = {3, 1, 0};
     std::array<double,3> d12 = {0.5, 0.5, 0.5};
 
-    std::vector<std::vector<std::array<double> > > dists;
-    dists.reserve( 3 );
-    for( auto &vec : dists )
-        vec.reserve( 3 );
+    std::vector<std::vector<std::array<double, 3> > > dists( 3, std::vector<std::array<double,3> >( 3 ) );
     dists[0][0] = d00;
     dists[0][1] = d01;
     dists[0][2] = d02;
@@ -911,7 +935,7 @@ TEST( distances, pair_wise_magnitudes )
     dists[2][1] = d12;
     dists[2][2] = d00;
 
-    auto mags = distances::pair_wise_distance_magnitudes( dists );
+    auto mags = distances::pair_wise_distance_magnitude( dists );
 
     EXPECT_DOUBLE_EQ( 0, mags[0][0] );
     EXPECT_DOUBLE_EQ( 0, mags[1][1] );
