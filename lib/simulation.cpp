@@ -116,15 +116,22 @@ struct simulation::results simulation::full_dynamics(
     // allocate memory for results
     simulation::results res( N_samples );
 
-
     // Allocate matrices needed for the midpoint method
     double *state = new double[state_size];
 
     double *dwm = new double[state_size];
     double *a_work = new double[state_size];
+    for( size_t i=0; i<state_size; i++ ) a_work[i] = 0.0;
+
     double *b_work = new double[state_square_size];
+    for( size_t i=0; i<state_square_size; i++ ) b_work[i] = 0.0;
+
     double *adash_work = new double[state_square_size];
+    for( size_t i=0; i<state_square_size; i++ ) adash_work[i] = 0.0;
+
     double *bdash_work = new double[state_cube_size];
+    for( size_t i=0; i<state_cube_size; i++ ) bdash_work[i] = 0.0;
+
     double *x_guess = new double[state_size];
     double *x_opt_tmp = new double[state_size];
     double *x_opt_jac = new double[state_square_size];
@@ -214,10 +221,10 @@ struct simulation::results simulation::full_dynamics(
      * Here we ignore interactions
      */
     std::function<void(double*,const double*,const double)> heff_jac_func =
-        [state_size, anis, n_particles, reduced_anisotropy_constants]
+        [state_square_size, anis, n_particles, reduced_anisotropy_constants]
         ( double *heff_jac, const double *, const double )
         {
-            field::zero_all_field_terms( heff_jac, state_size );
+            field::zero_all_field_terms( heff_jac, state_square_size );
             field::multi_add_uniaxial_anisotropy_jacobian(
                 heff_jac, anis, reduced_anisotropy_constants.data(), n_particles );
         };
@@ -328,7 +335,7 @@ struct simulation::results simulation::full_dynamics(
     delete[] distances;
     delete[] cubed_distance_magnitudes;
 
-    return res; // Ensure elison else copy is made and dtor is called!
+    return res;
 }
 
 /// Simulates a single particle under the discrete orientation model
