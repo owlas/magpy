@@ -8,7 +8,6 @@
 #include "io.hpp"
 #include "field.hpp"
 #include "trap.hpp"
-#include "easylogging++.h"
 #include "optimisation.hpp"
 #include "dom.hpp"
 #include "curry.hpp"
@@ -152,13 +151,10 @@ struct simulation::results simulation::steady_state_cycle_dynamics(
                 run_function,
                 mags,
                 varying_arguments... );
-            LOG(INFO) << "Steady state reached after " << n_field_cycles
-                      << " field cycles";
+           
             return full_res;
         }
         // If not reached - run another cycle from the current state
         prev_mags = mags;
-        LOG(INFO) << "Error after cycle " << n_field_cycles
-                  << ": " << std::abs( mag_before - mag_after );
     }
 }
