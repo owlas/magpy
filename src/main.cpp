@@ -12,11 +12,9 @@
 #include <fenv.h>
 #include "../include/moma_config.hpp"
 #include "../include/json.hpp"
-#include "../include/easylogging++.h"
 
 using json = nlohmann::json;
 
-INITIALIZE_EASYLOGGINGPP
 void print_help()
 {
     std::cout << "MOMA - Modern, open-source, magnetics... again" << std::endl;
@@ -28,7 +26,6 @@ void print_help()
 // specify the json on the command line (add args)
 int main( int argc, char *argv[] )
 {
-    START_EASYLOGGINGPP( argc, argv );
 
     feraiseexcept(FE_ALL_EXCEPT & ~FE_INEXACT );
 

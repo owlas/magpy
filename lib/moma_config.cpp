@@ -11,8 +11,8 @@
 #include <string>
 #include <omp.h>
 #include <exception>
+#include <fstream>
 #include "../include/constants.hpp"
-#include "../include/easylogging++.h"
 #include "../include/field.hpp"
 #include "../include/simulation.hpp"
 #include "../include/rng.hpp"
@@ -43,41 +43,41 @@ void moma_config::validate_for_llg( const json input )
     }
     double time_step = input.at("simulation").at("time-step");
     if( time_step < 0 )
-        LOG( FATAL ) << "Time_Step must be greater than 0";
+        throw std::invalid_argument( "Time_Step must be greater than 0" );
     int ensemble_size = input.at("simulation").at("ensemble-size");
     if ( ensemble_size < 1 )
-        LOG( FATAL ) << "Ensemble size must be interger value at least 1";
+        throw std::invalid_argument( "Ensemble size must be interger value at least 1" );
     std::vector<long> seeds = input.at("simulation").at("seeds");
     if ( seeds.size() < ensemble_size )
-        LOG( FATAL ) << "Not enough seeds. Must have as many seeds as ensemble size.";
+        throw std::invalid_argument( "Not enough seeds. Must have as many seeds as ensemble size." );
 
     // Check output
     std::string dir = input.at("output").at("directory");
     int max_samples = input.at("output").at("max-samples");
     if ( ( max_samples < 1 ) && ( max_samples != -1 ) )
-        LOG( FATAL ) << "Valid values for max-samples are -1 or integers greater than 0";
+        throw std::invalid_argument( "Valid values for max-samples are -1 or integers greater than 0" );
 
     // Check global
     double temp = input.at("global").at("temperature");
     if( temp < 0 )
-        LOG( FATAL ) << "Temperature must be greater than 0";
+        throw std::invalid_argument( "Temperature must be greater than 0" );
     std::string shape = input.at("global").at("applied-field").at("shape");
     if( ( shape.compare( "sine" ) != 0 )
         && ( shape.compare("square") != 0 )
         && ( shape.compare("square-fourier") != 0 ) )
-        LOG( FATAL ) << "Valid values for shape are 'sine' or 'square'";
+        throw std::invalid_argument( "Valid values for shape are 'sine' or 'square'" );
     if( shape.compare( "square-fourier" ) == 0 )
         if( input.at("global").at("applied-field").count("components") != 1 )
-            LOG( FATAL ) << "If specifying Fourier series field, "
-                         << "must specify number of components";
+            throw std::invalid_argument( "If specifying Fourier series field, "
+                                         "must specify number of components" );
     double freq = input.at("global").at("applied-field").at("frequency");
     if( freq < 0 )
-        LOG( FATAL ) << "Frequency must be greater than 0";
+        throw std::invalid_argument( "Frequency must be greater than 0" );
     double amp = input.at("global").at("applied-field").at("amplitude");
 
     // Check particles
     if( !input.at("particles").is_array() )
-        LOG( FATAL ) << "particles should be an array of particles!";
+        throw std::invalid_argument( "particles should be an array of particles!" );
     std::vector<json> particles = input.at("particles");
 
     double ms_ref = input.at("particles")[0].at("magnetisation");
@@ -86,15 +86,15 @@ void moma_config::validate_for_llg( const json input )
     {
         double damping = p.at("damping");
         if( damping < 0 )
-            LOG( FATAL ) << "Damping must be greater than 0";
+            throw std::invalid_argument( "Damping must be greater than 0" );
         if( damping != alpha_ref )
-            LOG( FATAL ) << "All particles must have the same damping value";
+            throw std::invalid_argument( "All particles must have the same damping value" );
         double radius = p.at("radius");
         if( radius < 0 )
-            LOG( FATAL ) << "Radius must be greater than 0";
+            throw std::invalid_argument( "Radius must be greater than 0" );
         double anisotropy = p.at("anisotropy");
         if( anisotropy < 0 )
-            LOG( FATAL ) << "Anisotropy must be greater than 0";
+            throw std::invalid_argument( "Anisotropy must be greater than 0" );
         std::array<double,3> aaxis = {
             p.at("anisotropy-axis")[0],
             p.at("anisotropy-axis")[1],
@@ -102,12 +102,12 @@ void moma_config::validate_for_llg( const json input )
         };
         double aaxis_mag = aaxis[0]*aaxis[0] + aaxis[1]*aaxis[1] + aaxis[2]*aaxis[2];
         if( std::abs( aaxis_mag - 1 ) > 0.00001 )
-            LOG( FATAL ) << "Anisotropy axis must be unit vector but has magnitude " << aaxis_mag;
+            throw std::invalid_argument( "Anisotropy axis must be unit vector" );
         double magnetisation = p.at("magnetisation");
         if( magnetisation < 0 )
-            LOG( FATAL ) << "Magnetisation must be greater than 0";
+            throw std::invalid_argument( "Magnetisation must be greater than 0" );
         if( magnetisation != ms_ref )
-            LOG( FATAL ) << "All particles must have the same saturation magnetisation";
+            throw std::invalid_argument( "All particles must have the same saturation magnetisation" );
         std::array<double,3> magaxis = {
             p.at("magnetisation-direction")[0],
             p.at("magnetisation-direction")[1],
@@ -115,7 +115,7 @@ void moma_config::validate_for_llg( const json input )
         };
         double magaxis_mag = magaxis[0]*magaxis[0] + magaxis[1]*magaxis[1] + magaxis[2]*magaxis[2];
         if( std::abs( magaxis_mag - 1 ) > 0.00001 )
-            LOG( FATAL ) << "Magnetisation direction axis must be unit vector but has magnitude" << magaxis_mag;
+            throw std::invalid_argument( "Magnetisation direction axis must be unit vector" );
     }
 }
 
@@ -140,30 +140,30 @@ void moma_config::validate_for_dom( const json input )
     }
     double time_step = input.at("simulation").at("time-step");
     if( time_step < 0 )
-        LOG( FATAL ) << "Time_Step must be greater than 0";
+        throw std::invalid_argument( "Time_Step must be greater than 0" );
 
     // Check output
     std::string dir = input.at("output").at("directory");
     int max_samples = input.at("output").at("max-samples");
     if ( ( max_samples < 1 ) && ( max_samples != -1 ) )
-        LOG( FATAL ) << "Valid values for max-samples are -1 or integers greater than 0";
+        throw std::invalid_argument( "Valid values for max-samples are -1 or integers greater than 0" );
 
     // Check global
     double temp = input.at("global").at("temperature");
     if( temp < 0 )
-        LOG( FATAL ) << "Temperature must be greater than 0";
+        throw std::invalid_argument( "Temperature must be greater than 0" );
     std::string shape = input.at("global").at("applied-field").at("shape");
     if( ( shape.compare( "sine" ) != 0 )
         && ( shape.compare("square") != 0 )
         && ( shape.compare("square-fourier") !=0 ) )
-        LOG( FATAL ) << "Valid values for shape are 'sine' or 'square'";
+        throw std::invalid_argument( "Valid values for shape are 'sine' or 'square'" );
     if( shape.compare( "square-fourier" ) == 0 )
         if( input.at("global").at("applied-field").count("components") != 1 )
-            LOG( FATAL ) << "If specifying Fourier series field, "
-                         << "must specify number of components";
+            throw std::invalid_argument( "If specifying Fourier series field, "
+                                         "must specify number of components" );
     double freq = input.at("global").at("applied-field").at("frequency");
     if( freq < 0 )
-        LOG( FATAL ) << "Frequency must be greater than 0";
+        throw std::invalid_argument( "Frequency must be greater than 0" );
     double amp = input.at("global").at("applied-field").at("amplitude");
     double tau0 = input.at("global").at("tau0");
 
@@ -172,23 +172,23 @@ void moma_config::validate_for_dom( const json input )
     {
         double radius = p.at("radius");
         if( radius < 0 )
-            LOG( FATAL ) << "Radius must be greater than 0";
+            throw std::invalid_argument( "Radius must be greater than 0" );
         double anisotropy = p.at("anisotropy");
         if( anisotropy < 0 )
-            LOG( FATAL ) << "Anisotropy must be greater than 0";
+            throw std::invalid_argument( "Anisotropy must be greater than 0" );
         std::array<double,2> probs = {
             p.at("initial-probs")[0],
             p.at("initial-probs")[1]
         };
         double probs_sum = probs[0] + probs[1];
         if( std::abs( probs_sum - 1 ) > 0.00001 )
-            LOG( FATAL ) << "Initial probabilities must sum to 1 but sum to " << probs_sum;
+            throw std::invalid_argument( "Initial probabilities must sum to 1" );
         double magnetisation = p.at("magnetisation");
         if( magnetisation < 0 )
-            LOG( FATAL ) << "Magnetisation must be greater than 0";
+            throw std::invalid_argument( "Magnetisation must be greater than 0" );
 
         if( p.count("damping") != 1 )
-            LOG( FATAL ) << "Missing damping parameter for particle";
+            throw std::invalid_argument( "Missing damping parameter for particle" );
     }
 }
 
@@ -346,12 +346,12 @@ int moma_config::write( const std::string fname, const json output )
     {
         os << std::setw(4) << output;
         os.close();
-        LOG(INFO) << "Successfully wrote json file: " << fname;
         return 0;
     }
     else
     {
-        LOG(ERROR) << "Error opening file to write json: " << fname;
+
+        throw std::runtime_error( "Error opening file to write json: " );
         return -1;
     }
 }
@@ -376,7 +376,7 @@ void moma_config::launch_simulation( const json config )
     else if( !sim_mode.compare( "llg" ) )
         moma_config::launch_llg_simulation( config );
     else
-        LOG( FATAL ) << "Simulation-mode must be 'llg' or 'dom'";
+        throw std::invalid_argument( "Simulation-mode must be 'llg' or 'dom'" );
 }
 
 void moma_config::launch_dom_simulation( const json in )
@@ -430,7 +430,7 @@ void moma_config::launch_dom_simulation( const json in )
                 params["global"]["applied-field"]["components"],
                 std::placeholders::_1 );
         else
-            LOG(FATAL) << field_shape << " is not a valid field shape.";
+            throw std::invalid_argument( "field is not a valid field shape." );
 
         happs.push_back( happ );
     }
@@ -604,7 +604,7 @@ void moma_config::launch_llg_simulation( const json in )
             params["global"]["applied-field"]["components"],
             std::placeholders::_1 );
     else
-        LOG(FATAL) << field_shape << " is not a valid field shape.";
+        throw std::invalid_argument( "field is not a valid field shape." );
 
     // Get the uniaxial anisotropy axes
     std::vector<json> particles = params.at("particles");
