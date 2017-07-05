@@ -715,7 +715,7 @@ void moma_config::launch_llg_simulation( const json in )
      * generator
      * The run function must always return the system state
      */
-    std::function<simulation::results(std::vector<d3>, std::shared_ptr<Rng>)> run_function =
+    std::function<std::vector<simulation::results>(std::vector<d3>, std::shared_ptr<Rng>)> run_function =
         [thermal_field_strengths, reduced_anisotropy_constants, reduced_particle_volumes,
          axes, interparticle_unit_distances, interparticle_reduced_distance_magnitudes,
          happ, average_anisotropy, average_volume, damping, saturation_magnetisation,
@@ -755,17 +755,56 @@ void moma_config::launch_llg_simulation( const json in )
     //         rngs );
     // }
     // else
-    auto results = simulation::ensemble_run(
-        max_samples,
-        run_function,
-        initial_system_state,
-        rngs );
+    // auto results = simulation::ensemble_run(
+    //     max_samples,
+    //     run_function,
+    //     initial_system_state,
+    //     rngs );
+    auto results = simulation::full_dynamics(
+        thermal_field_strengths,
+        reduced_anisotropy_constants,
+        reduced_particle_volumes,
+        axes,
+        initial_system_state[0],
+        interparticle_unit_distances,
+        interparticle_reduced_distance_magnitudes,
+        happ,
+        average_anisotropy,
+        average_volume,
+        damping,
+        saturation_magnetisation,
+        time_step,
+        simulation_time,
+        *(rngs[0].get()),
+        renorm,
+        max_samples );
+    // auto results2 = simulation::results( max_samples );
+    // auto run_funcs = curry::vector_curry( run_function, initial_system_state, rngs );
+    // for( unsigned int i=0; i<initial_system_state.size(); i++ )
+    // {
+    //     auto results = run_funcs[i]();
+    //     for( int j=0; j<max_samples; j++ )
+    //     {
+    //         results2.mx[j] = results.mx[j];
+    //         results2.my[j] = results.my[j];
+    //         results2.mz[j] = results.mz[j];
+    //         results2.time[j] = results.time[j];
+    //         results2.field[j] = results.field[j];
+    //     }
+    // }
+    // results2.energy_loss = 0;
+
 
     // save the results
     std::stringstream fname;
-    fname << params.at("output").at("directory").get<std::string>()
-          << "/results";
-    simulation::save_results( fname.str(), results );
+    for( unsigned int i=0; i<results.size(); i++ )
+    {
+        fname.str("");
+        fname << params.at("output").at("directory").get<std::string>()
+              << "/results" << i;
+        simulation::save_results( fname.str(), results[i] );
+    }
+
 
 
     // Compute the power emitted by the particle ensemble
