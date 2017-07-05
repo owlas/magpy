@@ -37,9 +37,12 @@ main: src/main.cpp $(OBJ_FILES)
 		$(OBJ_FILES) \
 		-o $@ $(LDLIBS)
 
+libmoma.so: $(OBJ_FILES)
+	$(CXX) -shared -o $@ $^
+
 # Build the individual object files
 $(OBJ_PATH)/%.o: $(LIB_PATH)/%.cpp
-	$(CXX)	$(CXXFLAGS) $(LDFLAGS) -c \
+	$(CXX)	$(CXXFLAGS) $(LDFLAGS) -c -fPIC \
 		-o $@ $< \
 		$(LDLIBS)
 

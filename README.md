@@ -77,3 +77,12 @@ See the [example config file](configs/example.json) for an overview of the optio
 ``` shell
 $ sudo apt install liblapack-dev
 ```
+
+## Additional notes
+
+Compiling Cython? Make sure to
+
+``` shell
+$ export CC=icc
+$ export CXX=icpc
+```

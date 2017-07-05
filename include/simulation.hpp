@@ -67,6 +67,24 @@ namespace simulation
         const bool renorm,
         const int max_samples );
 
+    // @TODO - add field term
+    std::vector<results> full_dynamics(
+        const std::vector<double> radius,
+        const std::vector<double> anisotropy,
+        const std::vector<d3> anisotropy_axes,
+        const std::vector<d3> magnetisation_direction,
+        const std::vector<d3> location,
+        const double magnetisation,
+        const double damping,
+        const double temperature,
+        const bool renorm,
+        const double time_step,
+        const double end_time,
+        const size_t max_samples,
+        const long seed
+    );
+
+
     /*
       Computes the probability trajectories based on a master equation
       approximation

@@ -1,6 +1,10 @@
 #include "../include/simulation.hpp"
 #include "../include/constants.hpp"
 #include "../include/field.hpp"
+#include "../include/distances.hpp"
+#include <numeric>
+#include <exception>
+#include <sstream>
 
 double simulation::energy_loss(
     const struct results &res,
@@ -285,7 +289,7 @@ std::vector<struct simulation::results> simulation::full_dynamics(
                 x_opt_tmp, x_opt_jac, x_opt_ipiv, pstate, wiener, sde,
                 state_size, state_size, t, time_step, eps, max_iter );
             if( errcode != optimisation::SUCCESS )
-                LOG(FATAL) << "integration error code: " << errcode;
+                std::runtime_error( "implicit integration error code" );
 
             // Renormalise the length of the magnetisation for each particle
             if( renorm  )
@@ -342,6 +346,104 @@ std::vector<struct simulation::results> simulation::full_dynamics(
     delete[] cubed_distance_magnitudes;
 
     return results;
+}
+
+std::vector<simulation::results> simulation::full_dynamics(
+    const std::vector<double> radius,
+    const std::vector<double> anisotropy,
+    const std::vector<d3> anisotropy_axis,
+    const std::vector<d3> magnetisation_direction,
+    const std::vector<d3> location,
+    const double magnetisation,
+    const double damping,
+    const double temperature,
+    const bool renorm,
+    const double time_step,
+    const double end_time,
+    const size_t max_samples,
+    const long seed
+    )
+{
+    size_t n_particles = radius.size();
+
+    // VOLUME
+    std::vector<double> volume;
+    for( auto &r : radius )
+        volume.push_back( 4.0 / 3.0 * M_PI * r * r * r );
+
+    double average_volume = std::accumulate(
+        volume.begin(), volume.end(), 0.0 ) / n_particles;
+
+    std::vector<double> reduced_volume;
+    for( auto &v : volume )
+        reduced_volume.push_back( v / average_volume );
+
+    // STABILITY RATIO
+    std::vector<double> stability_ratio;
+    for( size_t p=0; p<n_particles; p++ )
+        stability_ratio.push_back(
+            anisotropy[p] * volume[p] / constants::KB / temperature );
+
+    // ANISOTROPY
+    double average_anisotropy = std::accumulate(
+        anisotropy.begin(), anisotropy.end(), 0.0 ) / n_particles;
+
+    std::vector<double> reduced_anisotropy;
+    for( auto &a : anisotropy )
+        reduced_anisotropy.push_back( a / average_anisotropy );
+
+    // ANISOTROPY FIELD
+    double anisotropy_field = 2 * average_anisotropy / constants::MU0 / magnetisation;
+
+    // TIME
+    double time_factor = constants::GYROMAG * constants::MU0 * anisotropy_field
+        / ( 1+damping*damping );
+    double reduced_time_step = time_step * time_factor;
+    double reduced_end_time = end_time * time_factor;
+
+    // THERMAL FIELD
+    std::vector<double> thermal_field_strength;
+    for( auto &v : volume )
+        thermal_field_strength.push_back(
+            std::sqrt(
+                damping * constants::KB * temperature
+                / ( average_anisotropy * v) * ( 1 + damping*damping ) ) );
+
+    ///////////////////////
+    // Compute the field // @TODO
+    ///////////////////////
+    std::function<double(const double)> field_function = [](const double) { return 0.0; };
+
+    // DISTANCES
+    auto distance = distances::pair_wise_distance_vectors( location );
+    auto distance_mag = distances::pair_wise_distance_magnitude( distance );
+    auto distance_unit = distances::pair_wise_distance_unit_vectors( location );
+    auto reduced_distance_mag = distance_mag;
+    for( auto &i : reduced_distance_mag )
+        for( auto &j : i )
+            j /= std::pow( average_volume, 1./3 );
+
+    // RANDOM NUMBER GENERATOR
+    RngMtNorm rng( seed, std::sqrt( reduced_time_step ) );
+
+    return simulation::full_dynamics(
+        thermal_field_strength,
+        reduced_anisotropy,
+        reduced_volume,
+        anisotropy_axis,
+        magnetisation_direction,
+        distance_unit,
+        reduced_distance_mag,
+        field_function,
+        average_anisotropy,
+        average_volume,
+        damping,
+        magnetisation,
+        reduced_time_step,
+        reduced_end_time,
+        rng,
+        renorm,
+        max_samples );
 }
 
 /// Simulates a single particle under the discrete orientation model

@@ -2,9 +2,9 @@
 // reading and writing from disk
 #ifndef IO_H
 #define IO_H
-#include "../include/easylogging++.h"
 #include <cstdlib>
 #include <string>
+#include <exception>
 
 namespace io
 {
@@ -16,7 +16,7 @@ namespace io
         out = fopen( fname.c_str(), "wb" );
         if( out==NULL )
         {
-            LOG(ERROR) << "Failed to write array to file: " << fname;
+            std::runtime_error( "Failed to write array to disk" );
             return 1;
         }
 
