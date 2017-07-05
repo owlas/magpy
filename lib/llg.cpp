@@ -260,25 +260,29 @@ void llg::multi_diffusion( double *deriv, const double *state,
                            const double *field_strengths, const double *alphas,
                            const size_t N_particles )
 {
-    double diffusionwork[9];
-    for( unsigned int n=0; n<N_particles; n++ )
+    size_t row_offset, N3 = 3*N_particles;
+    double diffusion_work[9];
+
+    // Each 3-row-block
+    for( unsigned int bidx=0; bidx<N_particles; bidx++ )
     {
-        unsigned int n3 = 3*n;
-        unsigned int N3 = 3*N_particles;
-        llg::diffusion(diffusionwork, state+n3, 0.0,
-                       field_strengths[n], alphas[n] );
-        // Place on block diagonal
-        deriv[n3+0 + (n3+0)*N3] = diffusionwork[0];
-        deriv[n3+1 + (n3+0)*N3] = diffusionwork[1];
-        deriv[n3+2 + (n3+0)*N3] = diffusionwork[2];
+        llg::diffusion(diffusion_work, state+3*bidx,
+                       0.0, field_strengths[bidx], alphas[bidx] );
 
-        deriv[n3+0 + (n3+1)*N3] = diffusionwork[3];
-        deriv[n3+1 + (n3+1)*N3] = diffusionwork[4];
-        deriv[n3+2 + (n3+1)*N3] = diffusionwork[5];
-
-        deriv[n3+0 + (n3+2)*N3] = diffusionwork[6];
-        deriv[n3+1 + (n3+2)*N3] = diffusionwork[7];
-        deriv[n3+2 + (n3+2)*N3] = diffusionwork[8];
+        // Each row in 3-row-block
+        for( unsigned int row=0; row<3; row++ )
+        {
+            row_offset = (bidx*3+row)*N3;
+            // Before 3x3 block diagonal
+            for( unsigned int col=0; col<bidx*3; col++ )
+                deriv[row_offset + col] = 0.0;
+            // Inside 3x3 block diagonal
+            for( unsigned int col=0; col<3; col++ )
+                deriv[row_offset + bidx*3 + col] = diffusion_work[3*row + col];
+            // After 3x3 block diagonal
+            for( unsigned int col=(bidx+1)*3; col<N3; col++ )
+                deriv[row_offset + col] = 0.0;
+        }
     }
 }
 

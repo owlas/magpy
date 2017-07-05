@@ -56,6 +56,47 @@ TEST(llg, diffusion)
     EXPECT_EQ ( 78, deriv[8] );
 }
 
+TEST(llg, multi_diffusion)
+{
+    double deriv[6*6];
+    const double state[6] = { 2, 3, 4, 2, 3, 4 };
+    const double time=0;
+    const double sr[2] = { 2, 2 };
+    const double alpha[2]  = { 3, 3 };
+    llg::multi_diffusion( deriv, state, sr, alpha, 2 );
+    for( unsigned int i=0; i<6; i++ )
+    {
+        for( unsigned int j=0; j<6; j++ )
+            std::cout << deriv[i*6 + j] << " ";
+        std::cout << std::endl;
+    }
+
+    for( unsigned int i=0; i<6; i++ )
+        for( unsigned int j=0; j<6; j++ )
+            if( (i/3) != (j/3) )
+                EXPECT_EQ( 0, deriv[i*6+j] );
+
+    EXPECT_EQ( 150, deriv[0*6 + 0] );
+    EXPECT_EQ( -28, deriv[0*6 + 1] );
+    EXPECT_EQ ( -54, deriv[0*6 + 2] );
+    EXPECT_EQ ( -44, deriv[1*6 + 0] );
+    EXPECT_EQ ( 120, deriv[1*6 + 1] );
+    EXPECT_EQ ( -68, deriv[1*6 + 2] );
+    EXPECT_EQ ( -42, deriv[2*6 + 0] );
+    EXPECT_EQ ( -76, deriv[2*6 + 1] );
+    EXPECT_EQ ( 78, deriv[2*6 + 2] );
+
+    EXPECT_EQ( 150, deriv[3*6 + 3] );
+    EXPECT_EQ( -28, deriv[3*6 + 4] );
+    EXPECT_EQ ( -54, deriv[3*6 + 5] );
+    EXPECT_EQ ( -44, deriv[4*6 + 3] );
+    EXPECT_EQ ( 120, deriv[4*6 + 4] );
+    EXPECT_EQ ( -68, deriv[4*6 + 5] );
+    EXPECT_EQ ( -42, deriv[5*6 + 3] );
+    EXPECT_EQ ( -76, deriv[5*6 + 4] );
+    EXPECT_EQ ( 78, deriv[5*6 + 5] );
+}
+
 /*
   Equations evaluated symbolically with Mathematica then evaluated
   with test values.
