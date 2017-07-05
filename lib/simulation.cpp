@@ -72,7 +72,7 @@ void simulation::zero_results( struct simulation::results &res )
 }
 
 // Run a simulation of the full dynamics of an ensemble of particles
-struct simulation::results simulation::full_dynamics(
+std::vector<struct simulation::results> simulation::full_dynamics(
     const std::vector<double> thermal_field_strengths,
     const std::vector<double> reduced_anisotropy_constants,
     const std::vector<double> reduced_particle_volumes,
@@ -114,7 +114,9 @@ struct simulation::results simulation::full_dynamics(
     const double sampling_time = end_time / ( N_samples-1 );
 
     // allocate memory for results
-    simulation::results res( N_samples );
+    std::vector<simulation::results> results;
+    for( unsigned int i=0; i<n_particles; i++ )
+        results.push_back( simulation::results( N_samples ) );
 
     // Allocate matrices needed for the midpoint method
     double *state = new double[state_size];
@@ -143,8 +145,11 @@ struct simulation::results simulation::full_dynamics(
     const size_t max_iter=1000;
 
     // Copy in the initial state
-    res.time[0] = 0;
-    res.field[0] = applied_field( 0 );
+    for( auto &res : results )
+    {
+        res.time[0] = 0;
+        res.field[0] = applied_field( 0 );
+    }
 
     // The wiener paths
     double *wiener = new double[state_size];
@@ -302,18 +307,19 @@ struct simulation::results simulation::full_dynamics(
           state at the sampling time.
          */
         /// @TODO implement first-order hold for sampling
-        res.time[sample] = sample*sampling_time; // sampling time
-        double system_mag[dims];
-        simulation::reduce_to_system_magnetisation(
-            system_mag, pstate, n_particles );
-        res.mx[sample] = system_mag[0];
-        res.my[sample] = system_mag[1];
-        res.mz[sample] = system_mag[2];
-        res.field[sample] = applied_field( sample*sampling_time );
+        for( size_t i=0; i<results.size(); i++ )
+        {
+            results[i].time[sample] = sample*sampling_time; // sampling time
+            results[i].field[sample] = applied_field( sample * sampling_time );
+            results[i].mx[sample] = pstate[3*i];
+            results[i].my[sample] = pstate[3*i + 1];
+            results[i].mz[sample] = pstate[3*i + 2];
+        }
     } // end sampling loop
 
     /// @TODO compute energy loss for llg
-    res.energy_loss = 0;
+    for( auto &res : results )
+        res.energy_loss = 0;
 
     /// Free memory
     delete[] state;
@@ -335,7 +341,7 @@ struct simulation::results simulation::full_dynamics(
     delete[] distances;
     delete[] cubed_distance_magnitudes;
 
-    return res;
+    return results;
 }
 
 /// Simulates a single particle under the discrete orientation model

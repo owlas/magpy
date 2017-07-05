@@ -48,7 +48,7 @@ namespace simulation
     };
 
     // Run the full dynamics and return the results
-    struct results full_dynamics(
+    std::vector<struct results> full_dynamics(
         const std::vector<double> thermal_field_strengths,
         const std::vector<double> reduced_anisotropy_constants,
         const std::vector<double> reduced_particle_volumes,
