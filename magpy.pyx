@@ -18,6 +18,10 @@ cdef extern from "<memory>" namespace "std" nogil:
     cdef cppclass double_up "std::unique_ptr<double[]>":
         double& operator[](size_t) const
 
+# Constants
+cdef extern from 'constants.hpp' namespace 'constants':
+    const double KB, MU0, GYROMAG
+
 # Interface to results struct
 cdef extern from "simulation.hpp" namespace "simulation":
     struct results:
@@ -123,15 +127,92 @@ cpdef simulate(
     }
     return pyresults
 
+# -------------
+# Model object
+# -------------
 import matplotlib.pyplot as plt
-def plot_results(res):
-    fg, axs = plt.subplots(nrows=res['N'])
-    for idx in range(res['N']):
-        axs[idx].plot(res['time'], res['x'][idx], label='x')
-        axs[idx].plot(res['time'], res['y'][idx], label='y')
-        axs[idx].plot(res['time'], res['z'][idx], label='z')
-        axs[idx].legend()
-        axs[idx].set_title('Particle {}'.format(idx))
-        axs[idx].set_xlabel('Reduced time [dimless]')
-    fg.tight_layout()
-    return fg
+
+class EnsembleResults:
+    def __init__(self, results):
+        self.results = results
+
+    def magnetisation(self, direction='z'):
+        return [res.magnetisation(direction) for res in self.results]
+
+    def ensemble_magnetisation(self, direction='z'):
+        return np.sum(self.magnetisation(direction), axis=0) / len(self.results)
+
+    def final_state(self):
+        return [res.final_state() for res in self.results]
+
+class Results:
+    def __init__(self, time, field, x, y, z, N):
+        self.time = time
+        self.field = field
+        self.x = x
+        self.y = y
+        self.z = z
+        self.N = N
+
+    def plot(self):
+        fg, axs = plt.subplots(nrows=self.N)
+        if self.N==1:
+            axs = [axs]
+        for idx in range(self.N):
+            axs[idx].plot(self.time, self.x[idx], label='x')
+            axs[idx].plot(self.time, self.y[idx], label='y')
+            axs[idx].plot(self.time, self.z[idx], label='z')
+            axs[idx].legend()
+            axs[idx].set_title('Particle {}'.format(idx))
+            axs[idx].set_xlabel('Reduced time [dimless]')
+            fg.tight_layout()
+        return fg
+
+    def magnetisation(self, direction='z'):
+        return np.sum([vals for vals in getattr(self, direction).values()], axis=0)
+
+    def final_state(self):
+        return {
+            'x': {k:v[-1] for k,v in self.x.items()},
+            'y': {k:v[-1] for k,v in self.y.items()},
+            'z': {k:v[-1] for k,v in self.z.items()}
+        }
+
+from joblib import Parallel, delayed
+
+class Model:
+    def __init__(
+            self, radius, anisotropy, anisotropy_axis, magnetisation_direction,
+            location, magnetisation, damping, temperature ):
+        self.radius = radius
+        self.anisotropy = anisotropy
+        self.anisotropy_axis = anisotropy_axis
+        self.magnetisation_direction = magnetisation_direction
+        self.location = location
+        self.magnetisation = magnetisation
+        self.damping = damping
+        self.temperature = temperature
+        self.volume = np.array([4./3*np.pi * r**3 for r in self.radius])
+
+    def describe(self):
+        print('System stability:')
+        print(' '.join([
+            '{:.1f}'.format(k*v / KB / self.temperature)
+            for k,v in zip(self.anisotropy, self.volume)
+        ]))
+
+    def simulate(self, end_time, time_step, max_samples, seed=1001, renorm=False):
+        res = simulate(
+            self.radius, self.anisotropy, self.anisotropy_axis,
+            self.magnetisation_direction, self.location, self.magnetisation,
+            self.damping, self.temperature, renorm, time_step, end_time,
+            max_samples, seed)
+        return Results(**res)
+
+
+    def simulate_ensemble(self, end_time, time_step, max_samples, seeds, renorm=False, n_jobs=1):
+        results = Parallel(n_jobs)(
+            delayed(self.simulate)(end_time, time_step, max_samples, seed, renorm)
+            for seed in seeds
+        )
+        return EnsembleResults(results)
