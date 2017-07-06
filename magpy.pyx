@@ -57,7 +57,7 @@ cdef vector[d3] arr_to_d3vec(double *arr, size_t N):
     cdef vector[d3] vec
     vec.resize(N)
     for i in range(N):
-        for j in range(N):
+        for j in range(3):
             vec[i][j] = arr[3*i + j]
     return vec
 

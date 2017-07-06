@@ -165,6 +165,14 @@ std::vector<struct simulation::results> simulation::full_dynamics(
         res.time[0] = 0;
         res.field[0] = applied_field( 0 );
     }
+    for( size_t i=0; i<n_particles; i++ )
+    {
+        results[i].time[0] = 0;
+        results[i].field[0] = applied_field( 0 );
+        results[i].mx[0] = initial_magnetisations[i][0];
+        results[i].my[0] = initial_magnetisations[i][1];
+        results[i].mz[0] = initial_magnetisations[i][2];
+    }
 
     // The wiener paths
     double *wiener = new double[state_size];
