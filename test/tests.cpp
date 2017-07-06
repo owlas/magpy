@@ -1,5 +1,4 @@
 #include "../googletest/include/gtest/gtest.h"
-#include "../include/easylogging++.h"
 #include "../include/llg.hpp"
 #include "../include/integrators.hpp"
 #include "../include/io.hpp"
@@ -22,8 +21,6 @@
 #include <lapacke.h>
 #endif
 #include <stdexcept>
-
-INITIALIZE_EASYLOGGINGPP
 
 TEST(llg, drift)
 {
