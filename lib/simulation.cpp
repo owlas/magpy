@@ -426,7 +426,7 @@ std::vector<simulation::results> simulation::full_dynamics(
         thermal_field_strength.push_back(
             std::sqrt(
                 damping * constants::KB * temperature
-                / ( average_anisotropy * v) * ( 1 + damping*damping ) ) );
+                / ( average_anisotropy * v) / ( 1 + damping*damping ) ) );
 
     ///////////////////////
     // Compute the field // @TODO
