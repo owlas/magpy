@@ -305,7 +305,7 @@ int integrator::implicit_midpoint(
 {
     // Implicit method depends on a modified random variable
     // See http://epubs.siam.org/doi/pdf/10.1137/S0036142901395588 for details
-    double Ah = std::sqrt( 2*dt*std::abs( std::log( dt ) ) );
+    double Ah = std::sqrt( 2*std::abs( std::log( dt ) ) );
     for( unsigned int i=0; i<w_dim; i++ )
         dwm[i] = std::max( -Ah, std::min( Ah, dw[i] ) );
 
