@@ -739,6 +739,7 @@ void moma_config::launch_llg_simulation( const json in )
                 simulation_time,
                 *(rng.get()),
                 renorm,
+                true,
                 max_samples );
         };
 
@@ -777,6 +778,7 @@ void moma_config::launch_llg_simulation( const json in )
         simulation_time,
         *(rngs[0].get()),
         renorm,
+        true,
         max_samples );
     // auto results2 = simulation::results( max_samples );
     // auto run_funcs = curry::vector_curry( run_function, initial_system_state, rngs );

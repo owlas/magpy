@@ -104,6 +104,7 @@ std::vector<struct simulation::results> simulation::full_dynamics(
     const double end_time,
     Rng &rng,
     const bool renorm,
+    const bool interactions,
     const int max_samples )
 {
     // Dimensions
@@ -227,7 +228,7 @@ std::vector<struct simulation::results> simulation::full_dynamics(
     std::function<void(double*,const double*,const double)> heff_func =
         [state_size, anis, reduced_anisotropy_constants, n_particles,
          applied_field, saturation_magnetisation, average_anisotropy, average_volume,
-         distances, reduced_particle_volumes, cubed_distance_magnitudes]
+         distances, reduced_particle_volumes, cubed_distance_magnitudes, interactions]
         ( double *heff, const double *state, const double t )
         {
             field::zero_all_field_terms( heff, state_size );
@@ -237,10 +238,11 @@ std::vector<struct simulation::results> simulation::full_dynamics(
 
             field::multi_add_applied_Z_field_function( heff, applied_field,  t, n_particles );
 
-            field::multi_add_dipolar(
-                heff, saturation_magnetisation, average_anisotropy,
-                reduced_particle_volumes.data(), state,
-                distances, cubed_distance_magnitudes, n_particles );
+            if( interactions )
+                field::multi_add_dipolar(
+                    heff, saturation_magnetisation, average_anisotropy,
+                    reduced_particle_volumes.data(), state,
+                    distances, cubed_distance_magnitudes, n_particles );
 
         };
 
@@ -377,6 +379,7 @@ std::vector<simulation::results> simulation::full_dynamics(
     const double damping,
     const double temperature,
     const bool renorm,
+    const bool interactions,
     const double time_step,
     const double end_time,
     const size_t max_samples,
@@ -462,6 +465,7 @@ std::vector<simulation::results> simulation::full_dynamics(
         reduced_end_time,
         rng,
         renorm,
+        interactions,
         max_samples );
 }
 
