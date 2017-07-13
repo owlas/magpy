@@ -65,6 +65,7 @@ namespace simulation
         const double end_time,
         Rng &rng,
         const bool renorm,
+        const bool interactions,
         const int max_samples );
 
     // @TODO - add field term
@@ -78,6 +79,7 @@ namespace simulation
         const double damping,
         const double temperature,
         const bool renorm,
+        const bool interactions,
         const double time_step,
         const double end_time,
         const size_t max_samples,
