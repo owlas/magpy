@@ -307,7 +307,7 @@ int integrator::implicit_midpoint(
     // See http://epubs.siam.org/doi/pdf/10.1137/S0036142901395588 for details
     double Ah = std::sqrt( 2*std::abs( std::log( dt ) ) );
     for( unsigned int i=0; i<w_dim; i++ )
-        dwm[i] = std::max( -Ah, std::min( Ah, dw[i] ) );
+        dwm[i] = std::max( -Ah, std::min( Ah, dw[i] ) ) * std::sqrt( dt );
 
     // The initial guess will be an Euler step
     sde( a_work, b_work, adash_work, bdash_work, x0, t, t );
