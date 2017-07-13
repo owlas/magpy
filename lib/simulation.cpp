@@ -443,7 +443,7 @@ std::vector<simulation::results> simulation::full_dynamics(
             j /= std::pow( average_volume, 1./3 );
 
     // RANDOM NUMBER GENERATOR
-    RngMtNorm rng( seed, std::sqrt( reduced_time_step ) );
+    RngMtNorm rng( seed, 1.0 );
 
     return simulation::full_dynamics(
         thermal_field_strength,
