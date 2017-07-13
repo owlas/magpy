@@ -45,6 +45,7 @@ cdef extern from "simulation.hpp" namespace "simulation":
         const double damping,
         const double temperature,
         const bool renorm,
+        const bool interactions,
         const double time_step,
         const double end_time,
         const size_t max_samples,
@@ -78,6 +79,7 @@ cpdef simulate(
         double damping,
         double temperature,
         bool renorm,
+        bool interactions,
         double time_step,
         double end_time,
         int max_samples,
@@ -101,6 +103,7 @@ cpdef simulate(
         damping,
         temperature,
         renorm,
+        interactions,
         time_step,
         end_time,
         max_samples,
@@ -201,18 +204,18 @@ class Model:
             for k,v in zip(self.anisotropy, self.volume)
         ]))
 
-    def simulate(self, end_time, time_step, max_samples, seed=1001, renorm=False):
+    def simulate(self, end_time, time_step, max_samples, seed=1001, renorm=False, interactions=True):
         res = simulate(
             self.radius, self.anisotropy, self.anisotropy_axis,
             self.magnetisation_direction, self.location, self.magnetisation,
-            self.damping, self.temperature, renorm, time_step, end_time,
-            max_samples, seed)
+            self.damping, self.temperature, renorm, interactions, time_step,
+            end_time, max_samples, seed)
         return Results(**res)
 
 
-    def simulate_ensemble(self, end_time, time_step, max_samples, seeds, renorm=False, n_jobs=1):
+    def simulate_ensemble(self, end_time, time_step, max_samples, seeds, renorm=False, interactions=True, n_jobs=1):
         results = Parallel(n_jobs)(
-            delayed(self.simulate)(end_time, time_step, max_samples, seed, renorm)
+            delayed(self.simulate)(end_time, time_step, max_samples, seed, renorm, interactions)
             for seed in seeds
         )
         return EnsembleResults(results)
