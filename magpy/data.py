@@ -1,6 +1,6 @@
 from git import Repo
 from git import Actor
-import magpy
+from .core import EnsembleResults
 import os.path as osp
 import pickle as pkl
 
@@ -15,7 +15,7 @@ def shelve_results(results, repo_path, name):
     results_path = osp.join(repo.working_tree_dir, name)
 
     with open(results_path, 'wb') as f:
-        if isinstance(results, magpy.EnsembleResults):
+        if isinstance(results, EnsembleResults):
             pkl.dump(results.results, f)
         else:
             pkl.dump(results, f)
@@ -36,7 +36,7 @@ def grab_results(repo_path, name):
         res = pkl.load(f)
 
     if isinstance(res, list):
-        results = magpy.EnsembleResults(res)
+        results = EnsembleResults(res)
     else:
         results = res
     return results

@@ -2,6 +2,7 @@ from distutils.core import setup
 from distutils.extension import Extension
 from Cython.Distutils import build_ext
 from Cython.Build import cythonize
+from setuptools import find_packages
 
 import numpy
 
@@ -10,10 +11,11 @@ MKLROOT = os.environ['MKLROOT']
 
 setup(
     name='magpy',
-    version=0.01,
+    version='0.1dev',
+    packages=find_packages(),
     ext_modules= cythonize(Extension(
-        name='magpy',
-        sources=["magpy.pyx"],
+        name='magpy.core',
+        sources=["magpy/core.pyx"],
         language='c++',
         extra_compile_args=[
             "-std=c++11", '-pthread', '-O3','-fopenmp', '-simd', '-qopenmp', '-xHost',
