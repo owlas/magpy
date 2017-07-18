@@ -22,6 +22,13 @@ cdef extern from "<memory>" namespace "std" nogil:
 cdef extern from 'constants.hpp' namespace 'constants':
     const double KB, MU0, GYROMAG
 
+cpdef get_KB():
+    return KB
+cpdef get_mu0():
+    return MU0
+cpdef get_gamma():
+    return GYROMAG
+
 # Interface to results struct
 cdef extern from "simulation.hpp" namespace "simulation":
     struct results:
