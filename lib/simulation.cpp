@@ -437,7 +437,7 @@ std::vector<simulation::results> simulation::full_dynamics(
     // RANDOM NUMBER GENERATOR
     RngMtNorm rng( seed, 1.0 );
 
-    return simulation::full_dynamics(
+    auto results = simulation::full_dynamics(
         thermal_field_strength,
         reduced_anisotropy,
         reduced_volume,
@@ -456,6 +456,13 @@ std::vector<simulation::results> simulation::full_dynamics(
         renorm,
         interactions,
         max_samples );
+
+    // Convert reduced time back to real time
+    for( size_t p=0; p<n_particles; p++ )
+        for( size_t i=0; i<max_samples; i++ )
+            results[p].time[i] /= time_factor;
+
+    return results;
 }
 
 /// Simulates a single particle under the discrete orientation model
