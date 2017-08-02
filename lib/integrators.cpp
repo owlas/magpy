@@ -5,8 +5,10 @@
 #include "../include/integrators.hpp"
 #include "../include/optimisation.hpp"
 #include <cmath>
+#include <iostream>
 
 using sde_function = std::function<void(double*,const double*,const double)>;
+using sde_func = std::function<void(double*,double*,const double*,const double)>;
 using sde_jac = std::function<void(double*,double*,double*,double*,const double*,const double,const double)>;
 namespace ck = integrator::ck_butcher_table;
 
@@ -224,31 +226,28 @@ void integrator::heun(
     double *trial_diffusion_matrix,
     const double *current_state,
     const double *wiener_steps,
-    const sde_function drift,
-    const sde_function diffusion,
+    const sde_func sde,
     const size_t n_dims,
     const size_t wiener_dims,
     const double t,
     const double step_size )
 {
-    drift( drift_arr, current_state, t );
-    diffusion( diffusion_matrix, current_state, t );
+    sde( drift_arr, diffusion_matrix, current_state, t );
 
     for( unsigned int i=0; i<n_dims; i++ ){
         next_state[i] = current_state[i] + step_size*drift_arr[i];
         for( unsigned int j=0; j<wiener_dims; j++ )
-            next_state[i] += diffusion_matrix[j+i*wiener_dims]*wiener_steps[j];
+            next_state[i] += diffusion_matrix[j+i*wiener_dims]*wiener_steps[j] * std::sqrt( step_size );
     }
 
-    drift( trial_drift_arr, next_state, t + step_size );
-    diffusion( trial_diffusion_matrix, next_state, t +step_size );
+    sde( trial_drift_arr, trial_diffusion_matrix, next_state, t +step_size );
 
     for( unsigned int i=0; i<n_dims; i++ )
     {
         next_state[i] = current_state[i]
             + 0.5*step_size*( trial_drift_arr[i] + drift_arr[i] );
         for( unsigned int j=0; j<wiener_dims; j++ )
-            next_state[i] += 0.5*wiener_steps[j]
+            next_state[i] += 0.5*wiener_steps[j] * std::sqrt( step_size )
                 *( trial_diffusion_matrix[j+i*wiener_dims]
                    + diffusion_matrix[j+i*wiener_dims] );
     }
@@ -258,25 +257,27 @@ void driver::heun(
     double *states,
     const double* initial_state,
     const double *wiener_process,
-    const sde_function drift,
-    const sde_function diffusion,
+    const sde_func sde,
     const size_t n_steps,
     const size_t n_dims,
     const size_t n_wiener,
     const double step_size )
 {
-    for( unsigned int i=0; i<n_dims; i++ )
-        states[i] = initial_state[i];
-
     double *drift_arr = new double[n_dims];
     double *trial_drift_arr = new double[n_dims];
     double *diffusion_mat = new double[n_dims*n_wiener];
     double *trial_diffusion_mat = new double[n_dims*n_wiener];
-    for( unsigned int i=1; i<n_steps; i++ )
+
+    // First step
+    for( unsigned int i=0; i<n_dims; i++ )
+        states[i] = initial_state[i];
+
+    // More steps
+    for( unsigned int i=0; i<n_steps; i++ )
         integrator::heun(
-            states+i*n_dims, drift_arr, trial_drift_arr, diffusion_mat,
-            trial_diffusion_mat, states+(i-1)*n_dims, wiener_process+(i-1)*n_wiener,
-            drift, diffusion, n_dims, n_wiener, i*step_size, step_size );
+            states+(i+1)*n_dims, drift_arr, trial_drift_arr, diffusion_mat,
+            trial_diffusion_mat, states+i*n_dims, wiener_process+i*n_wiener,
+            sde, n_dims, n_wiener, i*step_size, step_size );
 
     delete[] drift_arr; delete[] trial_drift_arr;
     delete[] diffusion_mat; delete[] trial_diffusion_mat;
