@@ -370,61 +370,11 @@ json test_dom_config()
     return j;
 }
 
-TEST( moma_config, valid_llg_input )
-{
-    nlohmann::json in = test_llg_config();
-    // This should be a valid input
-
-    moma_config::validate_for_llg( in );
-}
 
 TEST( moma_config, valid_dom_input )
 {
     nlohmann::json in = test_dom_config();
     moma_config::validate_for_dom( in );
-}
-
-TEST( moma_config, transform_llg )
-{
-    nlohmann::json in = test_llg_config();
-    auto out = moma_config::transform_input_parameters_for_llg( in );
-
-    EXPECT_EQ( 1,
-               out.at("simulation").at("ensemble-size").get<int>() );
-    EXPECT_NEAR( 0.000179815211117,
-                 out.at("simulation").at("time-step").get<double>(), 1e-14);
-    EXPECT_DOUBLE_EQ( 17.981521111752436,
-                      out.at("simulation").at("simulation-time").get<double>() );
-    EXPECT_DOUBLE_EQ( 17981521111.752434,
-                      out.at("simulation").at("time-factor").get<double>() );
-    EXPECT_EQ( true,
-               out.at("simulation").at("renormalisation").get<bool>() );
-    EXPECT_EQ( false,
-               out.at("simulation").at("steady-cycle-activated").get<bool>() );
-    EXPECT_EQ( "output",
-               out.at("output").at("directory").get<std::string>() );
-    EXPECT_EQ( 1000,
-               out.at("output").at("max-samples").get<int>() );
-    EXPECT_DOUBLE_EQ( 300,
-                      out.at("global").at("temperature").get<double>() );
-    EXPECT_DOUBLE_EQ( 1.6683794331722291e-05,
-                      out.at("global").at("applied-field").at("frequency").get<double>() );
-    EXPECT_DOUBLE_EQ( 6.0919579213043464,
-                      out.at("global").at("applied-field").at("amplitude").get<double>() );
-    EXPECT_DOUBLE_EQ( 82075.419177049276,
-                      out.at("global").at("anisotropy-field"));
-    EXPECT_DOUBLE_EQ( 0.1,
-                      out.at("particle").at("damping") );
-    EXPECT_DOUBLE_EQ( 1.436755040241732e-24,
-                      out.at("particle").at("volume"));
-    EXPECT_DOUBLE_EQ( 7e-9,
-                      out.at("particle").at("radius"));
-    EXPECT_DOUBLE_EQ( 23e3,
-                      out.at("particle").at("anisotropy"));
-    EXPECT_DOUBLE_EQ( 0.11140026492035397,
-                      out.at("particle").at("thermal-field-strength"));
-    EXPECT_DOUBLE_EQ( 7.97822314341568,
-                      out.at("particle").at("stability-ratio"));
 }
 
 TEST( moma_config, transform_dom )
