@@ -282,6 +282,59 @@ void driver::heun(
     delete[] diffusion_mat; delete[] trial_diffusion_mat;
 }
 
+void driver::implicit_midpoint(
+    double *x,
+    const double *x0,
+    const double *dw,
+    const sde_jac sde,
+    const size_t n_dim,
+    const size_t w_dim,
+    const size_t n_steps,
+    const double t0,
+    const double dt,
+    const double eps,
+    const size_t max_iter )
+{
+    double *dwm = new double[w_dim];
+    double *a_work = new double[n_dim];
+    double *b_work = new double[n_dim*w_dim];
+    double *adash_work = new double[n_dim*n_dim];
+    double *bdash_work = new double[n_dim*w_dim*n_dim];
+    double *x_guess = new double[n_dim];
+    double *x_opt_tmp = new double [n_dim];
+    double *x_opt_jac = new double[n_dim*n_dim];
+    lapack_int *x_opt_ipiv = new lapack_int[n_dim];
+
+    // First step
+    double t = t0;
+    int err_code;
+    for( unsigned int i=0; i<n_dim; i++ )
+        x[i] = x0[i];
+
+    // Take N steps
+    for( unsigned int n=0; n<n_steps; n++ )
+    {
+        t+=dt;
+        err_code = integrator::implicit_midpoint(
+            x+((n+1)*n_dim), dwm, a_work, b_work, adash_work, bdash_work,
+            x_guess, x_opt_tmp, x_opt_jac, x_opt_ipiv, x+(n*n_dim),
+            dw+(n*n_dim), sde, n_dim, w_dim, t, dt, eps, max_iter );
+        //std::cout << x[n] << " " << dw[n] << " " << x[n+1] << std::endl;
+        if( err_code != 0 )
+            std::cout << "At time step " << n << " implicit solver errcode:" << err_code << std::endl;
+    }
+
+    delete[] dwm;
+    delete[] a_work;
+    delete[] b_work;
+    delete[] adash_work;
+    delete[] bdash_work;
+    delete[] x_guess;
+    delete[] x_opt_tmp;
+    delete[] x_opt_jac;
+    delete[] x_opt_ipiv;
+}
+
 int integrator::implicit_midpoint(
     double *x,
     double *dwm,
