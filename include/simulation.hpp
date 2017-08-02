@@ -66,7 +66,9 @@ namespace simulation
         Rng &rng,
         const bool renorm,
         const bool interactions,
-        const int max_samples );
+        const bool use_implicit,
+        const int max_samples
+    );
 
     // @TODO - add field term
     std::vector<results> full_dynamics(
@@ -80,6 +82,7 @@ namespace simulation
         const double temperature,
         const bool renorm,
         const bool interactions,
+        const bool use_implicit,
         const double time_step,
         const double end_time,
         const size_t max_samples,

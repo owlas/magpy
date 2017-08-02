@@ -105,6 +105,7 @@ std::vector<struct simulation::results> simulation::full_dynamics(
     Rng &rng,
     const bool renorm,
     const bool interactions,
+    const bool use_implicit,
     const int max_samples )
 {
     // Dimensions
@@ -281,6 +282,17 @@ std::vector<struct simulation::results> simulation::full_dynamics(
                 heff_jac_func );
         };
 
+    /// Create a version without Jacobians if implicit is not requested
+    std::function<void(double*,double*,const double*,double)> sde_no_jacs =
+        [heff, heff_func, damping_ratios, thermal_field_strengths, n_particles]
+        (double *drift, double *diffusion, const double *state, const double t)
+        {
+            llg::multi_stochastic_llg_field_update(
+                drift, diffusion, heff, heff_func, state, t,
+                damping_ratios.data(), thermal_field_strengths.data(),
+                n_particles );
+        };
+
     /*
       The time for each point in the regularly spaced grid is
       known. We want to obtain the state at each step
@@ -305,12 +317,21 @@ std::vector<struct simulation::results> simulation::full_dynamics(
                 wiener[i] = rng.get();
 
             // perform integration step
-            int errcode = integrator::implicit_midpoint(
-                nstate, dwm, a_work, b_work, adash_work, bdash_work, x_guess,
-                x_opt_tmp, x_opt_jac, x_opt_ipiv, pstate, wiener, sde,
-                state_size, state_size, t, time_step, eps, max_iter );
-            if( errcode != optimisation::SUCCESS )
-                std::runtime_error( "implicit integration error code" );
+            if( use_implicit )
+            {
+                int errcode = integrator::implicit_midpoint(
+                    nstate, dwm, a_work, b_work, adash_work, bdash_work, x_guess,
+                    x_opt_tmp, x_opt_jac, x_opt_ipiv, pstate, wiener, sde,
+                    state_size, state_size, t, time_step, eps, max_iter );
+                if( errcode != optimisation::SUCCESS )
+                    std::runtime_error( "implicit integration error code" );
+            }
+            else
+                integrator::heun(
+                    nstate, a_work, adash_work, b_work, bdash_work,
+                    pstate, wiener, sde_no_jacs, state_size, state_size,
+                    t, time_step );
+
 
             // Renormalise the length of the magnetisation for each particle
             if( renorm  )
@@ -380,6 +401,7 @@ std::vector<simulation::results> simulation::full_dynamics(
     const double temperature,
     const bool renorm,
     const bool interactions,
+    const bool use_implicit,
     const double time_step,
     const double end_time,
     const size_t max_samples,
@@ -466,6 +488,7 @@ std::vector<simulation::results> simulation::full_dynamics(
         rng,
         renorm,
         interactions,
+        use_implicit,
         max_samples );
 
     // Convert reduced time back to real time
