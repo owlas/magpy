@@ -17,14 +17,12 @@ namespace moma_config
       Validate that the config is correctly formatted for the
       simulation type.
     */
-    void validate_for_llg( const json input );
     void validate_for_dom( const json input );
 
     /*
       Takes a json config file and normalises the parameters for
       simulation. Returns the normalised params.
     */
-    json transform_input_parameters_for_llg( const json input );
     json transform_input_parameters_for_dom( const json input );
 
     /*
@@ -40,6 +38,5 @@ namespace moma_config
     */
     void launch_simulation( const json input );
     void launch_dom_simulation( const json input );
-    void launch_llg_simulation( const json input );
 }
 #endif
