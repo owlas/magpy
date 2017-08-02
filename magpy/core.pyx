@@ -53,6 +53,7 @@ cdef extern from "simulation.hpp" namespace "simulation":
         const double temperature,
         const bool renorm,
         const bool interactions,
+        const bool use_implicit,
         const double time_step,
         const double end_time,
         const size_t max_samples,
@@ -87,6 +88,7 @@ cpdef simulate(
         double temperature,
         bool renorm,
         bool interactions,
+        bool use_implicit,
         double time_step,
         double end_time,
         int max_samples,
@@ -111,6 +113,7 @@ cpdef simulate(
         temperature,
         renorm,
         interactions,
+        use_implicit,
         time_step,
         end_time,
         max_samples,
@@ -211,12 +214,12 @@ class Model:
             for k,v in zip(self.anisotropy, self.volume)
         ]))
 
-    def simulate(self, end_time, time_step, max_samples, seed=1001, renorm=False, interactions=True):
+    def simulate(self, end_time, time_step, max_samples, seed=1001, renorm=False, interactions=True, implict_solve=True):
         res = simulate(
             self.radius, self.anisotropy, self.anisotropy_axis,
             self.magnetisation_direction, self.location, self.magnetisation,
-            self.damping, self.temperature, renorm, interactions, time_step,
-            end_time, max_samples, seed)
+            self.damping, self.temperature, renorm, interactions, implict_solve,
+            time_step, end_time, max_samples, seed)
         return Results(**res)
 
 
