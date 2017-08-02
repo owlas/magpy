@@ -159,26 +159,29 @@ TEST(heun, multiplicative )
     double trial_drift_arr[2];
     double diffusion_matrix[6];
     double trial_diffusion_matrix[6];
+    double wiener_steps[3] = { 0.1, 0.01, 0.001 };
     const double current_state[2] = { 1, 2 };
-    const double wiener_steps[3] = { 0.1, 0.01, 0.001 };
 
-    const std::function<void(double*,const double*,const double)> drift =
-        [](double *out, const double *in, const double t) {
-        out[0]=in[0]*in[1]*t; out[1]=3*in[0];
-    };
-    const std::function<void(double*,const double*,const double)> diffusion =
-        [](double *out, const double *in, const double t) {
-        out[0]=t; out[1]=in[0]; out[2]=in[1]; out[3]=in[1]; out[4]=4.0;
-        out[5]=in[0]*in[1];
-    };
+    const std::function<void(double*,double*,const double*,const double)> sde =
+        [](double *drift, double*diff, const double *in, const double t)
+        {
+            drift[0]=in[0]*in[1]*t; drift[1]=3*in[0];
+            diff[0]=t; diff[1]=in[0]; diff[2]=in[1]; diff[3]=in[1]; diff[4]=4.0;
+            diff[5]=in[0]*in[1];
+
+        };
 
     const size_t n_dims=2, wiener_dims=3;
     const double t=0, step_size=0.1;;
 
+    for( size_t i=0; i<wiener_dims; i++ )
+        wiener_steps[i] = wiener_steps[i] / std::sqrt( step_size );
+
     integrator::heun(
         next_state, drift_arr, trial_drift_arr, diffusion_matrix, trial_diffusion_matrix,
-        current_state, wiener_steps, drift, diffusion, n_dims, wiener_dims,
+        current_state, wiener_steps, sde, n_dims, wiener_dims,
         t, step_size );
+
 
     EXPECT_DOUBLE_EQ( 1.03019352, next_state[0] );
     EXPECT_DOUBLE_EQ( 2.571186252, next_state[1] );
@@ -258,34 +261,36 @@ TEST( heun_driver, ou )
     const double ou_theta = 10;
     const double ou_mu = -1;
     const double ou_sigma = 0.8;
-    const std::function<void(double*,const double*,const double)> drift =
-        [ou_theta,ou_mu](double *out, const double *in, const double t)
-        { out[0]=ou_theta*(ou_mu - in[0]); };
-    const std::function<void(double*,const double*,const double)> diffusion =
-        [ou_sigma](double *out, const double *in, const double t) { out[0]=ou_sigma; };
+    const std::function<void(double*,double*,const double*,const double)> sde =
+        [ou_theta,ou_mu,ou_sigma](double *drift, double *diff,
+                         const double *in, const double t)
+        {
+            drift[0]=ou_theta*(ou_mu - in[0]);
+            diff[0] = ou_sigma;
+        };
 
 
     // Create a wiener path
     double wiener_process[n_steps];
-    std::normal_distribution<double> dist( 0, std::sqrt( step_size ) );
+    std::normal_distribution<double> dist( 0, 1 );
     std::mt19937_64 rng;
     for( unsigned int i=0; i<n_steps; i++ )
         wiener_process[i] = dist( rng );
 
     // Generate the states
-    double states[n_steps];
+    double states[n_steps+1];
     driver::heun(
-        states, initial_state, wiener_process, drift, diffusion,
+        states, initial_state, wiener_process, sde,
         n_steps, n_dims, n_wiener, step_size );
 
     // Compute the analytic solution and compare pathwise similarity
     double truesol = initial_state[0];
-    for( unsigned int i=1; i<n_steps; i++ )
+    for( unsigned int i=1; i<n_steps+1; i++ )
     {
         truesol = truesol*std::exp( -ou_theta*step_size )
             + ou_mu*( 1-std::exp( -ou_theta*step_size ) )
             + ou_sigma*std::sqrt( ( 1- std::exp( -2*ou_theta*step_size ) )/( 2*ou_theta ) )
-            * wiener_process[i-1]/std::sqrt( step_size );
+            * wiener_process[i-1];
 
         ASSERT_NEAR( truesol, states[i], 1e-8 );
     }

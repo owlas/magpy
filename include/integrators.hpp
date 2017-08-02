@@ -41,8 +41,7 @@ namespace driver
     void heun(
         double *states, const double* initial_state,
         const double *wiener_process,
-        const std::function<void(double*,const double*,const double)> drift,
-        const std::function<void(double*,const double*,const double)> diffusion,
+        const std::function<void(double*,double*,const double*,const double)> sde,
         const size_t n_steps, const size_t n_dims, const size_t n_wiener,
         const double step_size );
 
@@ -86,8 +85,7 @@ namespace integrator
         double *next_state, double *drift_arr, double *trial_drift_arr,
         double *diffusion_matrix, double *trial_diffusion_matrix,
         const double *current_state, const double *wiener_steps,
-        const std::function<void(double*,const double*,const double)> drift,
-        const std::function<void(double*,const double*,const double)> diffusion,
+        const std::function<void(double*,double*,const double*,const double)> sde,
         const size_t n_dims, const size_t wiener_dims, const double t,
         const double step_size );
 
