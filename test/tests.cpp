@@ -433,7 +433,7 @@ TEST( newton_raphson, 1d_funtion_max_iter )
 
 TEST( newton_raphson_noinv, 2d_function_2_sols )
 {
-    double x_root[2], x_tmp[2], jac_out[4], x0[2], eps=1e-8;
+    double x_root[2], x_tmp[2], jac_out[4], x0[2], eps=1e-10;
     lapack_int dim=2, ipiv[2];
     size_t max_iter=100;
     int lapack_err;
@@ -457,21 +457,23 @@ TEST( newton_raphson_noinv, 2d_function_2_sols )
 
     // Find the first solution
     x0[0] = x0[1] = -5.2;
+    double tolerance = std::sqrt(2 * 5.2 * 5.2) * eps;
     auto flag = optimisation::newton_raphson_noinv(
         x_root, x_tmp, jac_out, ipiv, &lapack_err,
         fj, x0, dim, eps, max_iter );
     ASSERT_EQ( optimisation::SUCCESS, flag );
-    EXPECT_LE( std::abs( x_root[0] + 5 ), eps );
-    EXPECT_LE( std::abs( x_root[1] - 4.9 ), eps );
+    EXPECT_LE( std::abs( x_root[0] + 5 ), tolerance );
+    EXPECT_LE( std::abs( x_root[1] - 4.9 ), tolerance );
 
     // Find the second solution
     x0[0] = x0[1] = 1.0;
+    tolerance = std::sqrt(2.0) * eps;
     flag = optimisation::newton_raphson_noinv(
         x_root, x_tmp, jac_out, ipiv, &lapack_err,
         fj, x0, dim, eps, max_iter );
     ASSERT_EQ( optimisation::SUCCESS, flag );
-    EXPECT_LE( std::abs( x_root[0] - 2 ), eps );
-    EXPECT_LE( std::abs( x_root[1] ), eps );
+    EXPECT_LE( std::abs( x_root[0] - 2 ), tolerance );
+    EXPECT_LE( std::abs( x_root[1] ), tolerance );
 }
 
 TEST( newton_raphson_noinv, 2d_function_singular )
