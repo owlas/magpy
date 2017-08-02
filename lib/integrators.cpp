@@ -408,5 +408,5 @@ int integrator::implicit_midpoint(
         x[i] = 2*x[i] - x0[i];
 
     // Return error code
-    return flag;
+    return flag + err_code;
 }
