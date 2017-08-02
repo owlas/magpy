@@ -46,16 +46,19 @@ int optimisation::newton_raphson_noinv (
     const double eps,
     const size_t max_iter )
 {
-    // Initialise the error
-    double err=2*eps;
-
     // Copy in the initial condition
     for( int i=0; i<dim; i++ )
         x_root[i] = x0[i];
 
+    // Relative tolerance
+    double tol = eps * cblas_dnrm2( dim, x_root, 1 );
+
+    // Initialise the error
+    double err=2*tol;
+
     // Repeat until convergence
     int iter = max_iter;
-    while( ( err > eps ) && ( iter --> 0 ) )
+    while( ( err > tol ) && ( iter --> 0 ) )
     {
         // Get the previous state
         for( int i=0; i<dim; i++ )
