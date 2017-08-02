@@ -45,6 +45,19 @@ namespace driver
         const std::function<void(double*,const double*,const double)> diffusion,
         const size_t n_steps, const size_t n_dims, const size_t n_wiener,
         const double step_size );
+
+    void implicit_midpoint(
+        double *x,
+        const double *x0,
+        const double *dw,
+        const std::function<void(double*,double*,double*,double*,const double*,const double,const double)> sde,
+        const size_t n_dim,
+        const size_t w_dim,
+        const size_t n_steps,
+        const double t0,
+        const double dt,
+        const double eps,
+        const size_t max_iter );
 }
 
 // The integrators contain the core numerical methods to compute the
