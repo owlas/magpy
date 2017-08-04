@@ -214,18 +214,18 @@ class Model:
             for k,v in zip(self.anisotropy, self.volume)
         ]))
 
-    def simulate(self, end_time, time_step, max_samples, seed=1001, renorm=False, interactions=True, implict_solve=True):
+    def simulate(self, end_time, time_step, max_samples, seed=1001, renorm=False, interactions=True, implicit_solve=True):
         res = simulate(
             self.radius, self.anisotropy, self.anisotropy_axis,
             self.magnetisation_direction, self.location, self.magnetisation,
-            self.damping, self.temperature, renorm, interactions, implict_solve,
+            self.damping, self.temperature, renorm, interactions, implicit_solve,
             time_step, end_time, max_samples, seed)
         return Results(**res)
 
 
-    def simulate_ensemble(self, end_time, time_step, max_samples, seeds, renorm=False, interactions=True, n_jobs=1):
+    def simulate_ensemble(self, end_time, time_step, max_samples, seeds, renorm=False, interactions=True, n_jobs=1, implicit_solve=False):
         results = Parallel(n_jobs)(
-            delayed(self.simulate)(end_time, time_step, max_samples, seed, renorm, interactions)
+            delayed(self.simulate)(end_time, time_step, max_samples, seed, renorm, interactions, implicit_solve)
             for seed in seeds
         )
         return EnsembleResults(results)
