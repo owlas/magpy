@@ -224,7 +224,7 @@ class Model:
 
 
     def simulate_ensemble(self, end_time, time_step, max_samples, seeds, renorm=False, interactions=True, n_jobs=1, implicit_solve=False):
-        results = Parallel(n_jobs)(
+        results = Parallel(n_jobs, verbose=5)(
             delayed(self.simulate)(end_time, time_step, max_samples, seed, renorm, interactions, implicit_solve)
             for seed in seeds
         )
