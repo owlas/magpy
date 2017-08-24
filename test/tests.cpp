@@ -770,6 +770,165 @@ TEST( dipolar_field, two_particles )
     EXPECT_DOUBLE_EQ( -0.09691328239836190239, field[5] );
 }
 
+TEST( dipolar_field, two_identical_aligned_particles )
+{
+    // Two identical particles aligned along their z-axis
+    // location_1 = [0, 0, 0]
+    // location_2 = [0, 0, R]
+
+    double r=2.5e-9;
+    double v=4./3 * M_PI * r * r * r;
+
+    double R=2.917e-9;
+    double R_red = R / std::pow(v,1./3);
+
+    double field[6] = {0, 0, 0, 0, 0, 0};
+    double k_av = 6.33e4;
+    double ms = 400e3;
+    double v_red[2] = {1.0, 1.0};
+    double mag[6] = {1, 0, 0, 1, 0, 0};
+    double dists[12] = {0, 0, 0, 0, 0, 1, 0, 0, -1, 0, 0, 0};
+    double dist_cubes[4] = {0, R_red*R_red*R_red, R_red*R_red*R_red, 0};
+    size_t N=2;
+
+    field::multi_add_dipolar( field, ms, k_av, v_red, mag, dists, dist_cubes, N );
+
+    // Reference calculation
+    // H1 = V*Ms/(4*pi*R**3) * (3*dot(m2,r12) - m2)
+    // H2 = V*Ms/(4*pi*R**3) * (3*dot(m1,r21) - m1)
+    // h1 = H1/Hk
+    // h2 = H2/Hk
+    double Hk = 2 * k_av / constants::MU0 / ms;
+    double H1x = v * ms / (4.0*M_PI*R*R*R) * (-mag[3]);
+    double H1y = v * ms / (4.0*M_PI*R*R*R) * (-mag[4]);
+    double H1z = v * ms / (4.0*M_PI*R*R*R) * (2*mag[5]);
+    double H2x = v * ms / (4.0*M_PI*R*R*R) * (-mag[0]);
+    double H2y = v * ms / (4.0*M_PI*R*R*R) * (-mag[1]);
+    double H2z = v * ms / (4.0*M_PI*R*R*R) * (2*mag[2]);
+
+    EXPECT_DOUBLE_EQ( H1x/Hk, field[0] );
+    EXPECT_DOUBLE_EQ( H1y/Hk, field[1] );
+    EXPECT_DOUBLE_EQ( H1z/Hk, field[2] );
+    EXPECT_DOUBLE_EQ( H2x/Hk, field[3] );
+    EXPECT_DOUBLE_EQ( H2y/Hk, field[4] );
+    EXPECT_DOUBLE_EQ( H2z/Hk, field[5] );
+
+
+    mag[0] = mag[3] = 0.0;
+    mag[2] = mag[5] = 1.0;
+    field::zero_all_field_terms( field, 6 );
+    field::multi_add_dipolar( field, ms, k_av, v_red, mag, dists, dist_cubes, N );
+    H1x = v * ms / (4.0*M_PI*R*R*R) * (-mag[3]);
+    H1y = v * ms / (4.0*M_PI*R*R*R) * (-mag[4]);
+    H1z = v * ms / (4.0*M_PI*R*R*R) * (2*mag[5]);
+    H2x = v * ms / (4.0*M_PI*R*R*R) * (-mag[0]);
+    H2y = v * ms / (4.0*M_PI*R*R*R) * (-mag[1]);
+    H2z = v * ms / (4.0*M_PI*R*R*R) * (2*mag[2]);
+
+    EXPECT_DOUBLE_EQ( H1x/Hk, field[0] );
+    EXPECT_DOUBLE_EQ( H1y/Hk, field[1] );
+    EXPECT_DOUBLE_EQ( H1z/Hk, field[2] );
+    EXPECT_DOUBLE_EQ( H2x/Hk, field[3] );
+    EXPECT_DOUBLE_EQ( H2y/Hk, field[4] );
+    EXPECT_DOUBLE_EQ( H2z/Hk, field[5] );
+
+    mag[2] = mag[5] = 0.0;
+    double norm = std::sqrt(0.1*0.1 + 0.2*0.2 + 0.3*0.3);
+    mag[0] = 0.1/norm; mag[1]=0.2/norm; mag[2]=0.3/norm;
+    norm = std::sqrt(0.8*0.8 + 0.5*0.5 + 0.1*0.1);
+    mag[3] = -0.8/norm; mag[4] = 0.5/norm; mag[5] = -0.1/norm;
+    field::zero_all_field_terms( field, 6 );
+    field::multi_add_dipolar( field, ms, k_av, v_red, mag, dists, dist_cubes, N );
+    H1x = v * ms / (4.0*M_PI*R*R*R) * (-mag[3]);
+    H1y = v * ms / (4.0*M_PI*R*R*R) * (-mag[4]);
+    H1z = v * ms / (4.0*M_PI*R*R*R) * (2*mag[5]);
+    H2x = v * ms / (4.0*M_PI*R*R*R) * (-mag[0]);
+    H2y = v * ms / (4.0*M_PI*R*R*R) * (-mag[1]);
+    H2z = v * ms / (4.0*M_PI*R*R*R) * (2*mag[2]);
+
+    EXPECT_DOUBLE_EQ( H1x/Hk, field[0] );
+    EXPECT_DOUBLE_EQ( H1y/Hk, field[1] );
+    EXPECT_DOUBLE_EQ( H1z/Hk, field[2] );
+    EXPECT_DOUBLE_EQ( H2x/Hk, field[3] );
+    EXPECT_DOUBLE_EQ( H2y/Hk, field[4] );
+    EXPECT_DOUBLE_EQ( H2z/Hk, field[5] );
+}
+
+TEST( dipolar_field, two_different_aligned_particles )
+{
+    // Two identical particles aligned along their z-axis
+    // location_1 = [0, 0, 0]
+    // location_2 = [0, 0, R]
+
+    double r1=2.5e-9;
+    double r2=3.0e-9;
+    double v1=4./3 * M_PI * r1 * r1 * r1;
+    double v2=4./3 * M_PI * r2 * r2 * r2;
+
+    double k1=5e4;
+    double k2=7e4;
+
+    double vav = 0.5*(v1+v2);
+    double kav = 0.5*(k1+k2);
+
+    double R=2.917e-9;
+    double R_red = R / std::pow(vav,1./3);
+
+    double field[6] = {0, 0, 0, 0, 0, 0};
+    double ms = 400e3;
+    double v_red[2] = {v1/vav, v2/vav};
+    double mag[6] = {1, 0, 0, 1, 0, 0};
+    double dists[12] = {0, 0, 0, 0, 0, 1, 0, 0, -1, 0, 0, 0};
+    double dist_cubes[4] = {0, R_red*R_red*R_red, R_red*R_red*R_red, 0};
+    size_t N=2;
+
+    field::multi_add_dipolar( field, ms, kav, v_red, mag, dists, dist_cubes, N );
+
+    // Reference calculation
+    // H1 = V1*Ms/(4*pi*R**3) * (3*dot(m2,r12) - m2)
+    // H2 = V2*Ms/(4*pi*R**3) * (3*dot(m1,r21) - m1)
+    // h1 = H1/Hk
+    // h2 = H2/Hk
+    double Hk = 2 * kav / constants::MU0 / ms;
+    double H1x = v2 * ms / (4.0*M_PI*R*R*R) * (-mag[3]); // r12[0]=0
+    double H1y = v2 * ms / (4.0*M_PI*R*R*R) * (-mag[4]); // r12[1]=0
+    double H1z = v2 * ms / (4.0*M_PI*R*R*R) * (2*mag[5]);// r12[2]=1
+    double H2x = v1 * ms / (4.0*M_PI*R*R*R) * (-mag[0]); // r21[0]=0
+    double H2y = v1 * ms / (4.0*M_PI*R*R*R) * (-mag[1]); // r21[1]=0
+    double H2z = v1 * ms / (4.0*M_PI*R*R*R) * (2*mag[2]);// r21[2]=-1
+
+    EXPECT_DOUBLE_EQ( H1x/Hk, field[0] );
+    EXPECT_DOUBLE_EQ( H1y/Hk, field[1] );
+    EXPECT_DOUBLE_EQ( H1z/Hk, field[2] );
+    EXPECT_DOUBLE_EQ( H2x/Hk, field[3] );
+    EXPECT_DOUBLE_EQ( H2y/Hk, field[4] );
+    EXPECT_DOUBLE_EQ( H2z/Hk, field[5] );
+
+
+    mag[0] = mag[3] = 0.0;
+    double norm = std::sqrt(0.1*0.1 + 0.2*0.2 + 0.3*0.3);
+    mag[0] = 0.1/norm; mag[1]=0.2/norm; mag[2]=0.3/norm;
+    norm = std::sqrt(0.8*0.8 + 0.5*0.5 + 0.1*0.1);
+    mag[3] = -0.8/norm; mag[4] = 0.5/norm; mag[5] = -0.1/norm;
+
+    field::zero_all_field_terms( field, 6 );
+    field::multi_add_dipolar( field, ms, kav, v_red, mag, dists, dist_cubes, N );
+
+    H1x = v2 * ms / (4.0*M_PI*R*R*R) * (-mag[3]);
+    H1y = v2 * ms / (4.0*M_PI*R*R*R) * (-mag[4]);
+    H1z = v2 * ms / (4.0*M_PI*R*R*R) * (2*mag[5]);
+    H2x = v1 * ms / (4.0*M_PI*R*R*R) * (-mag[0]);
+    H2y = v1 * ms / (4.0*M_PI*R*R*R) * (-mag[1]);
+    H2z = v1 * ms / (4.0*M_PI*R*R*R) * (2*mag[2]);
+
+    EXPECT_DOUBLE_EQ( H1x/Hk, field[0] );
+    EXPECT_DOUBLE_EQ( H1y/Hk, field[1] );
+    EXPECT_DOUBLE_EQ( H1z/Hk, field[2] );
+    EXPECT_DOUBLE_EQ( H2x/Hk, field[3] );
+    EXPECT_DOUBLE_EQ( H2y/Hk, field[4] );
+    EXPECT_DOUBLE_EQ( H2z/Hk, field[5] );
+}
+
 TEST( dipolar_field, prefactor )
 {
     double ms = 1 / std::sqrt(constants::MU0), k_av = 0.5;
