@@ -1104,3 +1104,15 @@ TEST( distances, pair_wise_magnitudes )
     EXPECT_DOUBLE_EQ( 0.8660254037844386, mags[1][2] );
     EXPECT_DOUBLE_EQ( 0.8660254037844386, mags[2][1] );
 }
+
+TEST( field_py, all )
+{
+    auto fsine = field_py::sinusoidal(1, 2);
+    ASSERT_DOUBLE_EQ( field::sinusoidal(1, 2, 3), fsine( 3 ) );
+
+    auto fconstant = field_py::constant( 4 );
+    ASSERT_DOUBLE_EQ( field::constant( 4, 0.3 ), fconstant( 0.3 ) );
+
+    auto fsquare = field_py::square(3.5, 1.77 );
+    ASSERT_DOUBLE_EQ( field::square( 3.5, 1.77, 3.9 ), fsquare( 3.9 ) );
+}
