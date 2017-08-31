@@ -29,6 +29,14 @@ cpdef get_mu0():
 cpdef get_gamma():
     return GYROMAG
 
+# Interface to field function generators
+# These functions create and return std::function objects
+cdef extern from "field.hpp" namespace "field":
+    cpdef enum options:
+        SINE,
+        SQUARE,
+        CONSTANT
+
 # Interface to results struct
 cdef extern from "simulation.hpp" namespace "simulation":
     struct results:
@@ -57,7 +65,11 @@ cdef extern from "simulation.hpp" namespace "simulation":
         const double time_step,
         const double end_time,
         const size_t max_samples,
-        const long seed )
+        const long seed,
+        const options field_shape,
+        const double field_amplitude,
+        const double field_frequency
+    )
 
 # Needed to convert numpy arrays to std::vectors
 cdef vector[double] arr_to_vec(double *arr, size_t N):
@@ -78,21 +90,25 @@ cdef vector[d3] arr_to_d3vec(double *arr, size_t N):
 # PYTHON WRAPPER
 # --------------
 cpdef simulate(
-        np.ndarray[double, ndim=1, mode='c'] radius,
-        np.ndarray[double, ndim=1, mode='c'] anisotropy,
-        np.ndarray[double, ndim=2, mode='c'] anisotropy_axis,
-        np.ndarray[double, ndim=2, mode='c'] magnetisation_direction,
-        np.ndarray[double, ndim=2, mode='c'] location,
-        double magnetisation,
-        double damping,
-        double temperature,
-        bool renorm,
-        bool interactions,
-        bool use_implicit,
-        double time_step,
-        double end_time,
-        int max_samples,
-        int seed ):
+    np.ndarray[double, ndim=1, mode='c'] radius,
+    np.ndarray[double, ndim=1, mode='c'] anisotropy,
+    np.ndarray[double, ndim=2, mode='c'] anisotropy_axis,
+    np.ndarray[double, ndim=2, mode='c'] magnetisation_direction,
+    np.ndarray[double, ndim=2, mode='c'] location,
+    double magnetisation,
+    double damping,
+    double temperature,
+    bool renorm,
+    bool interactions,
+    bool use_implicit,
+    double time_step,
+    double end_time,
+    int max_samples,
+    int seed,
+    str field_shape='constant',
+    double field_amplitude=0.0,
+    double field_frequency=0.0 ):
+
     cdef vector[double] c_radius, c_anisotropy
     cdef vector[d3] c_anisotropy_axis, c_magnetisation_direction, c_location
 
@@ -101,6 +117,11 @@ cpdef simulate(
     c_anisotropy_axis = arr_to_d3vec(&anisotropy_axis[0,0], anisotropy_axis.shape[0])
     c_magnetisation_direction = arr_to_d3vec(&magnetisation_direction[0,0], magnetisation_direction.shape[0])
     c_location = arr_to_d3vec(&location[0,0], location.shape[0])
+
+    lookup = {'constant': CONSTANT,
+              'sine': SINE,
+              'square': SQUARE}
+    field_code = lookup[field_shape]
 
     cdef vector[results] res = full_dynamics(
         c_radius,
@@ -117,7 +138,10 @@ cpdef simulate(
         time_step,
         end_time,
         max_samples,
-        seed )
+        seed,
+        field_code,
+        field_amplitude,
+        field_frequency)
 
     # Turn results into python results
     n_particles = radius.shape[0]
@@ -148,6 +172,8 @@ import matplotlib.pyplot as plt
 class EnsembleResults:
     def __init__(self, results):
         self.results = results
+        self.time = results[0].time
+        self.field = results[0].field
 
     def magnetisation(self, direction='z'):
         return [res.magnetisation(direction) for res in self.results]
@@ -196,7 +222,7 @@ from joblib import Parallel, delayed
 class Model:
     def __init__(
             self, radius, anisotropy, anisotropy_axis, magnetisation_direction,
-            location, magnetisation, damping, temperature ):
+            location, magnetisation, damping, temperature, field_shape='constant', field_frequency=0.0, field_amplitude=0.0 ):
         self.radius = radius
         self.anisotropy = anisotropy
         self.anisotropy_axis = anisotropy_axis
@@ -206,6 +232,9 @@ class Model:
         self.damping = damping
         self.temperature = temperature
         self.volume = np.array([4./3*np.pi * r**3 for r in self.radius])
+        self.field_shape = field_shape
+        self.field_frequency = field_frequency
+        self.field_amplitude = field_amplitude
 
     def describe(self):
         print('System stability:')
@@ -214,18 +243,24 @@ class Model:
             for k,v in zip(self.anisotropy, self.volume)
         ]))
 
+    def draw_initial_condition(self):
+        if callable(self.magnetisation_direction):
+            return self.magnetisation_direction()
+        return self.magnetisation_direction
+
     def simulate(self, end_time, time_step, max_samples, seed=1001, renorm=False, interactions=True, implicit_solve=True):
         res = simulate(
             self.radius, self.anisotropy, self.anisotropy_axis,
-            self.magnetisation_direction, self.location, self.magnetisation,
+            self.draw_initial_condition(), self.location, self.magnetisation,
             self.damping, self.temperature, renorm, interactions, implicit_solve,
-            time_step, end_time, max_samples, seed)
+            time_step, end_time, max_samples, seed,
+            self.field_shape, self.field_amplitude, self.field_frequency)
         return Results(**res)
 
 
     def simulate_ensemble(self, end_time, time_step, max_samples, seeds, renorm=False, interactions=True, n_jobs=1, implicit_solve=False):
         results = Parallel(n_jobs, verbose=5)(
-            delayed(self.simulate)(end_time, time_step, max_samples, seed, renorm, interactions, implicit_solve)
+            delayed(self.simulate)(end_time, time_step, max_samples, seed, renorm, interactions, implicit_solve,)
             for seed in seeds
         )
         return EnsembleResults(results)
