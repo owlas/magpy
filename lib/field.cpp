@@ -233,30 +233,3 @@ void field::zero_all_field_terms( double *h, const size_t N)
     for( unsigned int i=0; i<N; i++ )
         h[i] = 0.0;
 }
-
-/// Binds amplitude and frequency to the sinusoidal function
-/**
- * Used by python interface
- */
-std::function<double(double)> field_py::sinusoidal( const double h, const double f )
-{
-    return [h, f](double t) { return field::sinusoidal(h, f, t ); };
-}
-
-/// Binds amplitude to the constant field function
-/**
- * Used by python interface
- */
-std::function<double(double)> field_py::constant( const double h )
-{
-    return [h](double t) { return field::constant(h, t ); };
-}
-
-/// Binds amplitude and frequency to the square function
-/**
- * Used by pyhton interface
- */
-std::function<double(double)> field_py::square( const double h, const double f )
-{
-    return [h, f](double t) { return field::square(h, f, t ); };
-}

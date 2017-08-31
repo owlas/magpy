@@ -405,7 +405,10 @@ std::vector<simulation::results> simulation::full_dynamics(
     const double time_step,
     const double end_time,
     const size_t max_samples,
-    const long seed
+    const long seed,
+    const field::options field_shape,
+    const double field_amplitude,
+    const double field_frequency
     )
 {
     size_t n_particles = radius.size();
@@ -454,9 +457,37 @@ std::vector<simulation::results> simulation::full_dynamics(
                 / ( average_anisotropy * v) / ( 1 + damping*damping ) ) );
 
     ///////////////////////
-    // Compute the field // @TODO
+    // Compute the field //
     ///////////////////////
-    std::function<double(const double)> field_function = [](const double) { return 0.0; };
+
+    // Reduced field amplitude and frequency
+    double happ = field_amplitude / anisotropy_field;
+    double fapp = field_frequency / time_factor;
+
+    // The field function
+    std::function<double(const double)> field_function;
+    switch( field_shape )
+    {
+    case field::CONSTANT :
+        field_function=
+            [happ](const double)
+            { return happ; };
+        break;
+    case field::SINE :
+        field_function =
+            [happ, fapp](const double t)
+            { return field::sinusoidal( happ, fapp, t ); };
+        break;
+    case field::SQUARE :
+        field_function =
+            [happ, fapp](const double t)
+            { return field::square( happ, fapp, t ); };
+        break;
+    default :
+        throw std::invalid_argument( "Must specify valid field::options enum" );
+        break;
+    }
+
 
     // DISTANCES
     auto distance = distances::pair_wise_distance_vectors( location );
@@ -491,10 +522,18 @@ std::vector<simulation::results> simulation::full_dynamics(
         use_implicit,
         max_samples );
 
-    // Convert reduced time back to real time
     for( size_t p=0; p<n_particles; p++ )
         for( size_t i=0; i<max_samples; i++ )
+        {
+            // Convert reduced time back to real time
             results[p].time[i] /= time_factor;
+            // Convert reduced field back to real field
+            results[p].field[i] *= anisotropy_field;
+            // Convert magnetisation
+            results[p].mx[i] *= magnetisation;
+            results[p].my[i] *= magnetisation;
+            results[p].mz[i] *= magnetisation;
+        }
 
     return results;
 }
