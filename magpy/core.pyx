@@ -168,6 +168,7 @@ cpdef simulate(
 # Model object
 # -------------
 import matplotlib.pyplot as plt
+from scipy.integrate import trapz
 
 class EnsembleResults:
     def __init__(self, results):
@@ -183,6 +184,16 @@ class EnsembleResults:
 
     def final_state(self):
         return [res.final_state() for res in self.results]
+
+    def energy_dissipated(self, start_time=None, end_time=None):
+        before_mask = (self.time >= start_time) if start_time is not None else True
+        after_mask = (self.time <= end_time) if end_time is not None else True
+        mask = before_mask & after_mask
+        return -get_mu0() * trapz(self.field[mask], self.ensemble_magnetisation()[mask])
+
+    def final_cycle_energy_dissipated(self, field_frequency):
+        T = 1./field_frequency
+        return self.energy_dissipated(start_time=self.time[-1] - T)
 
 class Results:
     def __init__(self, time, field, x, y, z, N):
