@@ -13,6 +13,7 @@
 #include <cstdlib>
 #include <vector>
 #include "rng.hpp"
+#include "field.hpp"
 
 using d3 = std::array<double,3>;
 using rng_vec=std::vector<std::shared_ptr<Rng>, std::allocator<std::shared_ptr<Rng> > >;
@@ -86,7 +87,10 @@ namespace simulation
         const double time_step,
         const double end_time,
         const size_t max_samples,
-        const long seed
+        const long seed,
+        const field::options field_option=field::CONSTANT,
+        const double field_amplitude=0.0,
+        const double field_frequency=0.0
     );
 
 

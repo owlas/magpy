@@ -76,19 +76,8 @@ namespace field
         double *h,
         const size_t N);
 
-}
-
-/// Helper functions for python interface to generate field functions
-namespace field_py {
-    std::function<double(double)> sinusoidal(
-        const double h,
-        const double f );
-
-    std::function<double(double)> constant(
-        const double h );
-
-    std::function<double(double)> square(
-        const double h,
-        const double f );
+    enum options {
+        SINE, SQUARE, CONSTANT
+    };
 }
 #endif
