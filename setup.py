@@ -21,7 +21,7 @@ setup(
             "-std=c++11", '-pthread', '-O3','-fopenmp', '-simd', '-qopenmp', '-xHost',
             '-DUSEMKL', '-DMKL_ILP64', '-I{}/include'.format(MKLROOT)],
         extra_link_args=[
-            '-std=c++11', '-pthread', '-fopenmp',
+            '-std=c++11', '-pthread', '-fopenmp', '-qopenmp',
             '-Wl,--start-group', '{}/lib/intel64/libmkl_intel_ilp64.a'.format(MKLROOT),
             '{}/lib/intel64/libmkl_sequential.a'.format(MKLROOT),
             '{}/lib/intel64/libmkl_core.a'.format(MKLROOT), '-Wl,--end-group',
