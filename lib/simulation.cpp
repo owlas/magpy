@@ -106,6 +106,7 @@ std::vector<struct simulation::results> simulation::full_dynamics(
     const bool renorm,
     const bool interactions,
     const bool use_implicit,
+    const double eps,
     const int max_samples )
 {
     // Dimensions
@@ -158,7 +159,6 @@ std::vector<struct simulation::results> simulation::full_dynamics(
 
     /// @TODO optimise the implicit solver tolerance
     // Limits for the implicit solver
-    const double eps=1e-9;
     const size_t max_iter=1000;
 
     // Copy in the initial state
@@ -402,6 +402,7 @@ std::vector<simulation::results> simulation::full_dynamics(
     const bool renorm,
     const bool interactions,
     const bool use_implicit,
+    const double eps,
     const double time_step,
     const double end_time,
     const size_t max_samples,
@@ -520,6 +521,7 @@ std::vector<simulation::results> simulation::full_dynamics(
         renorm,
         interactions,
         use_implicit,
+        eps,
         max_samples );
 
     for( size_t p=0; p<n_particles; p++ )

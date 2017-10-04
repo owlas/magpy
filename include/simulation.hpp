@@ -68,10 +68,10 @@ namespace simulation
         const bool renorm,
         const bool interactions,
         const bool use_implicit,
+        const double eps,
         const int max_samples
     );
 
-    // @TODO - add field term
     std::vector<results> full_dynamics(
         const std::vector<double> radius,
         const std::vector<double> anisotropy,
@@ -84,6 +84,7 @@ namespace simulation
         const bool renorm,
         const bool interactions,
         const bool use_implicit,
+        const double eps,
         const double time_step,
         const double end_time,
         const size_t max_samples,
