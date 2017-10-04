@@ -62,6 +62,7 @@ cdef extern from "simulation.hpp" namespace "simulation":
         const bool renorm,
         const bool interactions,
         const bool use_implicit,
+        const double eps,
         const double time_step,
         const double end_time,
         const size_t max_samples,
@@ -107,7 +108,8 @@ cpdef simulate(
     int seed,
     str field_shape='constant',
     double field_amplitude=0.0,
-    double field_frequency=0.0 ):
+    double field_frequency=0.0,
+    double implicit_tol=1e-9 ):
 
     cdef vector[double] c_radius, c_anisotropy
     cdef vector[d3] c_anisotropy_axis, c_magnetisation_direction, c_location
@@ -135,6 +137,7 @@ cpdef simulate(
         renorm,
         interactions,
         use_implicit,
+        implicit_tol,
         time_step,
         end_time,
         max_samples,
@@ -242,36 +245,35 @@ class Model:
         self.magnetisation = magnetisation
         self.damping = damping
         self.temperature = temperature
-        self.volume = np.array([4./3*np.pi * r**3 for r in self.radius])
         self.field_shape = field_shape
         self.field_frequency = field_frequency
         self.field_amplitude = field_amplitude
 
     def describe(self):
+        v = np.array([4./3*np.pi * r**3 for r in self.radius()])
         print('System stability:')
         print(' '.join([
             '{:.1f}'.format(k*v / KB / self.temperature)
             for k,v in zip(self.anisotropy, self.volume)
         ]))
 
-    def draw_initial_condition(self):
-        if callable(self.magnetisation_direction):
-            return self.magnetisation_direction()
-        return self.magnetisation_direction
-
-    def simulate(self, end_time, time_step, max_samples, seed=1001, renorm=False, interactions=True, implicit_solve=True):
+    def simulate(self, end_time, time_step, max_samples, seed=1001, renorm=False, interactions=True, implicit_solve=True, implicit_tol=1e-9):
         res = simulate(
-            self.radius, self.anisotropy, self.anisotropy_axis,
-            self.draw_initial_condition(), self.location, self.magnetisation,
+            self.radius() if callable(self.radius) else self.radius,
+            self.anisotropy() if callable(self.anisotropy) else self.anisotropy,
+            self.anisotropy_axis() if callable(self.anisotropy_axis) else self.anisotropy_axis,
+            self.magnetisation_direction() if callable(self.magnetisation_direction) else self.magnetisation_direction,
+            self.location() if callable(self.location) else self.location,
+            self.magnetisation() if callable(self.magnetisation) else self.magnetisation,
             self.damping, self.temperature, renorm, interactions, implicit_solve,
             time_step, end_time, max_samples, seed,
-            self.field_shape, self.field_amplitude, self.field_frequency)
+            self.field_shape, self.field_amplitude, self.field_frequency, implicit_tol)
         return Results(**res)
 
 
-    def simulate_ensemble(self, end_time, time_step, max_samples, seeds, renorm=False, interactions=True, n_jobs=1, implicit_solve=False):
+    def simulate_ensemble(self, end_time, time_step, max_samples, seeds, renorm=False, interactions=True, n_jobs=1, implicit_solve=False, implicit_tol=1e-9):
         results = Parallel(n_jobs, verbose=5)(
-            delayed(self.simulate)(end_time, time_step, max_samples, seed, renorm, interactions, implicit_solve,)
+            delayed(self.simulate)(end_time, time_step, max_samples, seed, renorm, interactions, implicit_solve, implicit_tol)
             for seed in seeds
         )
         return EnsembleResults(results)
