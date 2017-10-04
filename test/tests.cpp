@@ -1104,7 +1104,3 @@ TEST( distances, pair_wise_magnitudes )
     EXPECT_DOUBLE_EQ( 0.8660254037844386, mags[1][2] );
     EXPECT_DOUBLE_EQ( 0.8660254037844386, mags[2][1] );
 }
-
-{
-
-}
