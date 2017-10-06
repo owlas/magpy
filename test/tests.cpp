@@ -272,10 +272,9 @@ TEST( heun_driver, ou )
 
     // Create a wiener path
     double wiener_process[n_steps];
-    std::normal_distribution<double> dist( 0, 1 );
-    std::mt19937_64 rng;
+    RngMtNorm rng( 1001, 1.0 );
     for( unsigned int i=0; i<n_steps; i++ )
-        wiener_process[i] = dist( rng );
+        wiener_process[i] = rng.get();
 
     // Generate the states
     double states[n_steps+1];
@@ -595,20 +594,20 @@ TEST( rng, rng_mt_downsample )
     EXPECT_DOUBLE_EQ( ref_4, rng.get() );
 }
 
-TEST( implicit_integrator_midpoint, atest )
+TEST( implicit_integrator_midpoint, 2d_stiff )
 {
     // Stiff 2d system with 1d wiener
     double x[2], dwm[1], a_work[2], b_work[2], adash_work[4], bdash_work[4];
-    double x_guess[2], x_opt_tmp[2], x_opt_jac[4], x0[2]={1.0, 2.0}, dw[1]={0.02};
+    double x_guess[2], x_opt_tmp[2], x_opt_jac[4], x0[2]={1.0, 2.0}, dw[1]={0.25};
     lapack_int x_opt_ipiv[2];
     const size_t n_dim=2;
     const size_t w_dim=1;
     const double t=0;
-    const double dt=0.01;
-    const double eps=1e-10;
-    const size_t max_iter=200;
+    const double dt=0.0001;
+    const double eps=1e-6;
+    const size_t max_iter=100;
 
-    const double a=25, b=2; //try b=10.0 too
+    const double a=0.1, b=5.0;
     auto sde = [a,b]
         (double*aout,double*bout,double*adashout,double*bdashout,
          const double*in,const double, const double )
@@ -640,8 +639,68 @@ TEST( implicit_integrator_midpoint, atest )
     ASSERT_EQ( optimisation::SUCCESS, ans );
 
     // Solutions from Kloeden & Platen (1992) pp.397
-    EXPECT_NEAR( 1.2209103141 , x[0], 1e-7 );
-    EXPECT_NEAR( 1.8396937059 , x[1], 1e-7 );
+    EXPECT_NEAR( 1.01132363, x[0], 0.0005 );
+    EXPECT_NEAR( 2.02261693, x[1], 0.0005 );
+}
+
+TEST( implicit_driver, stiff_2d )
+{
+    size_t N = 100;
+    double *x = new double[2*N];
+    double x0[2] = {1.0, 2.0};
+    double *dw = new double[N];
+    double *Wt = new double[N];
+
+    RngMtNorm rng( 1001, 1.0 );
+    for( unsigned int i=0; i<N; i++ )
+        dw[i] = rng.get();
+
+    Wt[0] = 0;
+    for( unsigned int i=1; i<N; i++ )
+        Wt[i] = Wt[i-1] + dw[i-1];
+
+    const double a=0.1, b=5.0;
+    auto sde = [a,b]
+        (double*aout,double*bout,double*adashout,double*bdashout,
+         const double*in,const double, const double )
+        {
+            aout[0]=a*(in[1]-in[0])-0.5*b*b*in[0];
+            aout[1]=a*(in[0]-in[1])-0.5*b*b*in[1];
+
+            adashout[0]=-a-0.5*b*b;
+            adashout[1]=a;
+            adashout[2]=a;
+            adashout[3]=-a-0.5*b*b;
+
+            bout[0]=b*in[0];
+            bout[1]=b*in[1];
+
+            bdashout[0]=b;
+            bdashout[1]=0;
+            bdashout[2]=0;
+            bdashout[3]=b;
+        };
+
+    size_t n_dim=2, w_dim=1, n_steps=N-1, max_iter=500;
+    double t0=0.0, dt=0.0001, eps=1e-6;
+
+    driver::implicit_midpoint(x, x0, dw, sde, n_dim, w_dim, n_steps, t0, dt, eps, max_iter);
+    io::write_array("test.out", x, 2*N);
+    io::write_array("test.rvs", dw, N);
+
+    double rho_p, rho_m, ondiag, offdiag, x0_true, x1_true;
+    for( unsigned int i=1; i<N; i++ )
+    {
+        rho_p = -0.5*b*b*i*dt + b*Wt[i] * std::sqrt(dt);
+        rho_m = (-2*a - 0.5*b*b)*i*dt + b*Wt[i] * std::sqrt(dt);
+        ondiag = std::exp(rho_p) + std::exp(rho_m);
+        offdiag = std::exp(rho_p) - std::exp(rho_m);
+        x0_true = 0.5*( ondiag*x0[0] + offdiag*x0[1] );
+        x1_true = 0.5*( offdiag*x0[0] + ondiag*x0[1] );
+        EXPECT_NEAR( x0_true, x[i*2+0], 0.002);
+        EXPECT_NEAR( x1_true, x[i*2+1], 0.002);
+    }
+    delete[] x; delete[] dw; delete[] Wt;
 }
 
 TEST( simulation, energy_loss )
