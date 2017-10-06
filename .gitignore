@@ -18,3 +18,6 @@ build/*
 *__pycache__*
 magpy/*.cpp
 *.egg-info
+*.ipynb_checkpoints/*
+docs/build/*
+docs/doxygen/doxyxml/*
