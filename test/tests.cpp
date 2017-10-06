@@ -61,12 +61,6 @@ TEST(llg, multi_diffusion)
     const double sr[2] = { 2, 2 };
     const double alpha[2]  = { 3, 3 };
     llg::multi_diffusion( deriv, state, sr, alpha, 2 );
-    for( unsigned int i=0; i<6; i++ )
-    {
-        for( unsigned int j=0; j<6; j++ )
-            std::cout << deriv[i*6 + j] << " ";
-        std::cout << std::endl;
-    }
 
     for( unsigned int i=0; i<6; i++ )
         for( unsigned int j=0; j<6; j++ )
@@ -185,68 +179,6 @@ TEST(heun, multiplicative )
 
     EXPECT_DOUBLE_EQ( 1.03019352, next_state[0] );
     EXPECT_DOUBLE_EQ( 2.571186252, next_state[1] );
-}
-
-TEST(io, write_array)
-{
-    double arr[3] = {1, 2, 3}, arrback[3];
-    int fail, nread;
-    fail = io::write_array( "./output/test.out", arr, 3 );
-    ASSERT_EQ( 0, fail );
-
-    // Read back the data
-    FILE *in;
-    in = fopen( "./output/test.out", "rb" );
-    nread = fread( arrback, sizeof(double), 3, in );
-    fclose( in );
-
-    ASSERT_EQ( 3, nread );
-    EXPECT_DOUBLE_EQ( 1, arrback[0] );
-    EXPECT_DOUBLE_EQ( 2, arrback[1] );
-    EXPECT_DOUBLE_EQ( 3, arrback[2] );
-
-}
-
-TEST( simulation, save_results )
-{
-    simulation::results res( 2 );
-
-    res.mx[0] = 2;
-    res.mx[1] = 3;
-    res.field[0] = 4;
-    res.field[1] = 5;
-    res.time[0] = 6;
-    res.time[1] = 7;
-    res.energy_loss = 10;
-
-
-    simulation::save_results( "output/test.out", res );
-
-    int nread;
-    double arr[2];
-    FILE *in;
-    in=fopen( "output/test.out.mx", "rb" );
-    nread = fread( arr, sizeof(double), 2, in );
-    ASSERT_EQ( 2, nread );
-    EXPECT_DOUBLE_EQ( 2, arr[0] );
-    EXPECT_DOUBLE_EQ( 3, arr[1] );
-
-    in=fopen( "output/test.out.field", "rb" );
-    nread = fread( arr, sizeof(double), 2, in );
-    ASSERT_EQ( 2, nread );
-    EXPECT_DOUBLE_EQ( 4, arr[0] );
-    EXPECT_DOUBLE_EQ( 5, arr[1] );
-
-    in=fopen( "output/test.out.time", "rb" );
-    nread = fread( arr, sizeof(double), 2, in );
-    ASSERT_EQ( 2, nread );
-    EXPECT_DOUBLE_EQ( 6, arr[0] );
-    EXPECT_DOUBLE_EQ( 7, arr[1] );
-
-    in=fopen( "output/test.out.energy", "rb" );
-    nread = fread( arr, sizeof(double), 1, in );
-    ASSERT_EQ( 1, nread );
-    EXPECT_DOUBLE_EQ( 10, arr[0] );
 }
 
 TEST( heun_driver, ou )
@@ -685,8 +617,6 @@ TEST( implicit_driver, stiff_2d )
     double t0=0.0, dt=0.0001, eps=1e-6;
 
     driver::implicit_midpoint(x, x0, dw, sde, n_dim, w_dim, n_steps, t0, dt, eps, max_iter);
-    io::write_array("test.out", x, 2*N);
-    io::write_array("test.rvs", dw, N);
 
     double rho_p, rho_m, ondiag, offdiag, x0_true, x1_true;
     for( unsigned int i=1; i<N; i++ )
