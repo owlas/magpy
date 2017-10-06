@@ -31,12 +31,16 @@
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
+
+import subprocess, os
+
 extensions = ['sphinx.ext.autodoc',
     'sphinx.ext.todo',
     'sphinx.ext.coverage',
     'sphinx.ext.viewcode',
     'nbsphinx',
-    'sphinx.ext.mathjax']
+    'sphinx.ext.mathjax',
+    'breathe']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -172,3 +176,14 @@ texinfo_documents = [
      author, 'magpy', 'One line description of project.',
      'Miscellaneous'),
 ]
+
+
+# Build the doxygen documentation
+subprocess.call('cd ../doxygen; doxygen', shell=True)
+# read_the_docs_build = os.environ.get('READTHEDOCS', None) == 'True'
+# if read_the_docs_build:
+#         subprocess.call('cd ../doxygen; doxygen', shell=True)
+
+# -- Options for Breathe -----------------------
+breathe_projects = {'magpy-api': '../doxygen/doxyxml'}
+breathe_default_project = 'magpy-api'

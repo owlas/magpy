@@ -12,6 +12,12 @@ Welcome to magpy's documentation!
 
    notebooks/introduction
 
+C++ API docs
+============
+
+.. doxygenindex::
+   :path: ../doxygen/doxyxml
+
 Indices and tables
 ==================
 
