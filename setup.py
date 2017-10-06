@@ -38,7 +38,7 @@ gnu_libs = ['moma', 'pthread', 'lapacke', 'blas']
 
 setup(
     name='magpy',
-    version='0.1dev',
+    version='0.1.dev0',
     packages=find_packages(),
     ext_modules= cythonize(Extension(
         name='magpy.core',
