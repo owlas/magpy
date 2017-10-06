@@ -6,6 +6,12 @@
 #ifndef TRAP_H
 #define TRAP_H
 #include <cstdlib>
+
+/**
+ * @namespace trap
+ * @brief numerical schemes for computing the area under curves
+ * @author Oliver Laslett
+ */
 namespace trap
 {
     /*

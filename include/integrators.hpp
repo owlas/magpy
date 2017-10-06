@@ -1,11 +1,9 @@
-// integrators.hpp
-// Header includes various numerical methods for estimating solutions
-// to stochastic and deterministic ODEs. Methods included in this are:
-//   -ODEs: RK4
-//   -SDEs: Euler, Heun
-//
-// Oliver W. Laslett 2016
-// O.Laslett@soton.ac.uk
+/** @file integrators.hpp
+ * Header includes various numerical methods for estimating solutions
+ * to stochastic and deterministic ODEs. Methods included in this are:
+ *   -ODEs: RK4
+ *   -SDEs: Euler, Heun
+ */
 #ifndef INTEGRATORS_H
 #define INTEGRATORS_H
 
@@ -74,7 +72,7 @@ namespace integrator
         double *k4, const double *current_state,
         const std::function<void(double*,const double*,const double)> derivs,
         const size_t n_dims,
-        const double t, const double step_size );
+        const double t, const double h );
 
     // FOR SDEs
     // The following integrators work as follows
