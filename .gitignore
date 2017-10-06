@@ -12,11 +12,9 @@ test/*.a
 test/convergence
 test/equilibrium
 tmp/*
-*.ipynb
 *.so
 vtune/*
 build/*
 *__pycache__*
 magpy/*.cpp
 *.egg-info
-docs/*
