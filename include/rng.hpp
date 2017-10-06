@@ -1,8 +1,9 @@
-// rng.hpp
-// Class for holding different random number generators
-//
-// Oliver W. Laslett
-// O.Laslett@soton.ac.uk
+/** @file rng.hpp
+ * @brief Class for holding different random number generators
+ *
+ * @author Oliver W. Laslett
+ *
+ */
 #ifndef RNG_H
 #define RNG_H
 

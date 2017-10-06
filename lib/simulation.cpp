@@ -38,6 +38,7 @@ double simulation::one_step_energy_loss(
     return trap::one_trapezoid( t1, t2, et1*pflow1, et2*pflow2 ) / volume;
 }
 
+
 void simulation::reduce_to_system_magnetisation(
     double *mag, const double *particle_mags, const size_t N_particles )
 {
@@ -50,6 +51,14 @@ void simulation::reduce_to_system_magnetisation(
     }
 }
 
+/// Save results to disk
+/**
+ * Saves the contents of a results struct to disk. Given a file name
+ * 'foo' the following files are written to disk 'foo.mx', 'foo.my',
+ * 'foo.mz', 'foo.field', 'foo.time', 'foo.energy'.
+ * @param[in] fname /path/to/filename prefix for files
+ * @param[in] res results struct to save
+ */
 void simulation::save_results( const std::string fname, const struct results &res )
 {
     std::stringstream magx_fname, magy_fname, magz_fname, field_fname, time_fname, energy_fname;
@@ -79,6 +88,10 @@ void simulation::save_results( const std::string fname, const struct results &re
     err = io::write_array( energy_fname.str(), &res.energy_loss, 1 );
 }
 
+/// Initialise results memory to zero
+/**
+ * @param[in,out] res results struct to zero
+ */
 void simulation::zero_results( struct simulation::results &res )
 {
     for( unsigned int i=0; i<res.N; i++ )
@@ -86,7 +99,63 @@ void simulation::zero_results( struct simulation::results &res )
     res.energy_loss = 0;
 }
 
-// Run a simulation of the full dynamics of an ensemble of particles
+/// Simulate the dynamics of interacting magnetic particles (reduced input)
+/**
+ * Simulates the stochastic Laundau-Lifshitz-Gilbert equation for a
+ * system of single domain magnetic nanoparticles interacting through
+ * the dipolar interaction term.
+ * @param[in] thermal_field_strengths intensity of the thermal field
+ * experienced by each particle \f$=\frac{\alpha K_BT}{\bar{K} V_i
+ * (1+\alpha^2)}$\f for the ith particle.
+ * @param[in] reduced_anisotropy_constants strength of the uniaxial
+ * anisotropy for each particle divided by the average anisotropy
+ * constant of all particles \f$=K_i/\bar{K}$\f
+ * @param[in] reduced_particle_volumes volume of each particle divided
+ * by the average volume of all particles \f$=V_i/\bar{V}$\f
+ * @param[in] anisotropy_unit_axes the unit vector (x,y,z) indicating
+ * the direction in 3D space of each particle's uniaxial anisotropy
+ * axis
+ * @param[in] initial_magnetisations initial state of the system. A
+ * unit vector (x,y,z) of the initial direction of the magnetisation
+ * for each particle
+ * @param[in] interparticle_unit_distances a matrix of unit distance
+ * vectors (x,y,z) where element i,j is the unit distance vector
+ * between particle i and particle j
+ * @param[in] interparticle_reduced_distance_magnitudes a matrix of
+ * reduced distance magnitudes which for element i,j is the Euclidean
+ * distance between particle i and particle j divided by a normalising
+ * factor \f$\cbrt{\bar{V}}
+ * @param[in] applied_field time-varying externally applied magnetic
+ * field, which is assumed to be applied along the z-axis. Returns the
+ * value of the reduced field
+ * \f$h(t)=H(t)/H_k,H_k=\frac{2*\bar{K}}{\mu_0 M_s}$\f given the time
+ * t
+ * @param[in] average_anisotropy average of the particle
+ * anisotropies \f$\bar{K}=\frac{1}{N}\sum_i K_i
+ * @param[in] average_volume average of the particle volumes
+ * \f$bar{V}=\frac{1}{N}\sum_i V_i
+ * @param[in] damping_constant dimensionless damping ratio. Fixed for
+ * all particles
+ * @param[in] saturation_magnetisation the magnitude of the saturated
+ * magnetisation. Fixed for all particles.
+ * @param[in] time_step size of the time step for each step of the
+ * simulation (in reduced time units)
+ * @param[in] end_time total time of the simulation (in reduced time
+ * units)
+ * @param[in] rng initialised random number generator (keep the seed
+ * same for reproducible simulations)
+ * @param[in] renorm set to True to artificially scale the
+ * magnetisation vectors back to unity at each time step
+ * @param[in] interactions set to True to enable dipolar interactions
+ * @param[in] use_implicit set to true to use the implicit midpoint
+ * scheme
+ * for time integration. Set to false to use the explicit Heun scheme
+ * @param[in] eps (only needed if \p use_implicit =true) the tolerance
+ * of the implicit scheme
+ * @param[in] max_samples number of times to sample the solution. Uses
+ * a first-order hold approach to interpolate between time steps.
+ * @returns simulation results struct for each particle
+ */
 std::vector<struct simulation::results> simulation::full_dynamics(
     const std::vector<double> thermal_field_strengths,
     const std::vector<double> reduced_anisotropy_constants,
@@ -390,6 +459,50 @@ std::vector<struct simulation::results> simulation::full_dynamics(
     return results;
 }
 
+
+/// Simulate the dynamics of interacting magnetic particles
+/**
+ * Simulates the stochastic Laundau-Lifshitz-Gilbert equation for a
+ * system of single domain magnetic nanoparticles interacting through
+ * the dipolar interaction term.
+ * @param[in] radius radius of each nanoparticle [m]
+ * @param[in] anisotropy anisotropy strength constant for each
+ * particle's uniaxial anisotropy axis [J/m3]
+ * @param[in] anisotropy_axis unit vector of the uniaxial anisotropy
+ * axis direction (x,y,z) for each particle [dimensionless]
+ * @param[in] magnetisation_direction unit vector of the initial
+ * direction of the magnetisation (x,y,z) for each particle [dimensionless]
+ * @param[in] location coordinate vector (x,y,z) of the location in 3D
+ * space of each particle [m]
+ * @param[in] magnetisation saturation magnetisation for all particles
+ * [A/m]
+ * @param[in] damping damping constant for all particles
+ * [dimensionless]
+ * @param[in] temperature temperature of the coupled heat bath
+ * (uniform temperature environment for all particles) [K]
+ * @param[in] renorm set to True to artificially scale the
+ * magnetisation vectors back to unity at each time step
+ * @param[in] interactions set to True to enable dipolar interactions
+ * @param[in] use_implicit set to true to use the implicit midpoint
+ * scheme
+ * for time integration. Set to false to use the explicit Heun scheme
+ * @param[in] eps (only needed if \p use_implicit =true) the tolerance
+ * of the implicit scheme
+ * @param[in] time_step size of the time step for each step of the
+ * simulation [s]
+ * @param[in] end_time total time of the simulation [s]
+ * @param[in] max_samples number of times to sample the solution. Uses
+ * a first-order hold approach to interpolate between time steps.
+ * @param[in] seed seed for the random number generator (reuse same
+ * seed for reproducible simulations)
+ * @param[in] field_shape time-varying externally applied field shape
+ * see field::options
+ * @param[in] field_amplitude peak amplitude of the time-varying
+ * externally appplied field [A/m]
+ * @param[in] field_frequency frequency of the time-varying externally
+ * applied field [Hz]
+ * @returns simulation results struct for each particle
+ */
 std::vector<simulation::results> simulation::full_dynamics(
     const std::vector<double> radius,
     const std::vector<double> anisotropy,
@@ -594,7 +707,7 @@ struct simulation::results simulation::dom_ensemble_dynamics(
     next_state[0] = initial_probs[0];
     next_state[1] = initial_probs[1];
 
-    // Allocate arrays for the RK4 integrator
+    // Allocate arrays for the RK45 integrator
     double k1[2], k2[2], k3[2], k4[2], k5[2], k6[2], tmpstate[2];
 
     // Construct the time dependent master equation

@@ -1,3 +1,7 @@
+/** @file rng.cpp
+ * @brief Class fr holding different random number generators
+ *
+ */
 #include "../include/rng.hpp"
 #include <stdexcept>
 

@@ -1,7 +1,26 @@
-// integrators.cpp
-// Implementation of numerical schemes for integration of SDEs and
-// ODEs. See header for interface information.
+/** @file integrators.cpp
+ * Integrator implementation
+ */
 
+/**
+ * @namespace integrator
+ * @brief Numerical methods for differential equations
+ * @details Numerical methods for simulating the time evolution
+ * of deterministic and stochastic ordinary nonlinear differential
+ * equations. All integrators compute a single step of the solution.
+ * @author Oliver Laslett
+ * @date 2017
+ */
+
+/** @namespace driver
+ * @brief High level interface to differential equation integrators
+ * @details Drivers wrap the single step integrators and provide an
+ * interface for simulating differential equations for multiple steps
+ * from the initial condition. Drivers also handle memory management
+ * of the work arrays needed by the integrators.
+ * @author Oliver Laslett
+ * @date 2017
+ */
 #include "../include/integrators.hpp"
 #include "../include/optimisation.hpp"
 #include <cmath>
@@ -12,6 +31,24 @@ using sde_func = std::function<void(double*,double*,const double*,const double)>
 using sde_jac = std::function<void(double*,double*,double*,double*,const double*,const double,const double)>;
 namespace ck = integrator::ck_butcher_table;
 
+/// Runge-Kutta 4 integration step
+/**
+ * Takes one step of the Runge-Kutta 4 method; an explicit solver for
+ * deterministic differential equations.
+ * @param[out] next_state the state of the system after time step
+ * (length \p n_dims)
+ * @param[out] k1 memory needed for work (length \p n_dims)
+ * @param[out] k2 memory needed for work (length \p n_dims)
+ * @param[out] k3 memory needed for work (length \p n_dims)
+ * @param[out] k4 memory needed for work (length \p n_dims)
+ * @param[in] current_state the initial state of the system (length \p n_dims)
+ * @param[in] derivs the ordinary differential equation. A function
+ * that takes the current state (length \p n_dims) and time and returns
+ * derivatives (length \p n_dims).
+ * @param[in] n_dims dimensionality of the system
+ * @param[in] t current time
+ * @param[in] h time step size
+ */
 void integrator::rk4(
     double *next_state,
     double *k1,
@@ -45,6 +82,22 @@ void integrator::rk4(
             + ( k1[i] + 2*k2[i] + 2*k3[i] + k4[i] ) * h/6.0;
 }
 
+/// Runge-Kutta 4 driver
+/**
+ * Takes multiple steps of the Runge-Kutta 4 method; an explicit
+ * solver for deterministic differential equations.
+ * @param[out] states the state of the system at each time step
+ (length \p n_steps*\p n_dims). Each state is a row stored in a row-major
+ fashion.
+ * @param[in] initial_state initial state of the system (length
+ \p n_dims)
+ * @param[in] derivs the ordinary differential equation. A function
+ * that takes the current state (length \p n_dims) and time and returns
+ * derivatives (length \p n_dims).
+ * @param[in] n_steps number of integration steps to take
+ * @param[in] n_dims dimensionality of the system
+ * @param[in] step_size size of time step
+ */
 void driver::rk4(
     double *states,
     const double* initial_state,
@@ -69,9 +122,32 @@ void driver::rk4(
     delete[] k1; delete[] k2; delete[] k3; delete[] k4;
 }
 
-/// RK45 adaptive step deterministic integrator
+/// Runge-Kutta 45 Cash-Karp integration step
 /**
- * Deterministic Runge-Kutta integrator step with adaptive step size
+ * Takes one step of the Runge-Kutta 45 adaptive step method; an
+ * explicit solver for deterministic differential equations. Uses the
+ * Cash-Karp Butcher tableau.
+ * @param[out] next_state the state of the system after time step
+ * (length \p n_dims)
+ * @param[out] temp_state memory needed for work (length \p n_dims)
+ * @param[out] k1 memory needed for work (length \p n_dims)
+ * @param[out] k2 memory needed for work (length \p n_dims)
+ * @param[out] k3 memory needed for work (length \p n_dims)
+ * @param[out] k4 memory needed for work (length \p n_dims)
+ * @param[out] k5 memory needed for work (length \p n_dims)
+ * @param[out] k6 memory needed for work (length \p n_dims)
+ * @param[in,out] h_ptr pointer to initial step size to take. Returns
+ * the time step size to take on the next step.
+ * @param[in,out] t_ptr pointer to the initial time. Returns the time
+ * after one adaptive time step.
+ * @param[in] current_state the initial state of the system (length \p n_dims)
+ * @param[in] derivs the ordinary differential equation. A function
+ * that takes the current state (length \p n_dims) and time and returns
+ * derivatives (length \p n_dims).
+ * @param[in] n_dims dimensionality of the system
+ * @param[in] tol tolerance of the solver. Step size will be reduced
+ * in order to keep error within tolerance. The maximum allowable
+ * error is \p tol + state*\p tol.
  */
 void integrator::rk45(
     double *next_state,
@@ -87,7 +163,7 @@ void integrator::rk45(
     const double *current_state,
     const sde_function derivs,
     const size_t n_dims,
-    const double eps )
+    const double tol )
 {
     bool step_success = false;
     double err;
@@ -143,7 +219,7 @@ void integrator::rk45(
                       + ck::x25 * k5[i]
                       + ck::x26 * k6[i] );
 
-        // Compute the error and scale according to (eps+eps*|state|)
+        // Compute the error and scale according to (tol+tol*|state|)
         err=0;
         double mag=0;
         for( unsigned int i=0; i<n_dims; i++ )
@@ -152,7 +228,7 @@ void integrator::rk45(
         for( unsigned int i=0; i<n_dims; i++ )
             err += std::pow( std::abs( temp_state[i] - next_state[i] ), 2 );
         err = pow( err, 0.5 );
-        err /= ( n_dims*eps*( 1 + mag ) );
+        err /= ( n_dims*tol*( 1 + mag ) );
 
         // If relative error is below 1 then step was successful
         // otherwise reduce the step size (max 10x reduction)
@@ -174,6 +250,30 @@ void integrator::rk45(
     *h_ptr = hfactor*h;
 }
 
+/// Euler-Maruyama integration step
+/**
+ * Takes one step of the Euler-Maruyama scheme; an explicit solver for
+ * Ito stochastic differential equations.
+ * @param[out] next_state the state of the system after time step
+ * (length \p n_dims)
+ * @param[out] diffusion_matrix the diffusion matrix computed at the
+ * initial time \p t (length \p n_dims*\p wiener_dims). Row-major.
+ * @param[in] current_state the initial state of the system (length
+ * \p n_dims)
+ * @param[in] wiener_steps incremental step in the Wiener processes
+ * over the time step \p step_size (length \p wiener_dims)
+ * @param[in] drift the stochastic differential equation drift
+ * component. A function that takes the current state and time and
+ * returns the deterministic drift component of length \p n_dims
+ * @param[in] diffusion the stochastic differential equation diffusion
+ * component. A function that takes the current state and time and
+ * returns the stochastic diffusion component of length
+ * \p n_dims*\p wiener_dims (row-major)
+ * @param[in] n_dims dimension of the system state
+ * @param[in] wiener_dims dimension of the Wiener process
+ * @param[in] t current time
+ * @param[in] step_size size of time step to take
+ */
 void integrator::eulerm(
     double *next_state,
     double *diffusion_matrix,
@@ -195,7 +295,33 @@ void integrator::eulerm(
             next_state[i] = diffusion_matrix[j+i*n_dims]*wiener_steps[j];
     }
 }
-
+/// Euler-Maruyama driver
+/**
+ * Takes multiple steps of the Euler-Maruyama scheme; an explicit
+ * solver for Ito stochastic differential equations. The first
+ * solution step is always the initial condition followed by \p
+ * n_steps -1 steps of the integrator.xo
+xo * @param[out] states the state of the system at each time step
+ (length \p n_steps*\p n_dims). Each state is a row stored in a row-major
+ fashion.
+ * @param[in] initial_state initial state of the system (length
+ * \p n_dims)
+ * @param[in] wiener_process the Wiener process increments for each
+ * time step (length \p n_steps*\p n_wiener). Row-major where the ith row is
+ * the increments in the \p n_wiener-dimensional Wiener process at the
+ * ith step.
+ * @param[in] drift the stochastic differential equation drift
+ * component. A function that takes the current state and time and
+ * returns the deterministic drift component of length \p n_dims
+ * @param[in] diffusion the stochastic differential equation diffusion
+ * component. A function that takes the current state and time and
+ * returns the stochastic diffusion component of length
+ * \p n_dims*\p n_wiener (row-major)
+ * @param[in] n_steps  number of integration steps to take
+ * @param[in] n_dims dimension of the system state
+ * @param[in] n_wiener dimension of the Wiener process
+ * @param[in] step_size size of the time step to take
+ */
 void driver::eulerm(
     double *states,
     const double* initial_state,
@@ -218,6 +344,31 @@ void driver::eulerm(
     delete[] diffusion_mat;
 }
 
+/// Heun integration step
+/**
+ * Takes one step of the Heun scheme; an explicit solver for
+ * Stratonovich stochastic differential equations.
+ * @param[out] next_state the state of the system after time step
+ * (length \p n_dims)
+ * @param[out] drift_arr memory needed for work (length \p n_dims)
+ * @param[out] trial_drift_arr memory needed for work (length \p n_dims)
+ * @param[out] diffusion_matrix memory needed for work (length \p n_dims
+ * * \p wiener_dims)
+ * @param[out] trial_diffusion_matrix memory needed for work (length
+ * \p n_dims * \p wiener_dims)
+ * @param[in] current_state the initial state of the system (length
+ * \p n_dims)
+ * @param[in] wiener_steps incremental step in the Wiener processes
+ * over the time step \p step_size (length \p wiener_dims)
+ * @param[in] sde the stochastic differential equation drift and
+ * diffusion. Function that takes the current state and time and
+ * returns the drift component of length \p n_dims and the diffusion
+ * component of length \p n_dims * \p wiener_dims
+ * @param[in] n_dims dimension of the system state
+ * @param[in] wiener_dims dimension of the Wiener process
+ * @param[in] t initial time before taking the step
+ * @param[in] step_size size of the time step to take
+ */
 void integrator::heun(
     double *next_state,
     double *drift_arr,
@@ -253,6 +404,28 @@ void integrator::heun(
     }
 }
 
+/// Heun driver
+/**
+ * Takes multiple steps of the Heun scheme; an explicit
+ * predictor-corrector solver for Stratonvich stochastic differential
+ * equations. The first solution step is always the initial condition
+ * followed by \p n_steps-1 steps of the integrator.
+ * @param[out] states the state of the system at each time step
+ (length \p n_steps*\p n_dims). Each state is a row stored in a row-major
+ fashion.
+ * @param[in] wiener_process the Wiener process increments for each
+ * time step (length \p n_steps*\p n_wiener). Row-major where the ith row is
+ * the increments in the \p n_wiener-dimensional Wiener process at the
+ * ith step.
+ * @param[in] sde the stochastic differential equation drift and
+ * diffusion. Function that takes the current state and time and
+ * returns the drift component of length \p n_dims and the diffusion
+ * component of length \p n_dims * \p n_wiener
+ * @param[in] n_steps number of integration steps to take
+ * @param[in] n_dims dimension of the system state
+ * @param[in] n_wiener dimension of the Wiener process
+ * @param[in] step_size size of the time step to take
+ */
 void driver::heun(
     double *states,
     const double* initial_state,
@@ -283,6 +456,33 @@ void driver::heun(
     delete[] diffusion_mat; delete[] trial_diffusion_mat;
 }
 
+/// Implicit midpoint driver
+/**
+ * Takes multiple steps of the implicit midpoint scheme; an implicit
+ * solver for Stratonovich stochastic differential equations. The
+ * first step is always the initial condition followed by \p n_steps
+ * -1 steps of the integrator.
+ * @param[out] x the state of the system at each time step
+ (length \p n_steps*\p n_dim). Each state is a row stored in a row-major
+ fashion.
+ * @param[in] dw the Wiener process increments for each
+ * time step (length \p n_steps*\p w_dim). Row-major where the ith row is
+ * the increments in the \p w_dim-dimensional Wiener process at the
+ * ith step.xo
+ * @param[in] sde the stochastic differential equation drift and
+ * diffusion. Function that takes the current state and time and
+ * returns the drift component of length \p n_dims and the diffusion
+ * component of length \p n_dim * \p w_dim
+ * @param[in] t0 initial time of the system
+ * @param[in] dt size of time step to take
+ * @param[in] eps the tolerance of the internal quasi-Newton method
+ * solver. Sensible values of the the tolerance are problem
+ * dependent.
+ * @param[in] max_iter maximum number of iterations for internal
+ * quasi-Newton method. Limits the number of iterations to reach
+ * required tolerance. Error will be raised if maximum number is
+ * reached.
+ */
 void driver::implicit_midpoint(
     double *x,
     const double *x0,
@@ -336,6 +536,43 @@ void driver::implicit_midpoint(
     delete[] x_opt_ipiv;
 }
 
+/// Implicit midpoint integration step
+/**
+ * Takes on step of the implicit midpoint scheme; an implicit solver
+ * for Stratonovich stochastic differential equations.
+ * @param[out] x the state of the system after stepping (length \p
+ * n_dim)
+ * @param[out] dwm memory needed for work (length \p wdim)
+ * @param[out] a_work memory needed for work (length \p n_dim)
+ * @param[out] b_work memory needed for work (length \p n_dim * \p w_dim)
+ * @param[out] adash_work memory needed for work (length \p n_dim * \p
+ * n_dim)
+ * @param[out] b_dash_work memory needed for work (length \p n_dim *
+ * \p w_dim * \p n_dim)
+ * @param[out] x_guess memory needed for work (length \p n_dim)
+ * @param[out] x_opt_tmp memory needed for work (length \p n_dim)
+ * @param[out] x_opt_jac memory needed for work (length \p n_dim * \p
+ * n_dim)
+ * @param[out] x_opt_ipiv memory needed for work (length \p n_dim)
+ * @param[in] x0 initial state of the system (length \p n_dim)
+ * @param[in] dw incremental step in the Wiener processes
+ * over the time step \p dt (length \p w_dim)
+ * @param[in] sde the stochastic differential equation drift and
+ * diffusion. Function that takes the current state and time and
+ * returns the drift component of length \p n_dim and the diffusion
+ * component of length \p n_dim * \p w_dim
+ * @param[in] n_dim dimension of the system state
+ * @param[in] w_dim dimension of the Wiener process
+ * @param[in] t initial time before taking a step
+ * @param[in] dt size of the time step to use
+ * @param[in] eps the tolerance of the internal quasi-Newton method
+ * solver. Sensible values of the the tolerance are problem
+ * dependent.
+ * @param[in] max_iter maximum number of iterations for internal
+ * quasi-Newton method. Limits the number of iterations to reach
+ * required tolerance. Error will be raised if maximum number is
+ * reached.
+ */
 int integrator::implicit_midpoint(
     double *x,
     double *dwm,
