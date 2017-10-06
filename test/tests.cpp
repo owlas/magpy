@@ -599,16 +599,16 @@ TEST( implicit_integrator_midpoint, atest )
 {
     // Stiff 2d system with 1d wiener
     double x[2], dwm[1], a_work[2], b_work[2], adash_work[4], bdash_work[4];
-    double x_guess[2], x_opt_tmp[2], x_opt_jac[4], x0[2]={1.0, 2.0}, dw[1]={0.07};
+    double x_guess[2], x_opt_tmp[2], x_opt_jac[4], x0[2]={1.0, 2.0}, dw[1]={0.02};
     lapack_int x_opt_ipiv[2];
     const size_t n_dim=2;
     const size_t w_dim=1;
     const double t=0;
-    const double dt=1e-3;
+    const double dt=0.01;
     const double eps=1e-10;
     const size_t max_iter=200;
 
-    const double a=5, b=0.1; //try b=10.0 too
+    const double a=25, b=2; //try b=10.0 too
     auto sde = [a,b]
         (double*aout,double*bout,double*adashout,double*bdashout,
          const double*in,const double, const double )
@@ -640,8 +640,8 @@ TEST( implicit_integrator_midpoint, atest )
     ASSERT_EQ( optimisation::SUCCESS, ans );
 
     // Solutions from Kloeden & Platen (1992) pp.397
-    EXPECT_NEAR( 1.01202953, x[0], 1e-7 );
-    EXPECT_NEAR( 2.00902904, x[1], 1e-7 );
+    EXPECT_NEAR( 1.2209103141 , x[0], 1e-7 );
+    EXPECT_NEAR( 1.8396937059 , x[1], 1e-7 );
 }
 
 TEST( simulation, energy_loss )
@@ -806,12 +806,12 @@ TEST( dipolar_field, two_identical_aligned_particles )
     double H2y = v * ms / (4.0*M_PI*R*R*R) * (-mag[1]);
     double H2z = v * ms / (4.0*M_PI*R*R*R) * (2*mag[2]);
 
-    EXPECT_DOUBLE_EQ( H1x/Hk, field[0] );
-    EXPECT_DOUBLE_EQ( H1y/Hk, field[1] );
-    EXPECT_DOUBLE_EQ( H1z/Hk, field[2] );
-    EXPECT_DOUBLE_EQ( H2x/Hk, field[3] );
-    EXPECT_DOUBLE_EQ( H2y/Hk, field[4] );
-    EXPECT_DOUBLE_EQ( H2z/Hk, field[5] );
+    EXPECT_NEAR( H1x/Hk, field[0], 1e-14);
+    EXPECT_NEAR( H1y/Hk, field[1], 1e-14);
+    EXPECT_NEAR( H1z/Hk, field[2], 1e-14);
+    EXPECT_NEAR( H2x/Hk, field[3], 1e-14);
+    EXPECT_NEAR( H2y/Hk, field[4], 1e-14);
+    EXPECT_NEAR( H2z/Hk, field[5], 1e-14);
 
 
     mag[0] = mag[3] = 0.0;
@@ -825,12 +825,12 @@ TEST( dipolar_field, two_identical_aligned_particles )
     H2y = v * ms / (4.0*M_PI*R*R*R) * (-mag[1]);
     H2z = v * ms / (4.0*M_PI*R*R*R) * (2*mag[2]);
 
-    EXPECT_DOUBLE_EQ( H1x/Hk, field[0] );
-    EXPECT_DOUBLE_EQ( H1y/Hk, field[1] );
-    EXPECT_DOUBLE_EQ( H1z/Hk, field[2] );
-    EXPECT_DOUBLE_EQ( H2x/Hk, field[3] );
-    EXPECT_DOUBLE_EQ( H2y/Hk, field[4] );
-    EXPECT_DOUBLE_EQ( H2z/Hk, field[5] );
+    EXPECT_NEAR( H1x/Hk, field[0], 1e-14);
+    EXPECT_NEAR( H1y/Hk, field[1], 1e-14);
+    EXPECT_NEAR( H1z/Hk, field[2], 1e-14);
+    EXPECT_NEAR( H2x/Hk, field[3], 1e-14);
+    EXPECT_NEAR( H2y/Hk, field[4], 1e-14);
+    EXPECT_NEAR( H2z/Hk, field[5], 1e-14);
 
     mag[2] = mag[5] = 0.0;
     double norm = std::sqrt(0.1*0.1 + 0.2*0.2 + 0.3*0.3);
@@ -846,12 +846,12 @@ TEST( dipolar_field, two_identical_aligned_particles )
     H2y = v * ms / (4.0*M_PI*R*R*R) * (-mag[1]);
     H2z = v * ms / (4.0*M_PI*R*R*R) * (2*mag[2]);
 
-    EXPECT_DOUBLE_EQ( H1x/Hk, field[0] );
-    EXPECT_DOUBLE_EQ( H1y/Hk, field[1] );
-    EXPECT_DOUBLE_EQ( H1z/Hk, field[2] );
-    EXPECT_DOUBLE_EQ( H2x/Hk, field[3] );
-    EXPECT_DOUBLE_EQ( H2y/Hk, field[4] );
-    EXPECT_DOUBLE_EQ( H2z/Hk, field[5] );
+    EXPECT_NEAR( H1x/Hk, field[0], 1e-14);
+    EXPECT_NEAR( H1y/Hk, field[1], 1e-14);
+    EXPECT_NEAR( H1z/Hk, field[2], 1e-14);
+    EXPECT_NEAR( H2x/Hk, field[3], 1e-14);
+    EXPECT_NEAR( H2y/Hk, field[4], 1e-14);
+    EXPECT_NEAR( H2z/Hk, field[5], 1e-14);
 }
 
 TEST( dipolar_field, two_different_aligned_particles )
@@ -897,12 +897,12 @@ TEST( dipolar_field, two_different_aligned_particles )
     double H2y = v1 * ms / (4.0*M_PI*R*R*R) * (-mag[1]); // r21[1]=0
     double H2z = v1 * ms / (4.0*M_PI*R*R*R) * (2*mag[2]);// r21[2]=-1
 
-    EXPECT_DOUBLE_EQ( H1x/Hk, field[0] );
-    EXPECT_DOUBLE_EQ( H1y/Hk, field[1] );
-    EXPECT_DOUBLE_EQ( H1z/Hk, field[2] );
-    EXPECT_DOUBLE_EQ( H2x/Hk, field[3] );
-    EXPECT_DOUBLE_EQ( H2y/Hk, field[4] );
-    EXPECT_DOUBLE_EQ( H2z/Hk, field[5] );
+    EXPECT_NEAR( H1x/Hk, field[0], 1e-14);
+    EXPECT_NEAR( H1y/Hk, field[1], 1e-14);
+    EXPECT_NEAR( H1z/Hk, field[2], 1e-14);
+    EXPECT_NEAR( H2x/Hk, field[3], 1e-14);
+    EXPECT_NEAR( H2y/Hk, field[4], 1e-14);
+    EXPECT_NEAR( H2z/Hk, field[5], 1e-14);
 
 
     mag[0] = mag[3] = 0.0;
@@ -921,12 +921,12 @@ TEST( dipolar_field, two_different_aligned_particles )
     H2y = v1 * ms / (4.0*M_PI*R*R*R) * (-mag[1]);
     H2z = v1 * ms / (4.0*M_PI*R*R*R) * (2*mag[2]);
 
-    EXPECT_DOUBLE_EQ( H1x/Hk, field[0] );
-    EXPECT_DOUBLE_EQ( H1y/Hk, field[1] );
-    EXPECT_DOUBLE_EQ( H1z/Hk, field[2] );
-    EXPECT_DOUBLE_EQ( H2x/Hk, field[3] );
-    EXPECT_DOUBLE_EQ( H2y/Hk, field[4] );
-    EXPECT_DOUBLE_EQ( H2z/Hk, field[5] );
+    EXPECT_NEAR( H1x/Hk, field[0], 1e-14);
+    EXPECT_NEAR( H1y/Hk, field[1], 1e-14);
+    EXPECT_NEAR( H1z/Hk, field[2], 1e-14);
+    EXPECT_NEAR( H2x/Hk, field[3], 1e-14);
+    EXPECT_NEAR( H2y/Hk, field[4], 1e-14);
+    EXPECT_NEAR( H2z/Hk, field[5], 1e-14);
 }
 
 TEST( dipolar_field, prefactor )
