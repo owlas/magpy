@@ -519,7 +519,7 @@ void driver::implicit_midpoint(
         err_code = integrator::implicit_midpoint(
             x+((n+1)*n_dim), dwm, a_work, b_work, adash_work, bdash_work,
             x_guess, x_opt_tmp, x_opt_jac, x_opt_ipiv, x+(n*n_dim),
-            dw+(n*n_dim), sde, n_dim, w_dim, t, dt, eps, max_iter );
+            dw+(n*w_dim), sde, n_dim, w_dim, t, dt, eps, max_iter );
         //std::cout << x[n] << " " << dw[n] << " " << x[n+1] << std::endl;
         if( err_code != 0 )
             std::cout << "At time step " << n << " implicit solver errcode:" << err_code << std::endl;
