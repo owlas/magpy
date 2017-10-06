@@ -1,8 +1,8 @@
-// optimisation.hpp
-// Contains numerical methods for optimisation and root-finding
-//
-// Oliver W. Laslett (2016)
-// O.Laslett@soton.ac.uk
+/** @file optimisation.hpp
+ * @brief Contains numerical methods for optimisation and root-finding
+ * @author Oliver W. Laslett
+ * @date 2016
+ */
 #ifndef OPTIM_H
 #define OPTIM_H
 #include <functional>
@@ -12,18 +12,26 @@
 #include <lapacke.h>
 #endif
 
+/** @file optimisation.cpp
+ * @brief Numerical methods for optimisation and root finding.
+ * @details Contains Newton Raphson methods for root finding.
+ */
 namespace optimisation {
+
+    /// Optimisation success return code
     const int SUCCESS = 0b0;
+
+    /// Optimisation maximum iterations reached error code
     const int MAX_ITERATIONS_ERR = 0b1;
+
+    /// Otimisation internal LAPACK error code
+    /**
+     * This error code indicates an error ocurred in an internal
+     * LAPACK call. Further investigation will be needed to determine the
+     * cause.
+     */
     const int LAPACK_ERR = 0b10;
 
-    /*
-      Newton-Raphson method for root finding.
-      Determines x such that f(x) = 0
-      Requires f(x) and f'(x) for computation.
-      Convergence criteria is the abs error for each dimension of f(x)
-      Returns SUCCESS on success. MAX_ITERATIONS_ERR if max_iter reached
-    */
     int newton_raphson_1( double *x_root,
                           const std::function<double(const double) > f,
                           const std::function<double(const double) > fdash,
@@ -31,24 +39,6 @@ namespace optimisation {
                           const double eps=1e-7,
                           const size_t max_iter=1000 );
 
-    /*
-      Newton-Raphson method finds the root F(x)=0 where F : N -> N
-      Jacobian of F is denoted J where J : N -> NxN
-      Newton iteration xn = x - inv(J(x))/F(x)
-      This function avoids inverse by solving the linear system:
-          J(x)(xn - x) = -F(x)
-      Params:
-        x_root is size N
-         x_tmp is size N
-       jac_out is size NxN
-          ipiv is size N
-            x0 is size N
-
-      NB: error is calculated as the 2-norm of the residual vector (xnext-xprev)
-      Returns SUCCESS or LAPACK_ERR (check lapack_err_code) or MAX_ITERATIONS_ERR
-
-      lapack_err_code - 0=ok -i=ith val is illegal i=i is exactly 0 (singular)
-    */
     int newton_raphson_noinv(
         double *x_root,
         double *x_tmp,

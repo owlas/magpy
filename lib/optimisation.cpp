@@ -1,7 +1,3 @@
-// optimisation.cpp
-//
-// Oliver W. Laslett (2016)
-// O.Laslett@soton.ac.uk
 #include "../include/optimisation.hpp"
 #include <cmath>
 #ifdef USEMKL
@@ -10,6 +6,24 @@
 #include <cblas.h>
 #endif
 
+
+/// Newton-Raphson method for scalar root finding
+/**
+ * Find a root \f$x\f$ of a scalar function such that
+ * \f$f(x)=0\f$. Starting with an initial guess at \p x0 the method
+ * attempts to find the nearest root. Requires function
+ * gradient. Convergence criteria is the abs error between two
+ * sucessive steps.
+ * @param[out] x_root estimate of the root ofter final iteration
+ * @param[in] f scalar function \f$f(.)\f$
+ * @param[in] fdash the gradient of the function \f$\partial f /
+ * \partial x\f$
+ * @param[in] x0 initial guess of the root
+ * @param[in] eps error tolerance for the iterative solution
+ * @param[in] max_iter maximum allowed number of iterations
+ * @returns SUCCESS on success or MAX_ITERATIONS_ERR if \p max_iter is
+ * reached
+ */
 int optimisation::newton_raphson_1(
     double *x_root,
     const std::function<double(const double )> f,
@@ -34,6 +48,36 @@ int optimisation::newton_raphson_1(
     return iter==-1 ? optimisation::MAX_ITERATIONS_ERR: optimisation::SUCCESS;
 }
 
+/// Newton-Raphson method for vector valued functions
+/**
+ * Newton-Raphson method iteratively computes the root \f$\vec{x}\f$
+ * of the vector valued function \f$f(\vec{x})\f$, starting from an
+ * initial guess at \f$\vec{x}_0\f$. Requires the Jacobian of the
+ * function \f$J(\vec{x})=\partial f / \partial \vec{x}$. Avoids
+ * the matrix inversion: \f$\vec{x}_n=x-J^{-1}(\vec{x})/f(\vec{x})\f$
+ *  by solving a linear system of equations
+ * \f$J(\vec{x})(\vec{x}_n-\vec{x}) = -f(\vec{x})\f$
+ * using LAPACK DGESV.
+ * @param[out] final estimate of the root (length \p dim)
+ * @param[out] allocated memory needed for work (length \p dim)
+ * @param[out] jac_out memory needed for work (length \p dim * \p dim)
+ * @param[out] ipiv memory needed for work (length \p dim)
+ * @param[out] lapack_err_code error code from the DGESV
+ * solver. There is no requirement to check this code unless the
+ * function returns the LAPACK_ERR flag. 0=ok -i=ith value is illegal,
+ * i=ith value is exactly 0 (i.e. singular)
+ * @param[in] fj std::function that computes the function value
+ * \f$f(\vec{x})\f$ and the Jacobian \f$J(\vec{x})\f$ given the
+ * current state \f$\vec{x}\f$
+ * @param[in] x0 initial guess for the root
+ * @param[in] dim dimension of the function input \f$\vec{x}\f$
+ * @param[in] eps tolerance on the solution error. Error is computed
+ * as the 2-norm of the residual vector \f$\vec{x}_n - \vec{x}_{n-1}\f$
+ * @param[in] maximum allowable number of iterations
+ * @returns SUCCESS if success, MAX_ITERATIONS_ERR if \p max_iter
+ * reached, LAPACK_ERR if error with DGESV (check \p lapack_err_code
+ * for more info)
+ */
 int optimisation::newton_raphson_noinv (
     double *x_root,
     double *x_tmp,

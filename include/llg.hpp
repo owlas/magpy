@@ -6,6 +6,15 @@
 #include <cstdlib>
 #include <functional>
 
+/**
+ * @namespace llg
+ * @brief Functions for evaluating the Landau-Lifshitz-Gilbert equation
+ * @details Includes the basic equation as well as Jacobians and
+ * combined functions to update fields during integration.
+ * @author Oliver Laslett
+ * @date 2017
+ */
+
 namespace llg
 {
     void drift(
