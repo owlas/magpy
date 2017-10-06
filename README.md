@@ -8,6 +8,7 @@ magnetic nanoparticles.
 **Current status**
 
 [![CircleCI](https://circleci.com/gh/owlas/magpy.svg?style=svg)](https://circleci.com/gh/owlas/magpy)
+[![Documentation Status](https://readthedocs.org/projects/magpy/badge/?version=latest)](http://magpy.readthedocs.io/en/latest/?badge=latest)
 [![Stories in Ready](https://badge.waffle.io/owlas/magpy.png?label=ready&title=Ready)](https://waffle.io/owlas/magpy)
 ![conda-version](https://anaconda.org/owlas/magpy/badges/version.svg)
 ![conda-license](https://anaconda.org/owlas/magpy/badges/license.svg)
