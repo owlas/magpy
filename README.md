@@ -1,6 +1,4 @@
-![magpy](./img/magpy.png)
-
-# magpy
+# <img src="./img/magpy.png" height="80px" alt="magpy">
 
 magpy is a C++ accelerated python package for simulating systems of
 magnetic nanoparticles.
