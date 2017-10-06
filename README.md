@@ -1,9 +1,18 @@
 ![magpy](./img/magpy.png)
 
-# magpy [![CircleCI](https://circleci.com/gh/owlas/magpy.svg?style=svg)](https://circleci.com/gh/owlas/magpy) [![Stories in Ready](https://badge.waffle.io/owlas/moma.png?label=ready&title=Ready)](https://waffle.io/owlas/moma)
+# magpy
 
 magpy is a C++ accelerated python package for simulating systems of
 magnetic nanoparticles.
+
+**Current status**
+
+[![CircleCI](https://circleci.com/gh/owlas/magpy.svg?style=svg)](https://circleci.com/gh/owlas/magpy)
+[![Stories in Ready](https://badge.waffle.io/owlas/magpy.png?label=ready&title=Ready)](https://waffle.io/owlas/magpy)
+![conda-version](https://anaconda.org/owlas/magpy/badges/version.svg)
+![conda-license](https://anaconda.org/owlas/magpy/badges/license.svg)
+![conda-downloads](https://anaconda.org/owlas/magpy/badges/downloads.svg)
+[![conda-link](https://anaconda.org/owlas/magpy/badges/installer/conda.svg)](https://anaconda.org/owlas/magpy/)
 
 **Features**
 
