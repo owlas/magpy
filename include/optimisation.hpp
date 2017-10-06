@@ -19,10 +19,10 @@
 namespace optimisation {
 
     /// Optimisation success return code
-    const int SUCCESS = 0b0;
+    const int SUCCESS = 0; //0b00
 
     /// Optimisation maximum iterations reached error code
-    const int MAX_ITERATIONS_ERR = 0b1;
+    const int MAX_ITERATIONS_ERR = 1; //0b01
 
     /// Otimisation internal LAPACK error code
     /**
@@ -30,7 +30,7 @@ namespace optimisation {
      * LAPACK call. Further investigation will be needed to determine the
      * cause.
      */
-    const int LAPACK_ERR = 0b10;
+    const int LAPACK_ERR = 2; //0b10
 
     int newton_raphson_1( double *x_root,
                           const std::function<double(const double) > f,
