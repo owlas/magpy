@@ -10,3 +10,5 @@ dependencies:
   - pip:
     - nbsphinx
     - breathe
+    - sphinx-rtd-theme
+    - git+https://github.com/owlas/JuliaDoc.git
