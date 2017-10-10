@@ -1,3 +1,4 @@
+import numpy as np
 from toolz import dicttoolz
 from joblib import Parallel, delayed
 
@@ -46,11 +47,11 @@ class Model:
     def __init__(
             self, radius, anisotropy, anisotropy_axis, magnetisation_direction,
             location, magnetisation, damping, temperature, field_shape='constant', field_frequency=0.0, field_amplitude=0.0 ):
-        self.radius = radius
-        self.anisotropy = anisotropy
-        self.anisotropy_axis = anisotropy_axis
-        self.magnetisation_direction = magnetisation_directpion
-        self.location = location
+        self.radius = np.array(radius)
+        self.anisotropy = np.array(anisotropy)
+        self.anisotropy_axis = np.array(anisotropy_axis)
+        self.magnetisation_direction = np.array(magnetisation_direction)
+        self.location = np.array(location)
         self.magnetisation = magnetisation
         self.damping = damping
         self.temperature = temperature
