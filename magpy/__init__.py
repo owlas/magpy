@@ -1,1 +1,1 @@
-from magpy.core import *
+from magpy.model import Model, EnsembleModel

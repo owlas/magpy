@@ -1,6 +1,6 @@
 from git import Repo
 from git import Actor
-from .core import EnsembleResults
+from .results import EnsembleResults
 import os.path as osp
 import pickle as pkl
 
