@@ -8,9 +8,9 @@ magnetic nanoparticles.
 [![CircleCI](https://circleci.com/gh/owlas/magpy.svg?style=svg)](https://circleci.com/gh/owlas/magpy)
 [![Documentation Status](https://readthedocs.org/projects/magpy/badge/?version=latest)](http://magpy.readthedocs.io/en/latest/?badge=latest)
 [![Stories in Ready](https://badge.waffle.io/owlas/magpy.png?label=ready&title=Ready)](https://waffle.io/owlas/magpy)
-![conda-version](https://anaconda.org/owlas/magpy/badges/version.svg)
+[![conda-version](https://anaconda.org/owlas/magpy/badges/version.svg)](https://anaconda.org/owlas/magpy/)
 ![conda-license](https://anaconda.org/owlas/magpy/badges/license.svg)
-![conda-downloads](https://anaconda.org/owlas/magpy/badges/downloads.svg)
+[![conda-downloads](https://anaconda.org/owlas/magpy/badges/downloads.svg)](https://anaconda.org/owlas/magpy/)
 [![conda-link](https://anaconda.org/owlas/magpy/badges/installer/conda.svg)](https://anaconda.org/owlas/magpy/)
 
 **Features**
@@ -30,108 +30,37 @@ Join the chat at:
 
 ## Documentation
 
-Documentation and example usage can be found here at read the docs
+Getting started guides, example code, tutorials, and the API documentation are
+available at http://magpy.readthedocs.io
 
-Example notebooks are in this directory
+They can also be built locally with sphinx. Requirements are found in the `enviornment.yml` file:
 
-Alternatively build the docs yourself with sphinx
-
-The C++ API docs are built locally using doxygen.
+``` shell
+    $ cd docs
+    $ cat environment.yml
+    $ make html
+```
 
 ## Installation
 
-Include the following installation procedures:
- - Conda package
- - Build from scratch
- - Intel and non intel
- - Link to install scripts
-
-Moma requires LAPACK and
-BLAS routines. Run the [makefile](makeflie) with intel complier:
-
-``` shell
-$ make
-```
-
-Make with gcc (will need version >=4.9):
-
-``` shell
-$ make CXX=g++-4.9
-```
-
-### Mac OSX
-
-The easiest way to obtain LACPACK/BLAS is through
-[homebrew](http://brew.sh/) by install openblas, which comes with
-both. Run the following command:
-
-``` shell
-$ brew install homebrew/science/openblas
-```
-
-You'll need to link to link to the libraries when running the make command, e.g:
-
-``` shell
-$ make CXX=g++-4.9 LDFLAGS=-L/usr/local/opt/openblas/lib CXXFLAGS=-I/usr/local/opt/openblas/include
-```
+Detailed instructions can be found at http://magpy.readthedocs.io
 
 ## Tests
 
-The fast unit tests can be run with
+### Unit tests
 
-``` shell
-$ make tests
-$ ./test
-```
+info soon
 
-The full test suite includes numerical simulations of convergence. These take a
-long time to execute (~5mins). Test suite results are available in `test/output`.
+### Numerical tests
 
-``` shell
-$ make run-tests
-$ cd test/output
-```
+info soon
 
-## Dependencies
+### Physics tests
 
-**LAPACK**: On Ubuntu:
-
-``` shell
-$ sudo apt install liblapack-dev
-```
-
-## Additional notes
-
-Compiling Cython? Make sure to
-
-``` shell
-$ export CC=icc
-$ export CXX=icpc
-```
-
-## Getting started
-
-
+info soon
 
 ## Contributing
 
  - Open an issue
  - Make a pull request
  - Join us on gitter
-
-## Tests
-
-### Unit tests
-
-If you downloaded with conda you can run conda test
-
-Otherwise install pytest and pytest-cpp dependencies then run it on
-this dir
-
-### Numerical tests
-
-Tests for the numerical methods are slow. They can be run like this
-
-### Physics tests
-
-We test the physics in these notebooks...
