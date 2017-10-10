@@ -1,0 +1,4 @@
+Class RngMtNorm
+===============
+
+.. doxygenclass:: RngMtNorm

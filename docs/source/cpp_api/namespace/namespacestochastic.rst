@@ -1,0 +1,4 @@
+Namespace stochastic
+====================
+
+.. doxygennamespace:: stochastic

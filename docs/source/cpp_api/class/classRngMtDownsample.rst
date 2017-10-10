@@ -1,0 +1,4 @@
+Class RngMtDownsample
+=====================
+
+.. doxygenclass:: RngMtDownsample

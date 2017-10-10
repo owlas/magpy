@@ -18,3 +18,10 @@ help:
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
 %: Makefile
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+
+apidocs:
+	rm -rf source/py_api
+	rm -rf source/cpp_api
+	sphinx-apidoc -fMeT ../magpy -o source/py_api
+	rm source/py_api/magpy.rst
+	breathe-apidoc ./doxygen/doxyxml -o source/cpp_api
