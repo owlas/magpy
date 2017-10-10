@@ -7,13 +7,15 @@ Welcome to magpy's documentation!
 =================================
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Examples
 
-   notebooks/introduction
+   installation
 
 .. toctree::
-   :maxdepth: 2
+   :caption: Examples
+
+   notebooks/single-particle
+
+.. toctree::
    :caption: Developer
 
    py_api_index
