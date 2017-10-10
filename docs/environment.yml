@@ -12,4 +12,3 @@ dependencies:
     - breathe
     - sphinx-rtd-theme
     - git+https://github.com/owlas/JuliaDoc.git
-    - toolz
