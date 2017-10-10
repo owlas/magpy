@@ -1,0 +1,4 @@
+Namespace curry
+===============
+
+.. doxygennamespace:: curry

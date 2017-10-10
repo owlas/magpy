@@ -8,10 +8,17 @@ Welcome to magpy's documentation!
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: Examples
 
    notebooks/introduction
-   cpp_api/index
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Developer
+
+   py_api_index
+   cpp_api_index
+
 
 Indices and tables
 ==================

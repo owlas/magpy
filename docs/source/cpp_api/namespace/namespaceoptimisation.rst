@@ -1,0 +1,4 @@
+Namespace optimisation
+======================
+
+.. doxygennamespace:: optimisation

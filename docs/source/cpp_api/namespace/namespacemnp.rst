@@ -1,0 +1,4 @@
+Namespace mnp
+=============
+
+.. doxygennamespace:: mnp

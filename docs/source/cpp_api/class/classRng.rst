@@ -1,0 +1,4 @@
+Class Rng
+=========
+
+.. doxygenclass:: Rng

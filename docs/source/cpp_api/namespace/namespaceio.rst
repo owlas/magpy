@@ -1,0 +1,4 @@
+Namespace io
+============
+
+.. doxygennamespace:: io

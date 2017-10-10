@@ -1,0 +1,4 @@
+Namespace distances
+===================
+
+.. doxygennamespace:: distances
