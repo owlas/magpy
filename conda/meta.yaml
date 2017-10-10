@@ -1,0 +1,41 @@
+package:
+  name: magpy
+  version: "0.1.dev1"
+
+source:
+  git_url: https://github.com/owlas/magpy
+  git_rev: "interactions"
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - setuptools
+    - openblas
+    - cython
+    - numpy >=1.11
+  run:
+    - setuptools
+    - openblas
+    - numpy >=1.11
+    - matplotlib
+    - toolz
+    - joblib
+    - scipy
+
+about:
+  home: https://github.com/owlas/magpy
+  license: BSD-3-Clause
+
+test:
+  imports:
+    - magpy
+  requires:
+    - pytest
+  source_files:
+    - test/tests
+    - magpy/test_package.py
+  commands:
+    - test/tests
+    - pytest -v magpy
