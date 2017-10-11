@@ -1,0 +1,17 @@
+name: magpy
+channels:
+  - conda-forge
+dependencies:
+  - setuptools
+  - openblas
+  - cython
+  - numpy >=1.11
+  - matplotlib
+  - toolz
+  - joblib
+  - scipy
+  - pytest
+  - pytest-cpp
+  - pip:
+      - transforms3d
+      - gitpython
