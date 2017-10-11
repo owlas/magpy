@@ -2,6 +2,14 @@ import numpy as np
 from toolz import dicttoolz
 from joblib import Parallel, delayed
 
+# When building docs on read the docs we cannot build the cython modules
+# So we mock those out here
+import os
+if 'READTHEDOCS' in os.environ:
+    import sys
+    from unittest.mock import MagicMock
+    sys.modules['magpy.core'] = MagicMock()
+
 from .core import simulate
 from .results import Results, EnsembleResults
 
