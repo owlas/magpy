@@ -48,7 +48,7 @@ extensions = [
 ]
 
 # Mock imports that we don't need
-autodoc_mock_imports = ['matplotlib', 'toolz', 'numpy', 'scipy', 'joblib']
+autodoc_mock_imports = ['matplotlib', 'toolz', 'numpy', 'scipy', 'joblib', 'transforms3d', 'git']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
