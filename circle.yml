@@ -2,11 +2,6 @@ machine:
   pre:
     - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.9 20
     - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.9 20
-  environment:
-    - MINICONDA: "$HOME/miniconda"
-    - MINICONDA_PATH: "$MINICONDA/bin"
-    - PATH: "$MINICONDA_PATH:$PATH"
-    - CONDA: "$MINICONDA_PATH/conda"
 
 dependencies:
   override:
@@ -15,12 +10,12 @@ dependencies:
     - make CXX=g++-4.9 test/tests
     - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
     - chmod +x Miniconda3-latest-Linux-x86_64.sh
-    - ./Miniconda3-latest-Linux-x86_64.sh -b -p $MINICONDA
-    - $CONDA env create -f environment.yml
-    - source activate magpy
-    - pip install .
+    - ./Miniconda3-latest-Linux-x86_64.sh -b -p $HOME/miniconda
+    - $HOME/miniconda/bin/conda env create -f environment.yml
+    - make CXX=g++-4.9 libmoma.so
+    - $HOME/miniconda/envs/magpy/bin/pip install .
 
 test:
   override:
     - make run-tests
-    - pytest -v magpy test/tests
+    - $HOME/miniconda/envs/magpy/bin/pytest -v magpy
