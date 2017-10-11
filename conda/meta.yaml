@@ -2,9 +2,8 @@ package:
   name: magpy
   version: "0.1.dev1"
 
-source:
   git_url: https://github.com/owlas/magpy
-  git_rev: "interactions"
+  git_rev: "0.1.dev1"
 
 build:
   number: 0
