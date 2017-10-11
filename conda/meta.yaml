@@ -35,7 +35,7 @@ test:
     - pytest
   source_files:
     - test/tests
-    - magpy/test_package.py
+    - test/test_magpy.py
   commands:
     - test/tests
-    - pytest -v magpy
+    - pytest -v test/test_magpy.py
