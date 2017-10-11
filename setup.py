@@ -8,12 +8,12 @@ import numpy
 
 import os
 
-# Check compiler
-CXX = os.environ['CXX']
+# Check compiler - default is g++
+CXX = os.environ.get('CXX', 'g++')
 
 # INTEL ARGUMENTS
 USE_INTEL = CXX=='icpc'
-MKLROOT = os.environ['MKLROOT'] if 'MKLROOT' in os.environ else False
+MKLROOT = os.environ.get('MKLROOT', False)
 intel_compile_args = [
     "-std=c++11", '-pthread', '-O3','-fopenmp', '-simd', '-qopenmp', '-xHost',
     '-DUSEMKL', '-DMKL_ILP64', '-I{}/include'.format(MKLROOT)
