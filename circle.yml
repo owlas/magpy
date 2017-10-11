@@ -8,7 +8,13 @@ dependencies:
     - sudo apt-get install -y liblapacke-dev
     - g++ --version
     - make CXX=g++-4.9 test/tests
+    - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
+    - ./Miniconda3-latest-Linux-x86_64.sh
+    - conda env create -f environment.yml
+    - source activate magpy
+    - pip install .
+
 test:
   override:
     - make run-tests
-    - pytest -v magpy
+    - pytest -v magpy test/tests
