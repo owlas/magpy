@@ -7,6 +7,10 @@ dependencies:
   - pandoc
   - nbconvert
   - ipykernel
+  - cython
+  - numpy
+  - setuptools
+  - openblas
   - pip:
     - nbsphinx
     - breathe
