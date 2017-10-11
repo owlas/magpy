@@ -3,7 +3,7 @@ package:
   version: "0.1.dev1"
 
   git_url: https://github.com/owlas/magpy
-  git_rev: "0.1.dev1"
+  git_rev: "v0.1.dev1"
 
 build:
   number: 0
