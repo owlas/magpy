@@ -110,21 +110,25 @@ class EnsembleModel:
 
     """
     def __init__(self, N, base_model, **kwargs):
-        self.ensemble_size = ensemble_size
+        self.ensemble_size = N
         self.base_model_params = base_model.__dict__
         self.model_params = [
-            dicttoolz.update(
-                base_model_params, {key: kwargs[key][i] for key in kwargs}
-            ) for i in range(ensemble_size)
+            dicttoolz.merge(
+                self.base_model_params, {key: kwargs[key][i] for key in kwargs}
+            ) for i in range(self.ensemble_size)
         ]
         self.models = [
             Model(**params) for params in self.model_params
         ]
 
 
-    def simulate_ensemble(self, end_time, time_step, max_samples, seeds, renorm=False, interactions=True, n_jobs=1, implicit_solve=False, implicit_tol=1e-9):
+    def simulate(self, end_time, time_step, max_samples, random_state,
+                 renorm=False, interactions=True, n_jobs=1,
+                 implicit_solve=False, implicit_tol=1e-9):
+        np.random.seed(random_state)
+        sim_seeds = np.random.randint(np.iinfo(np.int32).max, size=self.ensemble_size)
         results = Parallel(n_jobs, verbose=5)(
-            delayed(self.simulate)(end_time, time_step, max_samples, seed, renorm, interactions, implicit_solve, implicit_tol)
-            for seed in seeds
+            delayed(model.simulate)(end_time, time_step, max_samples, seed, renorm, interactions, implicit_solve, implicit_tol)
+            for seed, model in zip(sim_seeds, self.models)
         )
         return EnsembleResults(results)
