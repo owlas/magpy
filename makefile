@@ -67,8 +67,9 @@ test/tests: test/tests.cpp $(OBJ_FILES) $(GTEST_HEADERS) test/gtest_main.a
 		-o $@ $(LDLIBS)
 
 # Additional test-suit tests
-test/convergence: test/convergence.cpp $(OBJ_FILES)
-	$(CXX) 	$(CXXFLAGS) $(LDFLAGS) $< \
+CONVERGENCE_SOURCES=$(wildcard test/convergence/*.cpp)
+test/convergence/run: $(CONVERGENCE_SOURCES) $(OBJ_FILES)
+	$(CXX) 	$(CXXFLAGS) $(LDFLAGS) test/convergence/all_tasks.cpp \
 		$(OBJ_FILES) \
 		-o $@ $(LDLIBS)
 
