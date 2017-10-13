@@ -18,4 +18,4 @@ dependencies:
 test:
   override:
     - make run-tests
-    - LD_LIBRARY_PATH=$HOME/magpy:$LD_LIBRARY_PATH $HOME/miniconda/envs/magpy/bin/pytest -v test/test_magpy.py test_geometries.py
+    - LD_LIBRARY_PATH=$HOME/magpy:$LD_LIBRARY_PATH $HOME/miniconda/envs/magpy/bin/pytest -v test/test_magpy.py test/test_geometries.py
