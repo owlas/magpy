@@ -70,7 +70,41 @@ class Model:
     def simulate(self, end_time, time_step, max_samples, seed=1001, renorm=False, interactions=True, implicit_solve=True, implicit_tol=1e-9):
         """Simulate the dynamics of the particle cluster
 
-        Simulate the time-varying dynamics of the cluster of interacting macrospins.
+        Simulate the time-varying dynamics of the cluster of
+        interacting macrospins.  The time-varying dynamics are
+        described by the Landau-Lifshitz-Gilbert stochastic
+        differential equation, which is integrated using an explicit
+        or implicit numerical scheme.
+
+        In order to save memory, the user is required to specify the `max_samples`.
+        The output of the time-integrator is up/downsampled to `max_samples` regularly
+        spaced intervals using a first-order-hold interpolation. This is useful
+        for long simulations with very small time steps that, without downsampling,
+        would produce GBs of data very quickly.
+
+        There are two time-integration schemes available:
+          - a fully implicit midpoint scheme :cpp:function:`integrator::implicit_midpoint`
+          - an explicit predictor-corrector method (Heun scheme) :cpp:function:`integrator::heun`
+
+        Args:
+            end_time (float): time to end the simulation (in seconds)
+            time_step (float): time step for time-integration solver
+            max_samples (int): number of regularly spaced samples of the output
+            seed (int, optional): default value is 1001. The random seed for randam
+                number generation of the thermal noise. Set for reproducible results.
+            renorm (bool, optional): default is False. If True the magnetisation
+                of each particle is rescaled (using the 2-norm) to unity at every
+                time step.
+            interactions (bool, optional): default is True. If False the interactions
+                between particles are switched off.
+            implicit_solve (bool, optional): default is True. If True a fully-implicit
+                stochastic solver is used. If False the explicit Heun scheme is used.
+            implicit_tol (float, optional): if using the implicit solver `implicit_tol`
+                sets the tolerance of the internal Newton-Raphson method. Default
+                is 1e-9
+        Returns:
+            magpy.Results: a :py:class:`magpy.results.Results` object containing
+                the time-dependent magnetisation of the particle system.
         """
         res = simulate( self.radius, self.anisotropy, self.anisotropy_axis,
                         self.magnetisation_direction, self.location, self.magnetisation,
@@ -125,6 +159,46 @@ class EnsembleModel:
     def simulate(self, end_time, time_step, max_samples, random_state,
                  renorm=False, interactions=True, n_jobs=1,
                  implicit_solve=False, implicit_tol=1e-9):
+        """Simulate the dynamics of an ensemble of particle clusters
+
+        Simulate the time-varying dynamics of an ensemble of particle
+        clusters of interacting macrospins.  The time-varying dynamics
+        are described by the Landau-Lifshitz-Gilbert stochastic
+        differential equation, which is integrated using an explicit
+        or implicit numerical scheme.
+
+        In order to save memory, the user is required to specify the
+        `max_samples`.  The output of the time-integrator is
+        up/downsampled to `max_samples` regularly spaced intervals
+        using a first-order-hold interpolation. This is useful for
+        long simulations with very small time steps that, without
+        downsampling, would produce GBs of data very quickly.
+
+        There are two time-integration schemes available:
+          - a fully implicit midpoint scheme :cpp:function:`integrator::implicit_midpoint`
+          - an explicit predictor-corrector method (Heun scheme) :cpp:function:`integrator::heun`
+
+        Args:
+            end_time (float): time to end the simulation (in seconds)
+            time_step (float): time step for time-integration solver
+            max_samples (int): number of regularly spaced samples of the output
+            random_state (int, optional): the state is used to generate seeds for
+                each of the individual simulations. Set for reproducible results.
+            renorm (bool, optional): default is False. If True the magnetisation
+                of each particle is rescaled (using the 2-norm) to unity at every
+                time step.
+            interactions (bool, optional): default is True. If False the interactions
+                between particles are switched off.
+            implicit_solve (bool, optional): default is True. If True a fully-implicit
+                stochastic solver is used. If False the explicit Heun scheme is used.
+            implicit_tol (float, optional): if using the implicit solver `implicit_tol`
+                sets the tolerance of the internal Newton-Raphson method. Default
+                is 1e-9
+        Returns:
+            magpy.Results: a :py:class:`magpy.results.Results` object containing
+                the time-dependent magnetisation of the particle system.
+
+        """
         np.random.seed(random_state)
         sim_seeds = np.random.randint(np.iinfo(np.int32).max, size=self.ensemble_size)
         results = Parallel(n_jobs, verbose=5)(
