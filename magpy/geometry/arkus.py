@@ -5,7 +5,8 @@ into Arkus cluster geometries of varying size. Arkus clusters are
 *minimum energy* clusters that represent tightly packed clusters of
 spherical particles. Their definition (and name) are derived from:
 
-REFERENCE HERE
+N. Arkus, V. N. Manoharan, and M. P. Brenner, *Phys. Rev. Lett.* **103**, 118303 (2009).
+`http://dx.doi.org/10.1103/PhysRevLett.103.118303`
 
 Clusters of 1-5 particles have only one possible arrangement.
 Clusters of 6 or more particles have a variety of different
