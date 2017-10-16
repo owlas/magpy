@@ -81,12 +81,9 @@ def chain_coordinates(n_particles, R, direction=np.array([0,0,1])):
                      [2.5,0,0],
                      [5,0,0])
             >>> # Only unit vector of direction is used:
-            >>> chain_coordinates(2, 3.0, direction=[1,2,0])
+            >>> chain_coordinates(2, 3.0, direction=[3,4,0])
             np.array([0,0,0],
-                     [])
-
-    Todo:
-        * Fix the example
+                     [1.8, 2.4, 0])
 
     Args:
         n_particles (int): size of the particle chain
