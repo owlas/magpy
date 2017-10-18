@@ -253,11 +253,12 @@ cpdef simulate_dom(
             )
 
         pyresults = {
+            'N': 1,
             'time': np.array([res[0].time[i] for i in range(max_samples)]),
             'field': np.array([res[0].field[i] for i in range(max_samples)]),
-            'x': np.array([res[0].mx[i] for i in range(max_samples)]),
-            'y':np.array([res[0].my[i] for i in range(max_samples)]),
-            'z': np.array([res[0].mz[i] for i in range(max_samples)])
+            'x': {0: np.array([res[0].mx[i] for i in range(max_samples)])},
+            'y':{0:np.array([res[0].my[i] for i in range(max_samples)])},
+            'z': {0:np.array([res[0].mz[i] for i in range(max_samples)])}
         }
     finally:
         del res
