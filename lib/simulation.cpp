@@ -502,6 +502,7 @@ std::vector<struct simulation::results> simulation::full_dynamics(
  * @param[in] field_frequency frequency of the time-varying externally
  * applied field [Hz]
  * @returns simulation results struct for each particle
+ * @todo refactor to accept field function (see dom simulation)
  */
 std::vector<simulation::results> simulation::full_dynamics(
     const std::vector<double> radius,
