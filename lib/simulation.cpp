@@ -590,12 +590,12 @@ std::vector<simulation::results> simulation::full_dynamics(
     case field::SINE :
         field_function =
             [happ, fapp](const double t)
-            { return field::sinusoidal( happ, fapp, t ); };
+            { return field::sinusoidal( t, happ, fapp ); };
         break;
     case field::SQUARE :
         field_function =
             [happ, fapp](const double t)
-            { return field::square( happ, fapp, t ); };
+            { return field::square( t, happ, fapp ); };
         break;
     default :
         throw std::invalid_argument( "Must specify valid field::options enum" );

@@ -10,16 +10,32 @@
 
 namespace field
 {
-    /// Constant field term
-    double constant( const double h, const double t);
+    /// Bind field parameters into a field function
+    /**
+     * Field functions are of the form `std::function(double<double>)`
+     * This function allows additional arguments to be bound to functions
+     * and returns the function as a field function.
+     *
+     * @param[in] func function to bind
+     * @param[in] bind_args arguments to bind
+     * @returns field function
+     */
+    template <typename... T>
+    std::function<double(double)> bind_field_function(
+        std::function<double(double, T...)> func, T... bind_args)
+    {
+        std::function<double(double)> field_function =
+            [func, bind_args...](double t){ return func( t, bind_args...); };
+        return field_function;
+    }
 
-    // field strength h, frequency f, at time t
-    double sinusoidal( const double h, const double f, const double t );
-    double square( const double h, const double f, const double t );
 
-    // Use this to approximate a square wave with its fourier components
-    double square_fourier( const double h, const double f,
-                           const size_t n_compononents, double t );
+    // Time-varying externally applied field shapes
+    double constant( const double t, const double h);
+    double sinusoidal( const double t, const double h, const double f);
+    double square( const double t, const double h, const double f );
+    double square_fourier( const double t, const double h, const double f,
+                           const size_t n_compononents );
 
     void multi_add_applied_Z_field_function(
         double *heff,
