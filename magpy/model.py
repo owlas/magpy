@@ -10,7 +10,7 @@ if 'READTHEDOCS' in os.environ:
     from unittest.mock import MagicMock
     sys.modules['magpy.core'] = MagicMock()
 
-from .core import simulate
+from .core import simulate, simulate_dom
 from .results import Results, EnsembleResults
 
 class Model:
@@ -206,3 +206,28 @@ class EnsembleModel:
             for seed, model in zip(sim_seeds, self.models)
         )
         return EnsembleResults(results)
+
+
+class DOModel:
+    def __init__(
+            self, radius, anisotropy, initial_probabilities, magnetisation,
+            damping, temperature, field_shape='constant', field_frequency=0.0,
+            field_amplitude=0.0):
+        self.radius = radius
+        self.volume = 4./3 * np.pi * self.radius**3
+        self.anisotropy = anisotropy
+        self.initial_probabilities = np.array(initial_probabilities)
+        self.magnetisation = magnetisation
+        self.damping = damping
+        self.temperature = temperature
+        self.field_shape = field_shape
+        self.field_frequency = field_frequency
+        self.field_amplitude = field_amplitude
+
+    def simulate(self, end_time, time_step, max_samples):
+        results = simulate_dom(
+            self.initial_probabilities, self.volume,
+            self.anisotropy, self.temperature, self.magnetisation,
+            self.damping, time_step, end_time, max_samples,
+            self.field_shape, self.field_amplitude, self.field_frequency)
+        return Results(**results)
