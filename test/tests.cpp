@@ -3,8 +3,6 @@
 #include "../include/integrators.hpp"
 #include "../include/io.hpp"
 #include "../include/simulation.hpp"
-#include "../include/json.hpp"
-#include "../include/moma_config.hpp"
 #include "../include/trap.hpp"
 #include "../include/optimisation.hpp"
 #include "../include/rng.hpp"
@@ -235,100 +233,6 @@ TEST( trapezoidal_method, triangle )
     ASSERT_DOUBLE_EQ( 8.75, area );
 }
 
-json test_llg_config()
-{
-    nlohmann::json j;
-    j = {
-        {"simulation-mode", "llg"},
-        {"simulation", {
-                {"ensemble-size", 1},
-                {"simulation-time", 1e-9},
-                {"time-step", 1e-14},
-                {"renormalisation", true},
-                {"seeds", {100, 200}}
-            }},
-        {"output", {
-                {"directory", "output"},
-                {"max-samples", 1000}
-            }},
-        {"global", {
-                {"temperature", 300},
-                {"applied-field", {
-                        {"shape", "square-fourier"},
-                        {"frequency", 300e3},
-                        {"amplitude", 5e5},
-                        {"components", 10}
-                    }}
-            }},
-        {"particle", {
-                {"damping", 0.1},
-                {"radius", 7e-9},
-                {"anisotropy", 23e3},
-                {"anisotropy-axis", {0, 0, 1}},
-                {"magnetisation", 446e3},
-                {"magnetisation-direction", {1, 0, 0}}
-            }}
-    };
-    return j;
-}
-
-json test_dom_config()
-{
-    nlohmann::json j;
-    j = {
-        {"simulation-mode", "dom"},
-        {"simulation", {
-                {"simulation-time", 1e-9},
-                {"time-step", 1e-14},
-            }},
-        {"output", {
-                {"directory", "output"},
-                {"max-samples", 1000}
-            }},
-        {"global", {
-                {"temperature", 300},
-                {"applied-field", {
-                        {"shape", "square-fourier"},
-                        {"frequency", 300e3},
-                        {"amplitude", 5e5},
-                        {"components", 10}
-                    }},
-                {"tau0", 1e-10}
-            }},
-        {"particles", {{
-                {"radius", 7e-9},
-                {"anisotropy", 23e3},
-                {"magnetisation", 446e3},
-                {"initial-probs", {1, 0}},
-                {"damping", 0.01}
-            }}}
-    };
-    return j;
-}
-
-
-TEST( moma_config, valid_dom_input )
-{
-    nlohmann::json in = test_dom_config();
-    moma_config::validate_for_dom( in );
-}
-
-TEST( moma_config, transform_dom )
-{
-    nlohmann::json in = test_dom_config();
-    auto out = moma_config::transform_input_parameters_for_dom( in );
-
-    EXPECT_EQ( false,
-               out.at("simulation").at("steady-cycle-activated").get<bool>() );
-    EXPECT_DOUBLE_EQ( 1.436755040241732e-24,
-                      out.at("particles")[0].at("volume").get<double>() );
-    EXPECT_DOUBLE_EQ( 7.97822314341568,
-                      out.at("particles")[0].at("stability-ratio").get<double>() );
-    EXPECT_DOUBLE_EQ( 82075.419177049276,
-                      out.at("particles")[0].at("anisotropy-field").get<double>() );
-    EXPECT_DOUBLE_EQ( 6.0919579213043464,
-                      out.at("particles")[0].at("reduced-field-amplitude").get<double>() );
-}
 
 TEST( newton_raphson, 1d_function )
 {
@@ -631,28 +535,6 @@ TEST( implicit_driver, stiff_2d )
         EXPECT_NEAR( x1_true, x[i*2+1], 0.002);
     }
     delete[] x; delete[] dw; delete[] Wt;
-}
-
-TEST( simulation, energy_loss )
-{
-    struct simulation::results res( 5 );
-    res.field[0] = 0;
-    res.field[1] = 0.5;
-    res.field[2] = 1;
-    res.field[3] = 0.5;
-    res.field[4] = 0;
-    res.mz[0] = 0;
-    res.mz[1] = 1;
-    res.mz[2] = 1;
-    res.mz[3] = 0;
-    res.mz[4] = 0;
-
-    double area = trap::trapezoidal( res.field.get(), res.mz.get(), 5 );
-    ASSERT_DOUBLE_EQ( 0.5, area );
-
-    double power = simulation::energy_loss(
-        res, 5, 2 );
-    EXPECT_DOUBLE_EQ( 5*2*constants::MU0*area, power );
 }
 
 TEST( rk4, time_dependent_step )
