@@ -3,9 +3,17 @@
 #include <cmath>
 #include "../include/field.hpp"
 #include "../include/distances.hpp"
+#include "../include/io.hpp"
+#include "../include/dom.hpp"
+#include "../include/integrators.hpp"
+#include "../include/optimisation.hpp"
+#include "../include/llg.hpp"
 #include <numeric>
 #include <exception>
 #include <sstream>
+#include <cblas.h>
+
+using namespace std::placeholders;
 
 void simulation::reduce_to_system_magnetisation(
     double *mag, const double *particle_mags, const size_t N_particles )
@@ -743,8 +751,8 @@ struct simulation::results simulation::dom_ensemble_dynamics(
             next_pflow = prob_derivs[0];
             next_et = dom::single_transition_energy(
                 anisotropy, volume, applied_field( t ) );
-            energy_sum += one_step_energy_loss(
-                last_et, next_et, last_pflow, next_pflow, last_t, t, volume);
+            // energy_sum += one_step_energy_loss(
+            //     last_et, next_et, last_pflow, next_pflow, last_t, t, volume);
 
 
         } // end integration stepping loop

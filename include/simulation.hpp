@@ -17,6 +17,7 @@
 
 using d3 = std::array<double,3>;
 using rng_vec=std::vector<std::shared_ptr<Rng>, std::allocator<std::shared_ptr<Rng> > >;
+using sde_jac = std::function<void(double*,double*,double*,double*,const double*, const double, const double)>;
 
 
 namespace simulation
