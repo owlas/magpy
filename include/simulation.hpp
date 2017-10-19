@@ -35,7 +35,6 @@ namespace simulation
         std::unique_ptr<double[]> field;
         std::unique_ptr<double[]> time;
         size_t N;
-        double energy_loss;
 
         results( size_t _N ) {
             N=_N;
@@ -44,7 +43,6 @@ namespace simulation
             mz = std::unique_ptr<double[]>( new double[N] );
             field = std::unique_ptr<double[]>( new double[N] );
             time = std::unique_ptr<double[]>( new double[N] );
-            energy_loss=0;
         }
     };
 
@@ -111,61 +109,8 @@ namespace simulation
         const double end_time,
         const int max_samples );
 
-    /*
-      Simulate an ensemble of identical systems and average
-      their results.
-      Initial condition can be specified once for all particles
-      or a vector of initial conditions can be specified.
-    */
-    template <typename... T>
-    struct results ensemble_run(
-        const size_t max_samples,
-        std::function<results(T...)> run_function,
-        std::vector<T>... varying_arguments );
-
-    /*
-      Runs a full simulation and returns the final state of each of the systems
-      in the ensemble.
-    */
-    template <typename... T>
-    std::vector<d3> ensemble_run_final_state(
-        std::function<results(T...)> run_function,
-        std::vector<T>... varing_arguments );
-
-    /*
-      Simulates the dynamics for a single cycle of the applied
-      alternating field. Simulated repeatedly until the magnetisation
-      reaches a steady state.
-    */
-    template <typename... T>
-    struct results steady_state_cycle_dynamics(
-        std::function<results(d3, T...)> run_function,
-        const int max_samples,
-        const double steady_state_condition,
-        const std::vector<d3> initial_magnetisations,
-        std::vector<T >... varying_arguments );
-
     // Save a results file
     void save_results( const std::string fname, const struct results& );
-
-    // Compute the energy loss for a particle from its simulation results
-    double energy_loss(
-        const struct results&, const double ms, const double hk );
-
-    // Compute the energy loss for a particle from the probability flow
-    double energy_loss(
-        const std::unique_ptr<double[]> &transition_energy,
-        const std::unique_ptr<double[]> &probability_flow,
-        const std::unique_ptr<double[]> &time,
-        const double volume,
-        const size_t N );
-
-    // Computes the energy loss over just one step of the integrator
-    // Used for summing energy loss step-by-step without storing intermediate results
-    double one_step_energy_loss(
-        const double te1, const  double te2, const double pflow1, const double pflow2,
-        const double t1, const double t2, const double volume
-        );
 
     // Sets all of the arrays in the results struct to zero
     void zero_results( struct results& );
@@ -175,5 +120,4 @@ namespace simulation
 
 
 }
-#include "simulation.tpp"
 #endif
