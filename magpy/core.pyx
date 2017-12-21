@@ -100,7 +100,7 @@ cdef extern from "simulation.hpp" namespace "simulation":
         const double temperature,
         const double magnetisation,
         const double alpha,
-        const function[double(double)] h_func,
+        const function[double(double)] reduced_h_func,
         const d2 initial_probs,
         const double time_step,
         const double end_time,
@@ -219,18 +219,24 @@ cpdef simulate_dom(
     for i in range(2):
         c_initial_probabilities[i] = initial_probabilities[i]
 
+    # Simulation requires the reduced field value
+    cdef double anisotropy_field = 2.0 * anisotropy / get_mu0() / magnetisation
+    cdef double reduced_field_amplitude = field_amplitude / anisotropy_field
+
+    # Bind the field amplitude and frequency to create the field
+    # function
     cdef function[double(double)] field_function
     if field_shape=='sine':
-        field_function = bind_field_function(
-            f_sine, field_amplitude, field_frequency
+        reduced_field_function = bind_field_function(
+            f_sine, reduced_field_amplitude, field_frequency
         )
     elif field_shape=='square':
-        field_function = bind_field_function(
-            f_square, field_amplitude, field_frequency
+        reduced_field_function = bind_field_function(
+            f_square, reduced_field_amplitude, field_frequency
         )
     elif field_shape=='constant':
-        field_function = bind_field_function(
-            f_constant, field_amplitude
+        reduced_field_function = bind_field_function(
+            f_constant, reduced_field_amplitude
         )
 
     # Note:
@@ -245,7 +251,7 @@ cpdef simulate_dom(
                 temperature,
                 magnetisation,
                 alpha,
-                field_function,
+                reduced_field_function,
                 c_initial_probabilities,
                 time_step,
                 end_time,
@@ -255,7 +261,7 @@ cpdef simulate_dom(
         pyresults = {
             'N': 1,
             'time': np.array([res[0].time[i] for i in range(max_samples)]),
-            'field': np.array([res[0].field[i] for i in range(max_samples)]),
+            'field': np.array([res[0].field[i] for i in range(max_samples)]) * anisotropy_field,
             'x': {0: np.array([res[0].mx[i] for i in range(max_samples)])},
             'y':{0:np.array([res[0].my[i] for i in range(max_samples)])},
             'z': {0:np.array([res[0].mz[i] for i in range(max_samples)])}
