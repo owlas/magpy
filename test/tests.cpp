@@ -975,3 +975,66 @@ TEST( distances, pair_wise_magnitudes )
     EXPECT_DOUBLE_EQ( 0.8660254037844386, mags[1][2] );
     EXPECT_DOUBLE_EQ( 0.8660254037844386, mags[2][1] );
 }
+
+TEST( simulation, two_aligned_particles )
+{
+    size_t n = 6;
+
+    double field_r[6];
+    field::zero_all_field_terms( field_r, n );
+
+    double mag_r[6] = {0, 0, 1, 0, 1, 0};
+    double K_r[2] = {1, 1};
+    double anis[6] = {0, 0, 1, 0, 0, 1};
+
+    field::multi_add_uniaxial_anisotropy(
+        field_r, mag_r, anis, K_r, 2 );
+
+    double Ms = 400e3;
+    double K = 1e5;
+    double Bk  = 2*K/Ms;
+
+    EXPECT_DOUBLE_EQ( 0.0, Bk * field_r[0] );
+    EXPECT_DOUBLE_EQ( 0.0, Bk * field_r[1] );
+    EXPECT_DOUBLE_EQ( 0.5, Bk * field_r[2] );
+    EXPECT_DOUBLE_EQ( 0.0, Bk * field_r[3] );
+    EXPECT_DOUBLE_EQ( 0.0, Bk * field_r[4] );
+    EXPECT_DOUBLE_EQ( 0.0, Bk * field_r[5] );
+
+    double R = 8e-9;
+    double V = 4/3. * M_PI * R * R * R;
+    double V_r[2] = {1, 1};
+    double D=1e-8;
+    double D_r = D / std::cbrt( V );
+    double dists_r[12] = {0, 0, 0, 0, 0, 1, 0, 0, -1, 0, 0, 0};
+    double dist_cubes_r[4] = {0, D_r*D_r*D_r, D_r*D_r*D_r, 0};
+
+    field::multi_add_dipolar(
+        field_r, Ms, K, V_r, mag_r, dists_r, dist_cubes_r, 2 );
+
+    EXPECT_DOUBLE_EQ( 0.0, Bk * field_r[0] );
+    EXPECT_DOUBLE_EQ( -0.085786423296000003, Bk * field_r[1] );
+    EXPECT_DOUBLE_EQ( 0.5, Bk * field_r[2] );
+    EXPECT_DOUBLE_EQ( 0.0, Bk * field_r[3] );
+    EXPECT_DOUBLE_EQ( 0.0, Bk * field_r[4] );
+    EXPECT_DOUBLE_EQ(  0.171572846592000006, Bk * field_r[5] );
+
+    std::vector<double> rsim = {R,R};
+    std::vector<double> Ksim = {K,K};
+    std::vector<std::array<double,3> > kvecsim;
+    kvecsim.push_back( std::array<double,3>( {0, 0, 1} ) );
+    kvecsim.push_back( std::array<double,3>( {0, 0, 1} ) );
+    std::vector<std::array<double,3> > magsim;
+    magsim.push_back( std::array<double,3>( {0, 0, 1} ) );
+    magsim.push_back( std::array<double,3>( {0, 1, 0} ) );
+    std::vector<std::array<double,3> > locsim;
+    locsim.push_back( std::array<double,3>( {0, 0, 0} ) );
+    locsim.push_back( std::array<double,3>( {0, 0, D} ) );
+
+
+    // simulation::full_dynamics(
+    //     rsim, Ksim, kvecsim, magsim, locsim, Ms, 1.0, 330,
+    //     false, true, false, 1e-13, 2e-13, 2, 1001
+    //     );
+
+}

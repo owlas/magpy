@@ -11,3 +11,13 @@ def test_model():
         temperature = 300.,
         magnetisation = 400e3
     )
+
+def test_domodel():
+    dom = Model(
+        radius = 12e-9,
+        anisotropy = 4e4,
+        initial_probabilities = [0.5, 0.5],
+        magnetisation = 400e3,
+        damping = 0.1,
+        temperature = 300
+    )
