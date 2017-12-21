@@ -1,0 +1,4 @@
+Namespace dom
+=============
+
+.. doxygennamespace:: dom

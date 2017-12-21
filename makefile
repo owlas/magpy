@@ -19,12 +19,12 @@ GTEST_FLAGS=-isystem $(GTEST_DIR)/include
 GIT_VERSION := $(shell git describe --abbrev=4 --dirty --always --tags)
 
 ifeq ($(CXX),icpc)
-	CXXFLAGS=--std=c++11 -W -Wall -pedantic -pthread -O3 -g -fopenmp -simd -qopenmp -xHost -DVERSION=\"$(GIT_VERSION)\"
+	override CXXFLAGS+=--std=c++11 -W -Wall -pedantic -pthread -O3 -g -fopenmp -simd -qopenmp -xHost -DVERSION=\"$(GIT_VERSION)\" -DUSEMKL -DMKL_ILP64 -I$(MKLROOT)/include -wd488 -wd10145
+	LDLIBS=-Wl,--start-group $(MKLROOT)/lib/intel64/libmkl_intel_ilp64.a $(MKLROOT)/lib/intel64/libmkl_sequential.a $(MKLROOT)/lib/intel64/libmkl_core.a -Wl,--end-group -lpthread -lm -ldl
 else
-	CXXFLAGS=--std=c++11 -W -Wall -pedantic -pthread -O3 -g -fopenmp -DVERSION=\"$(GIT_VERSION)\"
+	override CXXFLAGS+=--std=c++11 -W -Wall -pthread -pedantic -O3 -g -DVERSION=\"$(GIT_VERSION)\"
+	LDLIBS=-llapacke -lblas
 endif
-
-LDFLAGS=-llapacke -lblas
 
 SOURCES=$(wildcard $(LIB_PATH)/*.cpp)
 OBJ_FILES=$(addprefix $(OBJ_PATH)/,$(notdir $(SOURCES:.cpp=.o)))
@@ -33,49 +33,79 @@ OBJ_FILES=$(addprefix $(OBJ_PATH)/,$(notdir $(SOURCES:.cpp=.o)))
 default: main
 
 main: src/main.cpp $(OBJ_FILES)
-	$(CXX) $(CXXFLAGS) $< \
-	$(OBJ_FILES) $(LDFLAGS) \
-	-o $@
+	$(CXX) 	$(CXXFLAGS) $(LDFLAGS) $< \
+		$(OBJ_FILES) \
+		-o $@ $(LDLIBS)
+
+libmoma.so: $(OBJ_FILES)
+	$(CXX) -shared -o $@ $^
 
 # Build the individual object files
 $(OBJ_PATH)/%.o: $(LIB_PATH)/%.cpp
-	$(CXX) 	$(CXXFLAGS) -c \
-	-o $@ $<
-	$(LDFLAGS)
+	$(CXX)	$(CXXFLAGS) $(LDFLAGS) -c -fPIC \
+		-o $@ $< \
+		$(LDLIBS)
 
-# The tests are run using googletest
-tests: test/tests.cpp $(OBJ_FILES) $(GTEST_HEADERS) gtest_main.a
-	$(CXX) $(GTEST_FLAGS) $(CXXFLAGS) $< gtest_main.a \
-	$(OBJ_FILES) $(LDFLAGS) \
-	-o $@
+# Run the entire testing suite (long run time)
+run-full-tests: test-suite run-tests
+	cd test && ./convergence configs/convergence.json
+	cd test && python plotting/convergence.py
+	cd test && ./equilibrium configs/equilibrium.json
+	cd test && python plotting/equilibrium.py
+
+# Run the unit tests only
+run-tests: test/tests
+	cd test && ./tests
+
+# Build full testing-suite
+test-suite: test/tests test/convergence test/equilibrium
+
+# The unit tests are run using googletest
+test/tests: test/tests.cpp $(OBJ_FILES) $(GTEST_HEADERS) test/gtest_main.a
+	$(CXX) 	$(GTEST_FLAGS) $(CXXFLAGS) $(LDFLAGS) $< test/gtest_main.a \
+		$(OBJ_FILES) \
+		-o $@ $(LDLIBS)
+
+# Additional test-suit tests
+test/convergence: test/convergence.cpp $(OBJ_FILES)
+	$(CXX) 	$(CXXFLAGS) $(LDFLAGS) $< \
+		$(OBJ_FILES) \
+		-o $@ $(LDLIBS)
+
+test/equilibrium: test/equilibrium.cpp $(OBJ_FILES)
+	$(CXX) 	$(CXXFLAGS) $(LDFLAGS) $< \
+		$(OBJ_FILES) \
+		-o $@ $(LDLIBS)
 
 # Builds the gtest testing suite
 GTEST_HEADERS = $(GTEST_DIR)/include/gtest/*.h \
 		$(GTEST_DIR)/include/gtest/internal/*.h
 GTEST_SRCS_ = $(GTEST_DIR)/src/*.cc $(GTEST_DIR)/src/*.h $(GTEST_HEADERS)
 
-gtest-all.o : $(GTEST_SRCS_)
-	$(CXX) $(GTEST_FLAGS) -I$(GTEST_DIR) $(CXXFLAGS) -c \
-	$(GTEST_DIR)/src/gtest-all.cc
+test/gtest-all.o : $(GTEST_SRCS_)
+	$(CXX) 	$(GTEST_FLAGS) -I$(GTEST_DIR) $(CXXFLAGS) -c \
+		-o $@ \
+		$(GTEST_DIR)/src/gtest-all.cc
 
-gtest_main.o : $(GTEST_SRCS_)
-	$(CXX) $(GTEST_FLAGS) -I$(GTEST_DIR) $(CXXFLAGS) -c \
-	$(GTEST_DIR)/src/gtest_main.cc
+test/gtest_main.o : $(GTEST_SRCS_)
+	$(CXX) 	$(GTEST_FLAGS) -I$(GTEST_DIR) $(CXXFLAGS) -c \
+		-o $@ \
+		$(GTEST_DIR)/src/gtest_main.cc
 
-gtest.a : gtest-all.o
-	$(AR) $(ARFLAGS) $@ $^
+test/gtest.a : test/gtest-all.o
+	$(AR) 	$(ARFLAGS) $@ $^
 
-gtest_main.a : gtest-all.o gtest_main.o
-	$(AR) $(ARFLAGS) $@ $^
+test/gtest_main.a : test/gtest-all.o test/gtest_main.o
+	$(AR) 	$(ARFLAGS) $@ $^
 
 clean:
 	rm -f objects/*
-	rm -f gtest-all.o gtest_main.o
 	rm -rf *.dSYM
 
 clean-tests:
 	rm -f test.out*
+	rm -f convergence.*
+	rm -f test/output/*
+	rm -f test/*.o test/*.a
 
 clean-all: clean clean-tests
-	rm -f main tests
-	rm -f gtest_main.a gtest.a

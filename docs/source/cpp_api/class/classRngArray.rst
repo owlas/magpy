@@ -1,0 +1,4 @@
+Class RngArray
+==============
+
+.. doxygenclass:: RngArray

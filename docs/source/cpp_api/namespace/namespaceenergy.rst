@@ -1,0 +1,4 @@
+Namespace energy
+================
+
+.. doxygennamespace:: energy

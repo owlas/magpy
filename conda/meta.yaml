@@ -1,0 +1,43 @@
+package:
+  name: magpy
+  version: 0.1.dev2
+
+source:
+  git_url: https://github.com/owlas/magpy
+  git_rev: master
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - setuptools
+    - openblas
+    - cython
+    - numpy >=1.11
+  run:
+    - setuptools
+    - openblas
+    - numpy >=1.11
+    - matplotlib
+    - toolz
+    - joblib
+    - scipy
+    - transforms3d
+
+about:
+  home: https://github.com/owlas/magpy
+  license: BSD-3-Clause
+
+test:
+  imports:
+    - magpy
+  requires:
+    - pytest
+  source_files:
+    - test/tests
+    - test/test_magpy.py
+    - test/test_geometries.py
+  commands:
+    - test/tests
+    - pytest -v test/test_magpy.py test/test_geometries.py

@@ -1,0 +1,41 @@
+{
+    "simulation-mode": "llg",
+    "simulation": {
+        "ensemble-size": 10,
+        "simulation-time": "steady-cycle",
+        "time-step": 1e-11,
+        "renormalisation": false,
+        "seeds": [
+            6683439711596033246,
+            7864481324381512219,
+            7697304282063596008,
+            7417386642214095595,
+            1797715502060420146,
+            9192188724016714037,
+            4104777465399802017,
+            6885042999472010130,
+            8500140750218701350,
+            7871570013001846818,
+            8617888306659980486
+        ]},
+    "output": {
+        "max-samples": 10000,
+        "directory": "output"
+    },
+    "global": {
+        "temperature": 270,
+        "applied-field": {
+            "shape": "sine",
+            "frequency": 300e4,
+            "amplitude": 3.5e5
+        }
+    },
+    "particle": {
+        "damping": 0.1,
+        "radius": 12e-9,
+        "anisotropy": 23e3,
+        "anisotropy-axis": [0, 0, 1],
+        "magnetisation": 446e3,
+        "magnetisation-direction": [0, 0, 1]
+    }
+}

@@ -1,0 +1,4 @@
+Namespace integrator
+====================
+
+.. doxygennamespace:: integrator

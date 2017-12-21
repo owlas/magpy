@@ -6,6 +6,12 @@
 #ifndef TRAP_H
 #define TRAP_H
 #include <cstdlib>
+
+/**
+ * @namespace trap
+ * @brief numerical schemes for computing the area under curves
+ * @author Oliver Laslett
+ */
 namespace trap
 {
     /*
@@ -13,5 +19,10 @@ namespace trap
       The grid can be non-uniform of length N.
      */
     double trapezoidal( double *x, double *y, size_t N);
+
+    /*
+      Just a single term of the trapezoidal summation
+    */
+    double one_trapezoid( double x1, double x2, double fx1, double fx2 );
 }
 #endif

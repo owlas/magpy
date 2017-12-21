@@ -1,0 +1,4 @@
+Namespace trap
+==============
+
+.. doxygennamespace:: trap

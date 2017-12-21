@@ -1,6 +1,5 @@
 # <img src="./img/magpy.png" height="80px" alt="magpy">
 
-[![Join the chat at https://gitter.im/magpy-users/Lobby](https://badges.gitter.im/magpy-users/Lobby.svg)](https://gitter.im/magpy-users/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 magpy is a C++ accelerated python package for simulating systems of
 magnetic nanoparticles.
@@ -29,7 +28,7 @@ magnetic nanoparticles.
 
 Join the chat at:
 
-[![gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/oh-moma)
+[![Join the chat at https://gitter.im/magpy-users/Lobby](https://badges.gitter.im/magpy-users/Lobby.svg)](https://gitter.im/magpy-users/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 ## Documentation
 

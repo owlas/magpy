@@ -1,0 +1,4 @@
+Namespace constants
+===================
+
+.. doxygennamespace:: constants
