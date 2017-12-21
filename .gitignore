@@ -1,15 +1,12 @@
-main
-tests
-logs/*
 objects/*
 *.dSYM
 .dir-locals.el
 output/*
 test/output/*
+test/convergence/output/*
 test/logs*
 test/*.o
 test/*.a
-test/convergence
 test/equilibrium
 tmp/*
 *.so
@@ -17,7 +14,7 @@ vtune/*
 build/*
 *__pycache__*
 magpy/*.cpp
-*.egg-info
 *.ipynb_checkpoints/*
 docs/build/*
 docs/doxygen/doxyxml/*
+*.DS_Store
