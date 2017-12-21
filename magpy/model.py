@@ -158,7 +158,7 @@ class EnsembleModel:
 
     def simulate(self, end_time, time_step, max_samples, random_state,
                  renorm=False, interactions=True, n_jobs=1,
-                 implicit_solve=False, implicit_tol=1e-9):
+                 implicit_solve=True, implicit_tol=1e-9):
         """Simulate the dynamics of an ensemble of particle clusters
 
         Simulate the time-varying dynamics of an ensemble of particle
@@ -209,6 +209,36 @@ class EnsembleModel:
 
 
 class DOModel:
+    """A probabilistic model of a single particle
+
+    A magpy DOModel is a probabilitic model of a single magnetic nanoparticle with a
+    uniaxial anisotropy axis. The model has just two possible states: up and down. The
+    model is defined by the material properties of the particle, an external field
+    (applied along the anisotropy axis), and an initial probability vector (length 2).
+
+    The model is simulated to solve the probability of the system being up and down over
+    time. The particle is optionally subjected to a time-varying field along the
+    anisotropy axis. The field can be constant or sine/square varying with a desired
+    frequency and amplitude.
+
+    Args:
+        radius (double): radius of the spherical particle
+        anisotropy (double): anisotropy constant for the uniaxial anisotropy axis
+        initial_probabilities (ndarray[double,2]): initial probability of the particle down
+            and up state respectively.
+        magnetisation (double): saturation magnetisation of all particles in the cluster (ampres / meter).
+            Saturation magnetisation cannot vary between particles.
+        damping (double): the damping constant for the particle.
+        temperature (double): the ambient temperature in Kelvin for the particle.
+        field_shape (str, optional): can be either 'constant', 'square' or 'sine' describing
+            the time-varying shape of the alternating field. The field is always applied
+            along the anisotropy axis. Default is 'constant'
+        field_frequency (double, optional): the frequency of the applied field in Hz.
+            Default is 0Hz.
+        field_amplitude (double, optional): the amplitude of the applied field in Ampres / meter.
+            Default is 0A/m
+
+    """
     def __init__(
             self, radius, anisotropy, initial_probabilities, magnetisation,
             damping, temperature, field_shape='constant', field_frequency=0.0,
@@ -225,6 +255,28 @@ class DOModel:
         self.field_amplitude = field_amplitude
 
     def simulate(self, end_time, time_step, max_samples):
+        """Simulate the state probabilities for the particle
+
+        Simulate the time-varying probabilities of the up/down states of the particle. The
+        system is described by a master equation, which is defined by the transition rates
+        between the up and down state. The master equation is solved numerically using an
+        explicit RK45 solver.
+
+        In order to save memory, the user is required to specify the `max_samples`.
+        The output of the time-integrator is up/downsampled to `max_samples` regularly
+        spaced intervals using a first-order-hold interpolation. This is useful
+        for long simulations with very small time steps that, without downsampling,
+        would produce GBs of data very quickly.
+
+        Args:
+            end_time (float): time to end the simulation (in seconds)
+            time_step (float): time step for time-integration solver
+            max_samples (int): number of regularly spaced samples of the output
+        Returns:
+            magpy.Results: a :py:class:`magpy.results.Results` object containing
+                the time-dependent magnetisation of the particle.
+
+        """
         results = simulate_dom(
             self.initial_probabilities, self.volume,
             self.anisotropy, self.temperature, self.magnetisation,
