@@ -12,8 +12,11 @@ Welcome to magpy's documentation!
 
 .. toctree::
    :caption: Examples
+   :maxdepth: 1
 
    notebooks/single-particle
+   notebooks/single-particle-equilibrium
+   notebooks/two-particle-equilibrium
 
 .. toctree::
    :caption: Developer
