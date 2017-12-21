@@ -12,6 +12,7 @@ magnetic nanoparticles.
 ![conda-license](https://anaconda.org/owlas/magpy/badges/license.svg)
 [![conda-downloads](https://anaconda.org/owlas/magpy/badges/downloads.svg)](https://anaconda.org/owlas/magpy/)
 [![conda-link](https://anaconda.org/owlas/magpy/badges/installer/conda.svg)](https://anaconda.org/owlas/magpy/)
+[![DOI](https://zenodo.org/badge/76475957.svg)](https://zenodo.org/badge/latestdoi/76475957)
 
 **Features**
 
