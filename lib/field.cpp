@@ -16,11 +16,11 @@
 /**
  * A simple placeholder function representing a constant
  * field. Always returns the same value.
- * @param[in] h applied field amplitude
  * @param[in] t time (parameter has no effect)
+ * @param[in] h applied field amplitude
  * @returns the constant field amplitude at all values of time
  */
-double field::constant( const double h, const double )
+double field::constant( const double, const double h )
 {
     return h;
 }
@@ -29,12 +29,12 @@ double field::constant( const double h, const double )
 /**
  * Returns the value of a sinusoidally varying field at any given
  * time.
+ * @param[in] t time
  * @param[in] h applied field amplitude
  * @param[in] f applied field frequency
- * @param[in] t time
  * @returns the value of the varying applied field at time `t`
  */
-double field::sinusoidal( const double h, const double f, const double t )
+double field::sinusoidal( const double t, const double h, const double f)
 {
     return h*std::sin( 2*M_PI*f*t );
 }
@@ -43,12 +43,12 @@ double field::sinusoidal( const double h, const double f, const double t )
 /**
  * An alternating applied field with a square shape centred around
  * zero. i.e. it alternates between values `-h` and `h`
+ * @param[in] t time
  * @param[in] h applied field amplitude
  * @param[in] f applied field frequency
- * @param[in] t time
  * @returns the value of the square wave applied field at time `t`
  */
-double field::square( const double h, const double f, const double t )
+double field::square( const double t, const double h, const double f )
 {
     return h*( int( t*f*2 )%2 ? -1 : 1 );
 }
@@ -58,16 +58,17 @@ double field::square( const double h, const double f, const double t )
  * An approximate square wave is computed from a finite number of
  * Fourier components. The square wave alternates between `-h` and
  * `h`.
+ * @param[in] t            time
  * @param[in] h            applied field amplitude
  * @param[in] f            applied field frequency
  * @param[in] n_components number of Fourier components to compute
- * @param[in] t            time
  * @returns the value of the square wave applied field at time `t`
  */
-double field::square_fourier( const double h,
-                              const double f,
-                              const size_t n_components,
-                              double t )
+double field::square_fourier(
+    const double t,
+    const double h,
+    const double f,
+    const size_t n_components )
 {
     double field=0;
     for( unsigned int k=1; k<n_components+1; k++ )

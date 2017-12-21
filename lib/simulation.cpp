@@ -3,41 +3,17 @@
 #include <cmath>
 #include "../include/field.hpp"
 #include "../include/distances.hpp"
+#include "../include/io.hpp"
+#include "../include/dom.hpp"
+#include "../include/integrators.hpp"
+#include "../include/optimisation.hpp"
+#include "../include/llg.hpp"
 #include <numeric>
 #include <exception>
 #include <sstream>
+#include <cblas.h>
 
-double simulation::energy_loss(
-    const struct results &res,
-    const double ms,
-    const double hk )
-{
-    double area = trap::trapezoidal( res.mz.get(), res.field.get(), res.N );
-    return -constants::MU0*ms*hk*area;
-}
-
-double simulation::energy_loss(
-    const std::unique_ptr<double[]> &transition_energy,
-    const std::unique_ptr<double[]> &probability_flow,
-    const std::unique_ptr<double[]> &time,
-    const double volume,
-    const size_t N )
-{
-    double *mult = new double[N];
-    for( unsigned int i; i<N; i++ )
-        mult[i] = transition_energy[i] * probability_flow[i];
-    delete[] mult;
-    return trap::trapezoidal( mult, time.get(), N ) / volume;
-}
-
-double simulation::one_step_energy_loss(
-    const double et1, const  double et2, const double pflow1, const double pflow2,
-    const double t1, const double t2, const double volume
-    )
-{
-    return trap::one_trapezoid( t1, t2, et1*pflow1, et2*pflow2 ) / volume;
-}
-
+using namespace std::placeholders;
 
 void simulation::reduce_to_system_magnetisation(
     double *mag, const double *particle_mags, const size_t N_particles )
@@ -67,7 +43,6 @@ void simulation::save_results( const std::string fname, const struct results &re
     magz_fname << fname << ".mz";
     field_fname << fname << ".field";
     time_fname << fname << ".time";
-    energy_fname << fname << ".energy";
 
     int err;
     err = io::write_array( magx_fname.str(), res.mx.get(), res.N );
@@ -85,7 +60,6 @@ void simulation::save_results( const std::string fname, const struct results &re
     err = io::write_array( time_fname.str(), res.time.get(), res.N );
     if( err != 0 )
         throw std::runtime_error( "failed to write file" );
-    err = io::write_array( energy_fname.str(), &res.energy_loss, 1 );
 }
 
 /// Initialise results memory to zero
@@ -96,7 +70,6 @@ void simulation::zero_results( struct simulation::results &res )
 {
     for( unsigned int i=0; i<res.N; i++ )
         res.mx[i] = res.my[i] = res.mz[i] = res.field[i] = res.time[i] = 0;
-    res.energy_loss = 0;
 }
 
 /// Simulate the dynamics of interacting magnetic particles (reduced input)
@@ -432,10 +405,6 @@ std::vector<struct simulation::results> simulation::full_dynamics(
         }
     } // end sampling loop
 
-    /// @TODO compute energy loss for llg
-    for( auto &res : results )
-        res.energy_loss = 0;
-
     /// Free memory
     delete[] state;
     delete[] dwm;
@@ -502,6 +471,7 @@ std::vector<struct simulation::results> simulation::full_dynamics(
  * @param[in] field_frequency frequency of the time-varying externally
  * applied field [Hz]
  * @returns simulation results struct for each particle
+ * @todo refactor to accept field function (see dom simulation)
  */
 std::vector<simulation::results> simulation::full_dynamics(
     const std::vector<double> radius,
@@ -590,12 +560,12 @@ std::vector<simulation::results> simulation::full_dynamics(
     case field::SINE :
         field_function =
             [happ, fapp](const double t)
-            { return field::sinusoidal( happ, fapp, t ); };
+            { return field::sinusoidal( t, happ, fapp ); };
         break;
     case field::SQUARE :
         field_function =
             [happ, fapp](const double t)
-            { return field::square( happ, fapp, t ); };
+            { return field::square( t, happ, fapp ); };
         break;
     default :
         throw std::invalid_argument( "Must specify valid field::options enum" );
@@ -781,8 +751,8 @@ struct simulation::results simulation::dom_ensemble_dynamics(
             next_pflow = prob_derivs[0];
             next_et = dom::single_transition_energy(
                 anisotropy, volume, applied_field( t ) );
-            energy_sum += one_step_energy_loss(
-                last_et, next_et, last_pflow, next_pflow, last_t, t, volume);
+            // energy_sum += one_step_energy_loss(
+            //     last_et, next_et, last_pflow, next_pflow, last_t, t, volume);
 
 
         } // end integration stepping loop
@@ -809,16 +779,6 @@ struct simulation::results simulation::dom_ensemble_dynamics(
         res.time[sample] = t_this;
         res.field[sample] = applied_field(t_this);
     }
-
-    // @deprecated
-    // Compute the energy loss from the hysteresis area
-    // double hk = 2*anisotropy / constants::MU0 / magnetisation;
-    // res.energy_loss = simulation::energy_loss( res, magnetisation, hk );
-
-    // Store the total energy dissipated
-    // Sign is not deterministic and depends on where the simulation begins
-    // the steady state cycle. So we take the absolute value.
-    res.energy_loss = std::abs(energy_sum);
 
     // free memory
     return res;

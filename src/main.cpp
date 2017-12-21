@@ -10,7 +10,6 @@
 #include <iostream>
 #include <random>
 #include <fenv.h>
-#include "../include/moma_config.hpp"
 #include "../include/json.hpp"
 
 using json = nlohmann::json;
@@ -41,9 +40,6 @@ int main( int argc, char *argv[] )
     std::ifstream filestream( argv[1] );
     config << filestream;
     filestream.close();
-
-    // Launch the simulation from the config file
-    moma_config::launch_simulation( config );
 
     return 0;
 }

@@ -5,13 +5,17 @@ cimport numpy as np
 
 from libcpp.vector cimport vector
 from libcpp.memory cimport unique_ptr
+from libcpp.functional cimport function
 from libcpp cimport bool
 
-# array of 3 doubles
+# arrays of doubles
 cdef extern from "<array>" namespace "std" nogil:
     cdef cppclass d3 "std::array<double,3>":
         d3() except+
         double& operator[](size_t)
+    cdef cppclass d2 "std::array<double,2>":
+        d2() except+
+        double &operator[](size_t)
 
 # unique_ptr array
 cdef extern from "<memory>" namespace "std" nogil:
@@ -37,9 +41,25 @@ cdef extern from "field.hpp" namespace "field":
         SQUARE,
         CONSTANT
 
+# Functions
+cdef extern from "field.hpp" namespace "field":
+    function[double(double)] bind_field_function(...)
+    double constant(double t, double h)
+    double sinusoidal(double t, double h, double f)
+    double square (double t, double h, double f)
+    double square_fourier(double t, double h, double f, size_t n_components)
+
+# std::function version of field functions
+cdef function[double(double,double,double)] f_sine = sinusoidal
+cdef function[double(double,double,double)] f_square = square
+cdef function[double(double,double)] f_constant = constant
+cdef function[double(double,double,double,size_t)] f_square_fourier = square_fourier
+
 # Interface to results struct
 cdef extern from "simulation.hpp" namespace "simulation":
-    struct results:
+    cdef cppclass results:
+        results(size_t N)
+        results(results&)
         double_up mx
         double_up my
         double_up mz
@@ -70,6 +90,21 @@ cdef extern from "simulation.hpp" namespace "simulation":
         const options field_shape,
         const double field_amplitude,
         const double field_frequency
+    )
+
+# Interface to thermal activation simulation
+cdef extern from "simulation.hpp" namespace "simulation":
+    results dom_ensemble_dynamics(
+        const double volume,
+        const double anisotropy,
+        const double temperature,
+        const double magnetisation,
+        const double alpha,
+        const function[double(double)] reduced_h_func,
+        const d2 initial_probs,
+        const double time_step,
+        const double end_time,
+        const int max_samples
     )
 
 # Needed to convert numpy arrays to std::vectors
@@ -167,3 +202,71 @@ cpdef simulate(
     }
     return pyresults
 
+cpdef simulate_dom(
+    np.ndarray[double, ndim=1, mode='c'] initial_probabilities,
+    double volume,
+    double anisotropy,
+    double temperature,
+    double magnetisation,
+    double alpha,
+    double time_step,
+    double end_time,
+    size_t max_samples,
+    str field_shape,
+    double field_amplitude,
+    double field_frequency ):
+    cdef d2 c_initial_probabilities
+    for i in range(2):
+        c_initial_probabilities[i] = initial_probabilities[i]
+
+    # Simulation requires the reduced field value
+    cdef double anisotropy_field = 2.0 * anisotropy / get_mu0() / magnetisation
+    cdef double reduced_field_amplitude = field_amplitude / anisotropy_field
+
+    # Bind the field amplitude and frequency to create the field
+    # function
+    cdef function[double(double)] field_function
+    if field_shape=='sine':
+        reduced_field_function = bind_field_function(
+            f_sine, reduced_field_amplitude, field_frequency
+        )
+    elif field_shape=='square':
+        reduced_field_function = bind_field_function(
+            f_square, reduced_field_amplitude, field_frequency
+        )
+    elif field_shape=='constant':
+        reduced_field_function = bind_field_function(
+            f_constant, reduced_field_amplitude
+        )
+
+    # Note:
+    # Cannot stack allocate cpp classes (hence structs) without a nullary constructor
+    # Rather we must handle the memory ourselves
+    cdef results* res
+    try:
+        res = new results(
+            dom_ensemble_dynamics(
+                volume,
+                anisotropy,
+                temperature,
+                magnetisation,
+                alpha,
+                reduced_field_function,
+                c_initial_probabilities,
+                time_step,
+                end_time,
+                max_samples)
+            )
+
+        pyresults = {
+            'N': 1,
+            'time': np.array([res[0].time[i] for i in range(max_samples)]),
+            'field': np.array([res[0].field[i] for i in range(max_samples)]) * anisotropy_field,
+            'x': {0: np.array([res[0].mx[i] for i in range(max_samples)])},
+            'y':{0:np.array([res[0].my[i] for i in range(max_samples)])},
+            'z': {0:np.array([res[0].mz[i] for i in range(max_samples)])}
+        }
+    finally:
+        del res
+
+    return pyresults
