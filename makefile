@@ -22,7 +22,7 @@ ifeq ($(CXX),icpc)
 	override CXXFLAGS+=--std=c++11 -W -Wall -pedantic -pthread -O3 -g -fopenmp -simd -qopenmp -xHost -DVERSION=\"$(GIT_VERSION)\" -DUSEMKL -DMKL_ILP64 -I$(MKLROOT)/include -wd488 -wd10145
 	LDLIBS=-Wl,--start-group $(MKLROOT)/lib/intel64/libmkl_intel_ilp64.a $(MKLROOT)/lib/intel64/libmkl_sequential.a $(MKLROOT)/lib/intel64/libmkl_core.a -Wl,--end-group -lpthread -lm -ldl
 else
-	override CXXFLAGS+=--std=c++11 -W -Wall -pedantic -O3 -g -DVERSION=\"$(GIT_VERSION)\"
+	override CXXFLAGS+=--std=c++11 -W -Wall -pthread -pedantic -O3 -g -DVERSION=\"$(GIT_VERSION)\"
 	LDLIBS=-llapacke -lblas
 endif
 
