@@ -14,7 +14,7 @@ vtune/*
 build/*
 *__pycache__*
 magpy/*.cpp
-*.ipynb_checkpoints/*
+*.ipynb_checkpoints*
 docs/build/*
 docs/doxygen/doxyxml/*
 *.DS_Store
