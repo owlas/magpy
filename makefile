@@ -1,15 +1,19 @@
-# makefile
+# Magpy C++ makefile
 #
-#    make - defaults to main
-#    make tests - builds tests
-#    make clean - cleans up
-
-
+#    make - defaults to libmoma.so
+#    make libmoma.so - build the magpy C++ library
+#    make tests - build C++ unit tests
+#    make run-tests - build and run C++ unit tests
+#    make convergence - build convergence tests
+#
+#    make clean - cleans up object files
+#    make clean-tests - cleans up testing object files
+#    make clean-all - cleans all object files
+#
 CXX=icpc
 INC_PATH=include
 OBJ_PATH=objects
 LIB_PATH=lib
-SRC_PATH=src
 
 GTEST_DIR=googletest
 TESTS=test/test.cpp
@@ -29,13 +33,8 @@ endif
 SOURCES=$(wildcard $(LIB_PATH)/*.cpp)
 OBJ_FILES=$(addprefix $(OBJ_PATH)/,$(notdir $(SOURCES:.cpp=.o)))
 
-# Default target builds the main CLI for the MOMA simulation package
-default: main
-
-main: src/main.cpp $(OBJ_FILES)
-	$(CXX) 	$(CXXFLAGS) $(LDFLAGS) $< \
-		$(OBJ_FILES) \
-		-o $@ $(LDLIBS)
+# Default target builds the magpy library
+default: libmoma.so
 
 libmoma.so: $(OBJ_FILES)
 	$(CXX) -shared -o $@ $^
@@ -46,19 +45,11 @@ $(OBJ_PATH)/%.o: $(LIB_PATH)/%.cpp
 		-o $@ $< \
 		$(LDLIBS)
 
-# Run the entire testing suite (long run time)
-run-full-tests: test-suite run-tests
-	cd test && ./convergence configs/convergence.json
-	cd test && python plotting/convergence.py
-	cd test && ./equilibrium configs/equilibrium.json
-	cd test && python plotting/equilibrium.py
-
 # Run the unit tests only
-run-tests: test/tests
+run-tests: tests
 	cd test && ./tests
 
-# Build full testing-suite
-test-suite: test/tests test/convergence test/equilibrium
+tests: test/tests
 
 # The unit tests are run using googletest
 test/tests: test/tests.cpp $(OBJ_FILES) $(GTEST_HEADERS) test/gtest_main.a
@@ -73,10 +64,7 @@ test/convergence/run: $(CONVERGENCE_SOURCES) $(OBJ_FILES)
 		$(OBJ_FILES) \
 		-o $@ $(LDLIBS)
 
-test/equilibrium: test/equilibrium.cpp $(OBJ_FILES)
-	$(CXX) 	$(CXXFLAGS) $(LDFLAGS) $< \
-		$(OBJ_FILES) \
-		-o $@ $(LDLIBS)
+convergence: test/convergence/run
 
 # Builds the gtest testing suite
 GTEST_HEADERS = $(GTEST_DIR)/include/gtest/*.h \
@@ -99,14 +87,11 @@ test/gtest.a : test/gtest-all.o
 test/gtest_main.a : test/gtest-all.o test/gtest_main.o
 	$(AR) 	$(ARFLAGS) $@ $^
 
+# Clean up
 clean:
 	rm -f objects/*
-	rm -rf *.dSYM
 
 clean-tests:
-	rm -f test.out*
-	rm -f convergence.*
-	rm -f test/output/*
 	rm -f test/*.o test/*.a
 
 clean-all: clean clean-tests
