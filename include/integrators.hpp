@@ -159,7 +159,7 @@ namespace integrator
         static constexpr double x24 = 13525.0/55296.0;
         static constexpr double x25 = 277.0/14336.0;
         static constexpr double x26 = 0.25;
-    };
+    }
 
 }
 #endif

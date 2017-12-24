@@ -13,8 +13,8 @@
  */
 RngMtNorm::RngMtNorm( const unsigned long int seed, const double std )
     : Rng()
-    , dist( 0, std )
-    , generator( seed ) {}
+    , generator( seed )
+    , dist( 0, std ) {}
 
 
 /// Draw a single normally distributed value from the RNG
@@ -28,8 +28,8 @@ double RngMtNorm::get() { return dist( generator ); }
 RngMtDownsample::RngMtDownsample( const unsigned long int seed, const double std,
                                   const size_t dim, const size_t down_factor )
     : Rng()
-    , dist( 0, std )
     , generator( seed )
+    , dist( 0, std )
     , current_dim( dim )
     , store( dim, 0 )
     , D( dim )
@@ -54,7 +54,7 @@ void RngMtDownsample::downsample_draw()
     for ( unsigned int j=1; j<F; j++ )
         for( unsigned int i=0; i<D; i++ )
             store[i] += dist( generator );
-};
+}
 
 
 /// Default constructor for RngArray
@@ -66,8 +66,8 @@ void RngMtDownsample::downsample_draw()
  */
 RngArray::RngArray( const double *_arr, size_t _arr_length, size_t _stride )
     : Rng()
-    , arr( _arr )
     , max( _arr_length )
+    , arr( _arr )
     , stride( _stride ) {}
 
 

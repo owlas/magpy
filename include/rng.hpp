@@ -57,7 +57,7 @@ private:
     void downsample_draw();
     std::mt19937_64 generator; ///< A Mersenne Twister generator instance
     std::normal_distribution<double> dist; ///< A normal distribution instance
-    int current_dim; ///< Stores the current state of the output dimenstion
+    size_t current_dim; ///< Stores the current state of the output dimenstion
     std::vector<double> store; ///< Stores consecutive random numbers
     const size_t D; ///< The number of dimensions required
     const size_t F; ///< The number of consecutive random numbers to downsample
