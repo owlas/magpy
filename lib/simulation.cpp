@@ -709,18 +709,10 @@ struct simulation::results simulation::dom_ensemble_dynamics(
     res.mz[0] = next_state[0] - next_state[1];
     res.time[0] = 0;
     res.field[0] = applied_field( 0 );
-
-    // allocate memory needed for computing the power loss
-    double prob_derivs[2];
-    double energy_sum = 0;
-    master_equation( prob_derivs, next_state, 0 );
-    double last_pflow=0, next_pflow=prob_derivs[0];
-    double last_et=0, next_et = dom::single_transition_energy(
-        anisotropy, volume, applied_field( 0 ) );
-
+    
 
     // Variables needed in the loop
-    double last_t, t=0;
+    double t=0;
     double max_dt = end_time / 1000.0; // never step more than 1000th of the simulation time
     double dt = 0.01*time_step;
     unsigned int step=0;
@@ -733,9 +725,6 @@ struct simulation::results simulation::dom_ensemble_dynamics(
             // take a step
             last_state[0] = next_state[0];
             last_state[1] = next_state[1];
-            last_pflow = next_pflow;
-            last_et = next_et;
-            last_t = t;
             step++;
 
             // perform integration step
@@ -745,14 +734,6 @@ struct simulation::results simulation::dom_ensemble_dynamics(
 
             // dt should never be greater than 1/1000 of the simulation time
             dt = dt>max_dt? max_dt : dt;
-
-            // Compute the energy loss for this step and add to total energy of cycle
-            master_equation( prob_derivs, next_state, t );
-            next_pflow = prob_derivs[0];
-            next_et = dom::single_transition_energy(
-                anisotropy, volume, applied_field( t ) );
-            // energy_sum += one_step_energy_loss(
-            //     last_et, next_et, last_pflow, next_pflow, last_t, t, volume);
 
 
         } // end integration stepping loop
