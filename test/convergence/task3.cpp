@@ -1,9 +1,9 @@
-///////////////////////////////
-// CONVERGENCE TESTS         //
-//                           //
-// TASK 3                    //
-// Single trajectory (stiff) //
-///////////////////////////////
+//////////////////////////////////
+// CONVERGENCE TESTS            //
+//                              //
+// TASK 3                       //
+// Single trajectory (unstable) //
+//////////////////////////////////
 
 #include "../../include/integrators.hpp"
 #include "../../include/rng.hpp"
