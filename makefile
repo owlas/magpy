@@ -27,7 +27,7 @@ ifeq ($(CXX),icpc)
 	LDLIBS=-Wl,--start-group $(MKLROOT)/lib/intel64/libmkl_intel_ilp64.a $(MKLROOT)/lib/intel64/libmkl_sequential.a $(MKLROOT)/lib/intel64/libmkl_core.a -Wl,--end-group -lpthread -lm -ldl
 else
 	override CXXFLAGS+=--std=c++11 -W -Wall -pthread -pedantic -O3 -g -DVERSION=\"$(GIT_VERSION)\"
-	LDLIBS=-llapacke -lblas
+	LDLIBS=-lopenblas
 endif
 
 SOURCES=$(wildcard $(LIB_PATH)/*.cpp)
@@ -37,13 +37,13 @@ OBJ_FILES=$(addprefix $(OBJ_PATH)/,$(notdir $(SOURCES:.cpp=.o)))
 default: libmoma.so
 
 libmoma.so: $(OBJ_FILES)
-	$(CXX) -shared -o $@ $^
+	$(CXX) 	-shared -o $@ $^ \
+		$(LDFLAGS) $(LDLIBS)
 
 # Build the individual object files
 $(OBJ_PATH)/%.o: $(LIB_PATH)/%.cpp
-	$(CXX)	$(CXXFLAGS) $(LDFLAGS) -c -fPIC \
-		-o $@ $< \
-		$(LDLIBS)
+	$(CXX)	$(CXXFLAGS) -c -fPIC \
+		-o $@ $<
 
 # Run the unit tests only
 run-tests: tests
@@ -52,10 +52,9 @@ run-tests: tests
 tests: test/tests
 
 # The unit tests are run using googletest
-test/tests: test/tests.cpp $(OBJ_FILES) $(GTEST_HEADERS) test/gtest_main.a
-	$(CXX) 	$(GTEST_FLAGS) $(CXXFLAGS) $(LDFLAGS) $< test/gtest_main.a \
-		$(OBJ_FILES) \
-		-o $@ $(LDLIBS)
+test/tests: test/tests.cpp libmoma.so $(GTEST_HEADERS) test/gtest_main.a
+	$(CXX) 	$(GTEST_FLAGS) $(CXXFLAGS) $< test/gtest_main.a \
+		-o $@ $(LDFLAGS) -L. -lmoma
 
 # Additional test-suit tests
 CONVERGENCE_SOURCES=$(wildcard test/convergence/*.cpp)

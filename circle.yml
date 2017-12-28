@@ -5,17 +5,16 @@ machine:
 
 dependencies:
   override:
-    - sudo apt-get install -y liblapacke-dev
-    - g++ --version
-    - make CXX=g++-4.9 test/tests
     - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
     - chmod +x Miniconda3-latest-Linux-x86_64.sh
     - ./Miniconda3-latest-Linux-x86_64.sh -b -p $HOME/miniconda
     - $HOME/miniconda/bin/conda env create -f environment.yml
-    - make CXX=g++-4.9 libmoma.so
+    - g++ --version
+    - make CXX=g++-4.9 CXXFLAGS=-I$HOME/miniconda/envs/magpy/include LDFLAGS=-L$HOME/miniconda/envs/magpy/lib/ libmoma.so
+    - make CXX=g++-4.9 CXXFLAGS=-I$HOME/miniconda/envs/magpy/include LDFLAGS=-Wl,-rpath=$HOME/miniconda/envs/magpy/lib test/tests
     - $HOME/miniconda/envs/magpy/bin/pip install .
 
 test:
   override:
-    - make run-tests
+    - LD_LIBRARY_PATH=$HOME/magpy make run-tests
     - LD_LIBRARY_PATH=$HOME/magpy:$LD_LIBRARY_PATH $HOME/miniconda/envs/magpy/bin/pytest -v test/test_magpy.py test/test_geometries.py

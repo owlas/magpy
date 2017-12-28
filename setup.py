@@ -31,9 +31,9 @@ intel_libs = ['moma', 'm', 'dl', 'pthread']
 # GNU ARGUMENTS
 gnu_compile_args = ["-std=c++11", '-pthread', '-O3', '-fopenmp']
 gnu_link_args = [
-    '-std=c++11', '-pthread', '-fopenmp', '-llapacke', '-lblas'
+    '-std=c++11', '-pthread', '-fopenmp'
 ]
-gnu_libs = ['moma', 'pthread', 'lapacke', 'blas']
+gnu_libs = ['moma']
 
 setup(
     name='magpy',
