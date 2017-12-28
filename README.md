@@ -50,15 +50,41 @@ Detailed instructions can be found at http://magpy.readthedocs.io
 
 ### Unit tests
 
-info soon
+Unit tests exist for the C++ code (gtest) and python code (pytest).
+
+The following code snippet will run the C++ unit tests with gtest.
+
+``` shell
+    $ cd /path/to/magpy/project
+    $ make run-tests
+```
+
+In order to run the python unit tests:
+
+``` shell
+    $ cd /path/to/magpy/project
+    $ pytest -v magpy
+```
 
 ### Numerical tests
 
-info soon
+The numerical tests check the stability of the numerical integrators:
+
+``` shell
+    $ cd /path/to/magpy/project
+    $ make test/convergence/run
+    $ cd test/convergence
+    $ chmod +x run
+    $ ./run
+```
+
+This command will populate the directory `./test/convergence/output` with results.
+The results are explained and visualised in `./docs/source/notebooks/convergence.ipynb`
+(also see [hosted docs](https://magpy.readthedocs.io))
 
 ### Physics tests
 
-info soon
+For details see the docs in `./docs` or at [magpy.readthedocs.io](https://magpy.readthedocs.io)
 
 ## Contributing
 
