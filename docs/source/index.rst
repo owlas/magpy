@@ -17,6 +17,7 @@ Welcome to magpy's documentation!
    notebooks/single-particle
    notebooks/single-particle-equilibrium
    notebooks/two-particle-equilibrium
+   notebooks/convergence
 
 .. toctree::
    :caption: Developer
