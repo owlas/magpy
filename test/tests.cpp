@@ -55,7 +55,6 @@ TEST(llg, multi_diffusion)
 {
     double deriv[6*6];
     const double state[6] = { 2, 3, 4, 2, 3, 4 };
-    const double time=0;
     const double sr[2] = { 2, 2 };
     const double alpha[2]  = { 3, 3 };
     llg::multi_diffusion( deriv, state, sr, alpha, 2 );
@@ -63,7 +62,9 @@ TEST(llg, multi_diffusion)
     for( unsigned int i=0; i<6; i++ )
         for( unsigned int j=0; j<6; j++ )
             if( (i/3) != (j/3) )
+	      {
                 EXPECT_EQ( 0, deriv[i*6+j] );
+	      }
 
     EXPECT_EQ( 150, deriv[0*6 + 0] );
     EXPECT_EQ( -28, deriv[0*6 + 1] );
@@ -193,7 +194,7 @@ TEST( heun_driver, ou )
     const double ou_sigma = 0.8;
     const std::function<void(double*,double*,const double*,const double)> sde =
         [ou_theta,ou_mu,ou_sigma](double *drift, double *diff,
-                         const double *in, const double t)
+                         const double *in, const double )
         {
             drift[0]=ou_theta*(ou_mu - in[0]);
             diff[0] = ou_sigma;
@@ -865,7 +866,9 @@ TEST( anisotropy_field, multi_uniaxial_jacobian )
     for( unsigned int i=0; i<jaclen; i++ )
         for( unsigned int j=0; j<jaclen; j++ )
             if ( (i/3) != (j/3) )
+	      {
                 EXPECT_DOUBLE_EQ( 0.0, res[i][j] );
+	      }
 
     // Check the blocks
     EXPECT_DOUBLE_EQ( 3.2, res[0][0] );
