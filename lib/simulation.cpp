@@ -709,10 +709,10 @@ struct simulation::results simulation::dom_ensemble_dynamics(
     res.mz[0] = next_state[0] - next_state[1];
     res.time[0] = 0;
     res.field[0] = applied_field( 0 );
-    
+
 
     // Variables needed in the loop
-    double t=0;
+    double t=0, t_last;
     double max_dt = end_time / 1000.0; // never step more than 1000th of the simulation time
     double dt = 0.01*time_step;
     unsigned int step=0;
@@ -725,6 +725,7 @@ struct simulation::results simulation::dom_ensemble_dynamics(
             // take a step
             last_state[0] = next_state[0];
             last_state[1] = next_state[1];
+            t_last = t;
             step++;
 
             // perform integration step
@@ -749,16 +750,16 @@ struct simulation::results simulation::dom_ensemble_dynamics(
            Thus the magnetisation is the difference between the two
            state probabilities.
         */
+        double mz_last = last_state[0] - last_state[1];
         double mz_next = next_state[0] - next_state[1];
-        double t_next = t;
-        double t_this = sample*sampling_time;
+        double t_sample = sample*sampling_time;
 
         // First-order-hold
-        double beta = (mz_next - res.mz[sample-1])/(t_next-res.time[sample-1]);
-        res.mz[sample] = res.mz[sample-1] + beta*(t_this - res.time[sample-1]);
+        double beta = (mz_next - mz_last)/(t - t_last);
+        res.mz[sample] = mz_last + beta*(t_sample - t_last);
 
-        res.time[sample] = t_this;
-        res.field[sample] = applied_field(t_this);
+        res.time[sample] = t_sample;
+        res.field[sample] = applied_field(t_sample);
     }
 
     // free memory
