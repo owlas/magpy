@@ -218,8 +218,13 @@ class DOModel:
 
     The model is simulated to solve the probability of the system being up and down over
     time. The particle is optionally subjected to a time-varying field along the
-    anisotropy axis. The field can be constant or sine/square varying with a desired
-    frequency and amplitude.
+    anisotropy axis. The available field types and applicable parameters:
+     - `constant`: a constant (time-invariant) field. Specify `field_amplitude`
+     - `sine`: a sinusoidal field. Specify `field_amplitude` and `field_frequency`
+     - `square`: a square alternating field (switching).
+       Specify `field_amplitude` and `field_frequency`
+     - `square_f`: a square alternating field with a finite number of cosine Fourier
+       series terms. Specify `field_amplitude`, `field_frequency` and `field_n_components`
 
     Args:
         radius (double): radius of the spherical particle
@@ -230,19 +235,22 @@ class DOModel:
             Saturation magnetisation cannot vary between particles.
         damping (double): the damping constant for the particle.
         temperature (double): the ambient temperature in Kelvin for the particle.
-        field_shape (str, optional): can be either 'constant', 'square' or 'sine' describing
+        field_shape (str, optional): can be either 'constant', 'square', 'square_f' or 'sine' describing
             the time-varying shape of the alternating field. The field is always applied
             along the anisotropy axis. Default is 'constant'
         field_frequency (double, optional): the frequency of the applied field in Hz.
             Default is 0Hz.
         field_amplitude (double, optional): the amplitude of the applied field in Ampres / meter.
             Default is 0A/m
+        field_n_components (int, optional): applies for `field_shape=='square_f'` only.
+            The number of cosine Fourier series components to use for square wave.
+            Default is 1
 
     """
     def __init__(
             self, radius, anisotropy, initial_probabilities, magnetisation,
             damping, temperature, field_shape='constant', field_frequency=0.0,
-            field_amplitude=0.0):
+            field_amplitude=0.0, field_n_components=1):
         self.radius = radius
         self.volume = 4./3 * np.pi * self.radius**3
         self.anisotropy = anisotropy
@@ -253,6 +261,7 @@ class DOModel:
         self.field_shape = field_shape
         self.field_frequency = field_frequency
         self.field_amplitude = field_amplitude
+        self.field_n_components = field_n_components
 
     def simulate(self, end_time, time_step, max_samples):
         """Simulate the state probabilities for the particle
@@ -281,5 +290,7 @@ class DOModel:
             self.initial_probabilities, self.volume,
             self.anisotropy, self.temperature, self.magnetisation,
             self.damping, time_step, end_time, max_samples,
-            self.field_shape, self.field_amplitude, self.field_frequency)
+            self.field_shape, self.field_amplitude, self.field_frequency,
+            self.field_n_components
+        )
         return Results(**results)
