@@ -214,7 +214,8 @@ cpdef simulate_dom(
     size_t max_samples,
     str field_shape,
     double field_amplitude,
-    double field_frequency ):
+    double field_frequency,
+    size_t field_n_components ):
     cdef d2 c_initial_probabilities
     for i in range(2):
         c_initial_probabilities[i] = initial_probabilities[i]
@@ -237,6 +238,11 @@ cpdef simulate_dom(
     elif field_shape=='constant':
         reduced_field_function = bind_field_function(
             f_constant, reduced_field_amplitude
+        )
+    elif field_shape=='square_f':
+        reduced_field_function = bind_field_function(
+            f_square_fourier, reduced_field_amplitude, field_frequency,
+            field_n_components
         )
 
     # Note:
