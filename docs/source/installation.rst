@@ -59,12 +59,18 @@ the code from source on **Linux**.
       $ cd magpy
       $ make CXX=<CXX> run-tests
 6. To build the python interface you'll need to obtain all the python
-   dependencies in the ``requirements.txt`` file.
+   dependencies in the ``environment.yml`` file. Install miniconda
+   (see Conda, above)
+
+   .. code-block:: bash
+
+      $ conda create env -f environment.yml
+      $ source activate magpy
+
 7. Once you have all of the dependencies you can install magpy
 
    .. code-block:: bash
 
-      $ cd magpy
       $ CXX=<CXX> pip install .
       $ python
       $ >>> import magpy
@@ -108,7 +114,13 @@ advantage of this by taking a few extra steps:
       $ cd magpy
       $ make CXX=icpc run-tests
 7. To build the python interface you'll need to obtain all the python
-   dependencies in the ``requirements.txt`` file.
+   dependencies in the ``environment.yml`` file. Install miniconda
+   (see Conda, above)
+
+   .. code-block:: bash
+
+      $ conda create env -f environment.yml
+      $ source activate magpy
 8. Once you have all of the dependencies you can install magpy
 
    .. code-block:: bash
