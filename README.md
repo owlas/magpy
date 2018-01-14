@@ -86,6 +86,18 @@ The results are explained and visualised in `./docs/source/notebooks/convergence
 
 For details see the docs in `./docs` or at [magpy.readthedocs.io](https://magpy.readthedocs.io)
 
+The notebooks are validated using [nbval](https://github.com/computationalmodelling/nbval). Nbval
+reruns all the documentation notebooks and checks that there has been no change in output.
+This is particularly important to check if you have updated interfaces or changed the code
+base in anyway.
+
+The notebooks take a long time to rerun and aren't included in the continuous integration testing.
+
+``` shell
+    $ cd /path/to/magpy/project
+    $ pytest --nbval docs/source/notebooks
+```
+
 ## Contributing
 
  - Open an issue
