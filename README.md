@@ -95,7 +95,7 @@ The notebooks take a long time to rerun and aren't included in the continuous in
 
 ``` shell
     $ cd /path/to/magpy/project
-    $ pytest --nbval docs/source/notebooks
+    $ pytest --nbval-lax docs/source/notebooks
 ```
 
 ## Contributing
