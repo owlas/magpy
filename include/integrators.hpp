@@ -31,8 +31,7 @@ namespace driver
     void eulerm(
         double *states, const double* initial_state,
         const double *wiener_process,
-        const std::function<void(double*,const double*,const double)> drift,
-        const std::function<void(double*,const double*,const double)> diffusion,
+        const std::function<void(double*,double*,const double*,const double)> sde,
         const size_t n_steps, const size_t n_dims, const size_t n_wiener,
         const double step_size );
 
@@ -91,8 +90,7 @@ namespace integrator
     void eulerm(
         double *states, double *diffusion_matrix,
         const double* initial_state, const double *wiener_process,
-        const std::function<void(double*,const double*,const double)> drift,
-        const std::function<void(double*,const double*,const double)> diffusion,
+        const std::function<void(double*,double*,const double*,const double)> sde,
         const size_t n_dims, const size_t n_wiener,
         const double t, const double step_size );
 

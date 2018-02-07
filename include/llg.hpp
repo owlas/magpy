@@ -24,6 +24,14 @@ namespace llg
         const double alpha,
         const double *heff );
 
+    void ito_drift(
+        double *deriv,
+        const double *state,
+        const double time,
+        const double alpha,
+        const double sig,
+        const double *heff );
+
     void drift_jacobian(
         double *deriv,
         const double *state,
@@ -92,6 +100,14 @@ namespace llg
         const double *heff,
         const size_t N_particles );
 
+    void ito_multi_drift(
+        double *deriv,
+        const double *state,
+        const double *alphas,
+        const double *sigs,
+        const double *heff,
+        const size_t N_particles );
+
     void multi_diffusion(
         double *deriv,
         const double *state,
@@ -100,6 +116,17 @@ namespace llg
         const size_t N_particles );
 
     void multi_stochastic_llg_field_update(
+        double *drift,
+        double *diffusion,
+        double *heff,
+        const std::function<void(double*,const double*,const double)> heff_func,
+        const double *state,
+        const double t,
+        const double *alphas,
+        const double *field_strengths,
+        const size_t N_particles );
+
+    void multi_stochastic_ito_llg_field_update(
         double *drift,
         double *diffusion,
         double *heff,

@@ -279,20 +279,18 @@ void integrator::eulerm(
     double *diffusion_matrix,
     const double *current_state,
     const double *wiener_steps,
-    const sde_function drift,
-    const sde_function diffusion,
+    const sde_func sde,
     const size_t n_dims,
     const size_t wiener_dims,
     const double t,
     const double step_size )
 {
-    drift( next_state, current_state, t );
-    diffusion( diffusion_matrix, current_state, t );
+    sde( next_state, diffusion_matrix, current_state, t );
 
     for( unsigned int i=0; i<n_dims; i++ ){
-        next_state[i] = current_state[i] * step_size*next_state[i];
+        next_state[i] = current_state[i] + step_size*next_state[i];
         for( unsigned int j=0; j<wiener_dims; j++ )
-            next_state[i] = diffusion_matrix[j+i*n_dims]*wiener_steps[j];
+            next_state[i] += diffusion_matrix[j+i*wiener_dims]*wiener_steps[j] * std::sqrt( step_size );
     }
 }
 /// Euler-Maruyama driver
@@ -326,20 +324,22 @@ void driver::eulerm(
     double *states,
     const double* initial_state,
     const double *wiener_process,
-    const sde_function drift,
-    const sde_function diffusion,
+    const sde_func sde,
     const size_t n_steps,
     const size_t n_dims,
     const size_t n_wiener,
     const double step_size )
 {
+    double *diffusion_mat = new double[n_dims*n_wiener];
+
+    // First step
     for( unsigned int i=0; i<n_dims; i++ )
         states[i] = initial_state[i];
 
-    double *diffusion_mat = new double[n_dims*n_wiener];
-    for( unsigned int i=1; i<n_steps; i++ )
-        integrator::eulerm( states+i*n_dims, diffusion_mat, states+(i-1)*n_dims,
-                            wiener_process+(i-1)*n_wiener, drift, diffusion,
+    // More steps
+    for( unsigned int i=0; i<n_steps; i++ )
+        integrator::eulerm( states+(i+1)*n_dims, diffusion_mat, states+i*n_dims,
+                            wiener_process+i*n_wiener, sde,
                             n_dims, n_wiener, i*step_size, step_size );
     delete[] diffusion_mat;
 }
