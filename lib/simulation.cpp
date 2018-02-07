@@ -11,7 +11,11 @@
 #include <numeric>
 #include <exception>
 #include <sstream>
+#ifdef USEMKL
+#include <mkl_cblas.h>
+#else
 #include <cblas.h>
+#endif
 
 using namespace std::placeholders;
 
