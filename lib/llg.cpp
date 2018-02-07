@@ -28,6 +28,28 @@ void llg::drift( double *deriv, const double *state, const double,
                              + state[1]*heff[1]));
 }
 
+/// Deterministic drift component of the stochastic Ito form of the LLG
+/**
+ * @param[out] deriv  drift derivative of the deterministic part
+ * of the stochastic llg [length 3]
+ * @param[in] state current state of the magnetisation vector [length
+ * 3]
+ * @param[in] t time (has no effect)
+ * @param[in] alpha damping ratio
+ * @param[in] sig thermal noise strength
+ * @param[in] the effective field on the magnetisation [length 3]
+ */
+void llg::ito_drift( double *deriv, const double *state, const double,
+                     const double alpha, const double sig, const double *heff )
+{
+    llg::drift( deriv, state, 0, alpha, heff );
+
+    // ITO CORRECTION
+    deriv[0] -= 0;//sig*state[0];
+    deriv[1] -= 0;//sig*state[1];
+    deriv[2] -= 0;//sig*state[2];
+}
+
 /// Jacobian of the deterministic drift component of the stochastic
 /// LLG
 /**
@@ -243,6 +265,29 @@ void llg::multi_drift( double *deriv, const double *state,
     }
 }
 
+/// Deterministic drift component of the stochastic Ito LLG for many
+/// particles
+/**
+ * @param[out] deriv  drift derivative of the deterministic part
+ * of the stochastic llg for each particle [length 3xN]
+ * @param[in] state current state of the magnetisation vectors [length
+ * 3xN]
+ * @param[in] t time (has no effect)
+ * @param[in] alphas damping ratio of each particle
+ * @param[in] sigs the thermal noise strength for each particle
+ * @param[in] heff the effective field on each particle [length 3xN]
+ * @param[in] N_particles the number of particles
+ */
+void llg::ito_multi_drift( double *deriv, const double *state,
+                           const double *alphas, const double *sigs,
+                           const double *heff, const size_t N_particles )
+{
+    for( unsigned int n=0; n<N_particles; n++ )
+    {
+        unsigned int n3 = 3*n;
+        llg::ito_drift(deriv+n3, state+n3, 0, alphas[n], sigs[n], heff+n3 );
+    }
+}
 
 /// Compute 3x3 block diagonal multi diffusion
 /**
@@ -298,6 +343,30 @@ void llg::multi_stochastic_llg_field_update(
     heff_func( heff, state, t );
     llg::multi_drift(
         drift, state, alphas, heff, N_particles );
+    llg::multi_diffusion(
+        diffusion, state, field_strengths, alphas, N_particles );
+}
+
+/// Updates field and computes Ito LLG for N interacting particles
+/**
+ * heff_fuc is a function that returns the effective field given
+ * the current state and the current time. This can be whatever you
+ * want e.g. cubic anisotropy terms and interactions. EZEEE.
+ */
+void llg::multi_stochastic_ito_llg_field_update(
+    double *drift,
+    double *diffusion,
+    double *heff,
+    const std::function<void(double*,const double*,const double)> heff_func,
+    const double *state,
+    const double t,
+    const double *alphas,
+    const double *field_strengths,
+    const size_t N_particles )
+{
+    heff_func( heff, state, t );
+    llg::ito_multi_drift(
+        drift, state, alphas, field_strengths, heff, N_particles );
     llg::multi_diffusion(
         diffusion, state, field_strengths, alphas, N_particles );
 }
