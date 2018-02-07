@@ -1,4 +1,5 @@
 import numpy as np
+from transforms3d import quaternions
 
 from .arkus import ARKUS
 
@@ -99,3 +100,24 @@ def chain_coordinates(n_particles, R, direction=np.array([0,0,1])):
     multipliers = np.atleast_2d(np.arange(n_particles))
     unscaled_chain_coordinates = multipliers.T.dot(unit_direction)
     return R * unscaled_chain_coordinates
+
+def random_rotate_coordinates(coords):
+    """
+    Returns a random rotation of the coordinates matrix.
+
+    Given a list of `n_particles` coordinates a random rotation axis is defined
+    and all coordinates are rotated about the axis.
+
+    Args:
+        coords (np.ndarray): `(n_particles,3)`array of coordinates
+    Returns:
+        np.ndarray: shape `(n_particles,3)` original coordinates rotated
+    """
+    theta = 2.0*np.pi*np.random.rand()
+    phi = np.arccos(1 - 2.0*np.random.rand())
+    random_axis = np.array([np.sin(phi)*np.cos(theta), np.sin(phi)*np.sin(theta), np.cos(phi)])
+    random_quaternion = quaternions.axangle2quat(random_axis, 2.0*np.pi*np.random.randn())
+    rotated_coords = np.apply_along_axis(
+        quaternions.rotate_vector, 1, coords, q=random_quaternion
+    )
+    return rotated_coords
